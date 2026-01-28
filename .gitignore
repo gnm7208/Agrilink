@@ -1,0 +1,14 @@
+.env
+# Environment variables
+.env
+*.env
+server/.env
+
+# Python
+__pycache__/
+*.pyc
+venv/
+*.db
+
+# Node
+node_modules/
