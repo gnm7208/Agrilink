@@ -1,7 +1,6 @@
-from flask import Flask
+from flask import Flask,session, g
 from config import Config
 from extensions import db, migrate
-from flask import session, g
 from models import User
 
 
@@ -26,15 +25,15 @@ def create_app():
     app.register_blueprint(users.bp)
     app.register_blueprint(posts.bp)
     app.register_blueprint(communities.bp)
+    @app.before_request
+    def load_current_user():
+        user_id = session.get("user_id")
+        if user_id is not None:
+            g.current_user = User.query.get(user_id)
+        else:
+            g.current_user = None
+
     app.register_blueprint(messages.bp)
 
     return app
-
-@app.before_request
-def load_current_user():
-    user_id = session.get("user_id")
-    if user_id:
-        g.current_user = User.query.get(user_id)
-    else:
-        g.current_user = None
 
