@@ -17,11 +17,12 @@ class Role(db.Model):
 
     def __repr__(self) -> str:
         return f"<Role {self.name}>"
-    
-    def to_dict(self): 
-        return { "id": self.id,
-                "name": self.name, 
-                }
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+        }
 
 class User(db.Model):
     __tablename__ = "users"
@@ -68,23 +69,23 @@ class User(db.Model):
         # Fallback for legacy rows/code paths prior to role_id backfill.
         return self.role == "admin"
     
-    def set_password(self, password):
-        self.password_hash = generate_password_hash(password) 
-    
-    def check_password(self, password): 
+    def set_password(self, password: str) -> None:
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password: str) -> bool:
         return check_password_hash(self.password_hash, password)
-    
-    def to_dict(self, include_email=False): 
+
+    def to_dict(self, include_email=False) -> dict:
         data = {
-            "id": self.id, 
-            "username": self.username, 
-            "bio": self.bio, 
-            "location": self.location, 
+            "id": self.id,
+            "username": self.username,
+            "bio": self.bio,
+            "location": self.location,
             "profile_image_url": self.profile_image_url,
-            "role": self.role, 
+            "role": self.role,
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }
-        if include_email: 
+        if include_email:
             data["email"] = self.email
         return data
     def __repr__(self):
@@ -103,7 +104,7 @@ class Community(db.Model):
 
     members = db.relationship("CommunityMembership", backref="community", cascade="all, delete-orphan")
     posts = db.relationship("Post", backref="community", lazy=True)
-
+    messages = db.relationship("Message", backref="community", lazy=True)
     def to_dict(self): 
         return { 
             "id": self.id, 
