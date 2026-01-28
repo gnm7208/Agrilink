@@ -56,3 +56,10 @@ def logout():
     session.pop("user_id", None)
     return jsonify({"message": "Logged out"})
 
+@bp.get("/me")
+def me():
+    if g.current_user:
+        return jsonify({"id": g.current_user.id, "username": g.current_user.username})
+    return jsonify({"user": None})
+
+
