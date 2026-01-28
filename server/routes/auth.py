@@ -11,6 +11,7 @@ def health():
 
 @bp.post("/register")
 def register():
+    """Register a new user with username, email and password."""
     data = request.get_json() or {}
     username = data.get("username", "").strip()
     email = data.get("email", "").strip().lower()
@@ -46,6 +47,7 @@ def register():
 
 @bp.post("/login")
 def login():
+    """Authenticate user and start session."""
     data = request.get_json() or {}
     email = data.get("email", "").strip().lower()
     password = data.get("password", "")
@@ -63,6 +65,7 @@ def login():
 
 @bp.post("/logout")
 def logout():
+    """End the current user session."""
     session.pop("user_id", None)
     return jsonify({"message": "Logged out"})
 

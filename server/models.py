@@ -70,9 +70,11 @@ class User(db.Model):
         return self.role == "admin"
     
     def set_password(self, password: str) -> None:
+        """Hash password using Werkzeug for secure storage."""
         self.password_hash = generate_password_hash(password)
 
     def check_password(self, password: str) -> bool:
+        """Verify password against stored hash."""
         return check_password_hash(self.password_hash, password)
 
     def to_dict(self, include_email=False) -> dict:
