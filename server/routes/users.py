@@ -60,6 +60,7 @@ def delete_user(user_id):
 @bp.post("/<int:user_id>/follow")
 @login_required
 def follow_user(user_id):
+    """Follow another user by their ID."""
     if g.current_user.id == user_id:
         return jsonify({"error": "cannot follow yourself"}), 400
 
@@ -81,6 +82,7 @@ def follow_user(user_id):
 @bp.delete("/<int:user_id>/follow")
 @login_required
 def unfollow_user(user_id):
+    """Stop following a user by their ID."""
     follow = Follow.query.filter_by(
         follower_id=g.current_user.id,
         followed_id=user_id
