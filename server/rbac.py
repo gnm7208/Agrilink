@@ -24,3 +24,12 @@ def admin_required(view_func):
 
     return wrapper
 
+
+def login_required(view_func):
+    @wraps(view_func)
+    def wrapper(*args, **kwargs):
+        if g.current_user is None:
+            abort(401)
+        return view_func(*args, **kwargs)
+    return wrapper
+
