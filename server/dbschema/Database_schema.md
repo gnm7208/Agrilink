@@ -36,7 +36,8 @@ Stores all user accounts, both farmers and experts, with basic profile metadata.
 | name        | VARCHAR(255)         | NOT NULL                                                |
 | bio         | TEXT                 | NULLABLE                                                |
 | location    | VARCHAR(255)         | NULLABLE                                                |
-| role        | VARCHAR(50)          | NOT NULL, CHECK (`role` IN ('farmer','expert'))        |
+| role_id     | INTEGER              | FK → `roles(id)`                                        |
+| role        | VARCHAR(50)          | NOT NULL (legacy), kept for backward compatibility      |
 | avatar_url  | TEXT                 | NULLABLE                                                |
 | is_expert   | BOOLEAN              | NOT NULL DEFAULT FALSE                                  |
 | created_at  | TIMESTAMPTZ          | NOT NULL DEFAULT NOW()                                  |
@@ -50,7 +51,31 @@ Stores all user accounts, both farmers and experts, with basic profile metadata.
 - Optional: `CREATE INDEX idx_users_is_expert ON users(is_expert);` (for expert listing)
 
 ### Relationships
+- One `role` → many `users`.
 - One `user` → many `posts`, `comments`, `likes`, `follows` (as follower), `follows` (as expert), `community_memberships`, `conversation_participants`, `messages`.
+
+---
+
+## roles
+
+### Purpose
+Defines system roles used for role-based access control (RBAC). MVP defaults include `"user"` and `"admin"`.
+
+### Columns
+
+| Column | Type        | Constraints                 |
+|--------|-------------|-----------------------------|
+| id     | INTEGER     | PK                          |
+| name   | VARCHAR(50) | NOT NULL, UNIQUE            |
+
+### Primary Key
+- `PRIMARY KEY (id)`
+
+### Relationships
+- One `role` → many `users` via `users.role_id`.
+
+### Indexes & Constraints
+- `UNIQUE (name)`
 
 ---
 
