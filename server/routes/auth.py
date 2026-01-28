@@ -50,3 +50,9 @@ def login():
     session["user_id"] = user.id
 
     return jsonify({"message": "Logged in", "user": {"id": user.id, "username": user.username}})
+
+@bp.post("/logout")
+def logout():
+    session.pop("user_id", None)
+    return jsonify({"message": "Logged out"})
+
