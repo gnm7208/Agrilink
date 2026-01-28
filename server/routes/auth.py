@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, session, jsonify
 from extensions import db
 from models import User
 
@@ -34,3 +34,19 @@ def register():
     db.session.commit()
 
     return jsonify({"message": "User registered successfully"})
+
+
+
+@bp.post("/login")
+def login():
+    data = request.json
+    email = data.get("email")
+    password = data.get("password")
+
+    user = User.query.filter_by(email=email).first()
+    if not user or not user.check_password(password):
+        return jsonify({"error": "Invalid credentials"}), 401
+
+    session["user_id"] = user.id
+
+    return jsonify({"message": "Logged in", "user": {"id": user.id, "username": user.username}})
