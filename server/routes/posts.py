@@ -23,6 +23,7 @@ def list_posts():
 @bp.post("")
 @login_required
 def create_post():
+    """Create a new post in the user's feed or a community."""
     data = request.get_json() or {}
     content = data.get("content", "").strip()
     title = data.get("title")
@@ -96,6 +97,7 @@ def add_post_image(post_id):
 @bp.post("/<int:post_id>/comments")
 @login_required
 def add_comment(post_id):
+    """Add a comment to a post."""
     post = Post.query.get_or_404(post_id)
     data = request.get_json() or {}
     content = data.get("content", "").strip()

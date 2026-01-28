@@ -22,6 +22,7 @@ def list_communities():
 @bp.post("")
 @login_required
 def create_community():
+    """Create a new community and add the creator as a member."""
     data = request.get_json() or {}
     name = data.get("name", "").strip()
     description = data.get("description")
@@ -49,6 +50,7 @@ def create_community():
 @bp.post("/<int:community_id>/join")
 @login_required
 def join_community(community_id):
+    """Join an existing community as a member."""
     community = Community.query.get_or_404(community_id)
     existing = CommunityMembership.query.filter_by(
         user_id=g.current_user.id,

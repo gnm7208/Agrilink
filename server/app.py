@@ -27,6 +27,7 @@ def create_app():
     app.register_blueprint(communities.bp)
     @app.before_request
     def load_current_user():
+        """Load authenticated user from session into g.current_user."""
         user_id = session.get("user_id")
         if user_id is not None:
             g.current_user = User.query.get(user_id)
