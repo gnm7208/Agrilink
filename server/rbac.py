@@ -24,3 +24,14 @@ def admin_required(view_func):
 
     return wrapper
 
+
+def login_required(view_func):
+    """Ensure user is authenticated before accessing the endpoint."""
+    @wraps(view_func)
+    def wrapper(*args, **kwargs):
+        current_user = getattr(g, "current_user", None)
+        if current_user is None:
+            abort(401)
+        return view_func(*args, **kwargs)
+    return wrapper
+
