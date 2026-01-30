@@ -21,15 +21,88 @@ def admin_health():
 @bp.get("")
 @admin_required
 def list_users():
-    users = User.query.all()
-    return jsonify([u.to_dict(include_email=True) for u in users])
+    """List all users with pagination.
+    
+    Query params:
+        page: Page number (default: 1)
+        per_page: Items per page (default: 20, max: 100)
+    """
+    page = request.args.get("page", 1, type=int)
+    per_page = min(request.args.get("per_page", 20, type=int), 100)
+    
+    pagination = User.query.paginate(page=page, per_page=per_page, error_out=False)
+    users = [u.to_dict(include_email=True) for u in pagination.items]
+    
+    return jsonify({
+        "users": users,
+        "total": pagination.total,
+        "page": pagination.page,
+        "pages": pagination.pages,
+        "per_page": per_page
+    })
+
+
+@bp.get("/experts")
+@login_required
+def list_experts():
+    """List all expert users with pagination.
+    
+    TODO: Add dedicated 'expert' role to roles table and filter by role_id.
+    Current implementation returns all users for MVP.
+    
+    Query params:
+        page: Page number (default: 1)
+        per_page: Items per page (default: 20, max: 100)
+    """
+    page = request.args.get("page", 1, type=int)
+    per_page = min(request.args.get("per_page", 20, type=int), 100)
+    
+    # FIXME: Replace with role-based filtering when expert role is added to roles table
+    pagination = User.query.paginate(page=page, per_page=per_page, error_out=False)
+    experts = [u.to_dict() for u in pagination.items]
+    
+    return jsonify({
+        "experts": experts,
+        "total": pagination.total,
+        "page": pagination.page,
+        "pages": pagination.pages,
+        "per_page": per_page
+    })
+
+
+@bp.get("/inbox")
+@login_required
+def user_inbox():
+    """Get all messages received by the current user with pagination.
+    
+    Query params:
+        page: Page number (default: 1)
+        per_page: Items per page (default: 20, max: 100)
+    """
+    from models import Message
+    page = request.args.get("page", 1, type=int)
+    per_page = min(request.args.get("per_page", 20, type=int), 100)
+    
+    pagination = Message.query.filter_by(receiver_id=g.current_user.id) \
+        .order_by(Message.created_at.desc()) \
+        .paginate(page=page, per_page=per_page, error_out=False)
+    
+    messages = [m.to_dict() for m in pagination.items]
+    
+    return jsonify({
+        "messages": messages,
+        "total": pagination.total,
+        "page": pagination.page,
+        "pages": pagination.pages,
+        "per_page": per_page
+    })
 
 
 @bp.get("/<int:user_id>")
 @login_required
 def get_user(user_id):
     user = User.query.get_or_404(user_id)
-    return jsonify(user.to_dict(include_email=(g.current_user.is_admin() or g.current_user.id == user.id)))
+    return jsonify(user.to_dict(include_email=(g.current_user.is_admin() or g.current_user.id == user_id)))
 
 
 @bp.patch("/<int:user_id>")
@@ -107,3 +180,4 @@ def get_followers(user_id):
 def get_following(user_id):
     following = Follow.query.filter_by(follower_id=user_id).all()
     return jsonify([f.to_dict() for f in following])
+
