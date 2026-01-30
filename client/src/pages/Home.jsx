@@ -1,5 +1,5 @@
 import React from 'react';
-import { PostCard } from '../components/PostCard';
+import  PostCard  from '../components/PostCard';
 import { posts } from '../data/mockData';
 import { Bell, Search } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -21,7 +21,7 @@ export function HomeFeed() {
       </header>
 
       <main className="p-4 space-y-4">
-        {/* Stories/Highlights could go here */}
+     
 
         <div className="space-y-4">
           {posts.map((post, index) => (
