@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Image as ImageIcon, Camera, X } from 'lucide-react';
 import { Button } from '../components/ui/Button';
-import { Input } from '../components/ui/Input';
+import { Input } from "../components/ui/input";
 import { Avatar } from '../components/ui/Avatar';
 import { currentUser } from '../data/mockData';
 
