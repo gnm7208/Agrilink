@@ -1,8 +1,15 @@
 from flask import Blueprint, jsonify, request, session, g
 from extensions import db
 from models import User
+from rbac import login_required
 
 bp = Blueprint("auth", __name__, url_prefix="/auth")
+
+# Rate limits for auth endpoints (Flask-Limiter)
+DEFAULT_RATE_LIMIT = "15 per minute"
+LOGIN_RATE_LIMIT = "10 per minute"
+REGISTER_RATE_LIMIT = "5 per minute"
+
 
 @bp.route("/health", methods=["GET"])
 def health():
@@ -11,7 +18,10 @@ def health():
 
 @bp.post("/register")
 def register():
-    """Register a new user with username, email and password."""
+    """Register a new user with username, email and password.
+    
+    New users are assigned the 'user' role via set_role_by_name().
+    """
     data = request.get_json() or {}
     username = data.get("username", "").strip()
     email = data.get("email", "").strip().lower()
@@ -29,12 +39,9 @@ def register():
     if User.query.filter_by(username=username).first():
         return jsonify({"error": "username already in use"}), 400
 
-    user = User(
-        username=username,
-        email=email,
-        role="user",
-    )
+    user = User(username=username, email=email)
     user.set_password(password)
+    # Assign role via set_role_by_name() - roles table is source of truth
     user.set_role_by_name("user")
 
     db.session.add(user)
@@ -63,16 +70,18 @@ def login():
 
     return jsonify({"message": "logged in", "user": user.to_dict(include_email=True)})
 
+
 @bp.post("/logout")
 def logout():
     """End the current user session."""
     session.pop("user_id", None)
     return jsonify({"message": "Logged out"})
 
+
 @bp.get("/me")
 def me():
+    """Get current authenticated user."""
     if g.current_user is None:
         return jsonify({"user": None})
     return jsonify({"user": g.current_user.to_dict(include_email=True)})
-
 

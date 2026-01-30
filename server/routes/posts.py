@@ -1,4 +1,3 @@
-
 from flask import Blueprint, jsonify, request, g
 
 from extensions import db
@@ -16,8 +15,27 @@ def health():
 @bp.get("")
 @login_required
 def list_posts():
-    posts = Post.query.order_by(Post.created_at.desc()).all()
-    return jsonify([p.to_dict() for p in posts])
+    """List all posts with pagination.
+    
+    Query params:
+        page: Page number (default: 1)
+        per_page: Items per page (default: 20, max: 100)
+    """
+    page = request.args.get("page", 1, type=int)
+    per_page = min(request.args.get("per_page", 20, type=int), 100)
+    
+    pagination = Post.query.order_by(Post.created_at.desc()).paginate(
+        page=page, per_page=per_page, error_out=False
+    )
+    posts = [p.to_dict() for p in pagination.items]
+    
+    return jsonify({
+        "posts": posts,
+        "total": pagination.total,
+        "page": pagination.page,
+        "pages": pagination.pages,
+        "per_page": per_page
+    })
 
 
 @bp.post("")
