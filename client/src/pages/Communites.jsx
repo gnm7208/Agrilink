@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Search } from 'lucide-react';
-import { ExpertCard } from '../components/ExpertCard';
+import  ExpertCard  from '../components/ExpertCard';
 import { experts } from '../data/mockData';
-import { Input } from '../components/ui/Input';
+import { Input } from '../components/ui/input';
 
 export function CommunitiesPage() {
   const [activeTab, setActiveTab] = useState('experts');

@@ -2,7 +2,7 @@ import React from 'react';
 import { Settings, MapPin, Calendar } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Avatar } from '../components/ui/Avatar';
-import { PostCard } from '../components/PostCard';
+import  PostCard  from '../components/PostCard';
 import { currentUser, posts } from '../data/mockData';
 
 export function ProfilePage() {
