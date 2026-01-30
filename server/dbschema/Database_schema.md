@@ -1,397 +1,250 @@
-## AgriLink Database Schema (PostgreSQL)
+# AgriLink Database Schema
 
-### Schema Overview
+## Overview
 
-The AgriLink PostgreSQL schema is designed to support the MVP features of user registration, expert following, communities, posts with images, likes, comments, and messaging.  
-The schema is normalized (3NF-oriented), with clear separation of concerns and explicit join tables for many-to-many relationships (e.g., community memberships, follows, conversation participants).
+This document describes the PostgreSQL schema for the AgriLink backend (MVP).
+The schema is designed to support user registration, expert following, communities, posts with images, likes, comments, and direct messaging.
 
-Core tables:
-
-- `users`
-- `communities`
-- `community_memberships`
-- `posts`
-- `post_images`
-- `likes`
-- `comments`
-- `follows`
-- `conversations`
-- `conversation_participants`
-- `messages`
+**Key Notes:**
+- INTEGER primary keys are the source of truth (UUID migration planned for future)
+- Roles are managed via the `roles` table with `users.role_id` as the canonical RBAC model
+- Legacy `users.role` string column is kept temporarily for backward compatibility
+- Messaging is direct-message based (no conversations table for MVP)
 
 ---
 
-## users
+## Core Tables
 
-### Purpose
-Stores all user accounts, both farmers and experts, with basic profile metadata.
+### users
 
-### Columns
+Stores all user accounts (farmers and experts).
 
-| Column       | Type                 | Constraints                                              |
-|-------------|----------------------|----------------------------------------------------------|
-| id          | UUID                 | PK, `DEFAULT gen_random_uuid()`                         |
-| email       | VARCHAR(255)         | NOT NULL, UNIQUE                                        |
-| password_hash | VARCHAR(255)       | NOT NULL                                                |
-| name        | VARCHAR(255)         | NOT NULL                                                |
-| bio         | TEXT                 | NULLABLE                                                |
-| location    | VARCHAR(255)         | NULLABLE                                                |
-| role        | VARCHAR(50)          | NOT NULL, CHECK (`role` IN ('farmer','expert'))        |
-| avatar_url  | TEXT                 | NULLABLE                                                |
-| is_expert   | BOOLEAN              | NOT NULL DEFAULT FALSE                                  |
-| created_at  | TIMESTAMPTZ          | NOT NULL DEFAULT NOW()                                  |
-| updated_at  | TIMESTAMPTZ          | NOT NULL DEFAULT NOW()                                  |
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| id | INTEGER | PK | Primary key |
+| username | VARCHAR(80) | NOT NULL, UNIQUE | Display name |
+| email | VARCHAR(120) | NOT NULL, UNIQUE | User email |
+| password_hash | VARCHAR(255) | NOT NULL | Werkzeug hash |
+| role | VARCHAR(20) | NOT NULL | Legacy: farmer \| expert \| admin |
+| role_id | INTEGER | FK → roles.id | Canonical RBAC reference |
+| bio | TEXT | NULLABLE | User biography |
+| location | VARCHAR(100) | NULLABLE | Geographic location |
+| profile_image_url | VARCHAR(255) | NULLABLE | Avatar URL |
+| created_at | DATETIME | DEFAULT now() | Creation timestamp |
+| updated_at | DATETIME | ON UPDATE | Last update timestamp |
 
-### Primary Key
-- `PRIMARY KEY (id)`
+**Relationships:**
+- One `role` → many `users` (via role_id)
+- One `user` → many `posts`, `comments`, `likes`, `follows` (as follower), `community_memberships`, `messages` (as sender/receiver)
 
-### Indexes & Constraints
-- `UNIQUE (email)`
-- Optional: `CREATE INDEX idx_users_is_expert ON users(is_expert);` (for expert listing)
+### roles
 
-### Relationships
-- One `user` → many `posts`, `comments`, `likes`, `follows` (as follower), `follows` (as expert), `community_memberships`, `conversation_participants`, `messages`.
+Defines system roles for RBAC.
 
----
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| id | INTEGER | PK | Primary key |
+| name | VARCHAR(50) | NOT NULL, UNIQUE | Role name (user, admin) |
 
-## communities
+**Note:** The `expert` role is planned for future use. Currently, all non-admin users are assigned the `user` role.
 
-### Purpose
-Represents agricultural communities (e.g., crops, regions, topics) that users can join.
+### communities
 
-### Columns
+Represents agricultural communities users can join.
 
-| Column      | Type        | Constraints                         |
-|------------|-------------|-------------------------------------|
-| id         | UUID        | PK, `DEFAULT gen_random_uuid()`    |
-| name       | VARCHAR(255)| NOT NULL, UNIQUE                    |
-| description| TEXT        | NULLABLE                            |
-| is_private | BOOLEAN     | NOT NULL DEFAULT FALSE              |
-| created_by | UUID        | NOT NULL FK → `users(id)`           |
-| created_at | TIMESTAMPTZ | NOT NULL DEFAULT NOW()              |
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| id | INTEGER | PK | Primary key |
+| name | VARCHAR(120) | NOT NULL, UNIQUE | Community name |
+| description | TEXT | NULLABLE | Community description |
+| image_url | VARCHAR(255) | NULLABLE | Community image |
+| created_by | INTEGER | FK → users.id | Creator user ID |
+| created_at | DATETIME | DEFAULT now() | Creation timestamp |
 
-### Primary Key
-- `PRIMARY KEY (id)`
+### community_memberships
 
-### Foreign Keys
-- `FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE RESTRICT`
+Join table for user-community membership (many-to-many).
 
-### Indexes & Constraints
-- `UNIQUE (name)`
-- Optional: `CREATE INDEX idx_communities_is_private ON communities(is_private);`
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| id | INTEGER | PK | Primary key |
+| user_id | INTEGER | FK → users.id, NOT NULL | Member user ID |
+| community_id | INTEGER | FK → communities.id, NOT NULL | Community ID |
+| created_at | DATETIME | DEFAULT now() | Join timestamp |
 
-### Relationships
-- One `community` → many `community_memberships`, `posts`, and `conversation_participants` (for community conversations).
+**Primary Key:** Composite (user_id, community_id) could be used but single pk is fine for MVP.
 
----
+### posts
 
-## community_memberships
+Stores posts authored by users, optionally within a community.
 
-### Purpose
-Join table tracking which users belong to which communities (many-to-many).
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| id | INTEGER | PK | Primary key |
+| author_id | INTEGER | FK → users.id, NOT NULL | Author user ID |
+| community_id | INTEGER | FK → communities.id, NULLABLE | Optional community reference |
+| title | VARCHAR(255) | NULLABLE | Post title |
+| content | TEXT | NOT NULL | Post content |
+| created_at | DATETIME | DEFAULT now() | Creation timestamp |
+| updated_at | DATETIME | ON UPDATE | Last update timestamp |
 
-### Columns
+### post_images
 
-| Column       | Type        | Constraints                          |
-|-------------|-------------|--------------------------------------|
-| user_id     | UUID        | NOT NULL FK → `users(id)`           |
-| community_id| UUID        | NOT NULL FK → `communities(id)`     |
-| joined_at   | TIMESTAMPTZ | NOT NULL DEFAULT NOW()               |
-| role        | VARCHAR(50) | NULLABLE (e.g., 'member','admin')    |
+Stores images attached to posts.
 
-### Primary Key
-- `PRIMARY KEY (user_id, community_id)`
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| id | INTEGER | PK | Primary key |
+| post_id | INTEGER | FK → posts.id, NOT NULL | Parent post |
+| image_url | VARCHAR(255) | NOT NULL | Image URL |
+| created_at | DATETIME | DEFAULT now() | Creation timestamp |
 
-### Foreign Keys
-- `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
-- `FOREIGN KEY (community_id) REFERENCES communities(id) ON DELETE CASCADE`
+### likes
 
-### Indexes & Constraints
-- Composite PK already covers uniqueness and lookup by `(user_id, community_id)`.
-- Optional: index on `community_id` alone for membership queries.
+Tracks user likes on posts (many-to-many).
 
-### Relationships
-- Many `users` ↔ many `communities` via `community_memberships`.
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| id | INTEGER | PK | Primary key |
+| user_id | INTEGER | FK → users.id, NOT NULL | Liking user |
+| post_id | INTEGER | FK → posts.id, NOT NULL | Liked post |
+| created_at | DATETIME | DEFAULT now() | Like timestamp |
 
----
+**Constraint:** Unique (user_id, post_id) - each user can like a post only once.
 
-## posts
+### comments
 
-### Purpose
-Stores all posts (blogs/content) authored by users, optionally associated with a community.
+Stores comments on posts.
 
-### Columns
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| id | INTEGER | PK | Primary key |
+| user_id | INTEGER | FK → users.id, NOT NULL | Comment author |
+| post_id | INTEGER | FK → posts.id, NOT NULL | Parent post |
+| content | TEXT | NOT NULL | Comment text |
+| created_at | DATETIME | DEFAULT now() | Creation timestamp |
 
-| Column       | Type        | Constraints                                  |
-|-------------|-------------|----------------------------------------------|
-| id          | UUID        | PK, `DEFAULT gen_random_uuid()`             |
-| author_id   | UUID        | NOT NULL FK → `users(id)`                   |
-| community_id| UUID        | NULLABLE FK → `communities(id)`             |
-| title       | VARCHAR(255)| NOT NULL                                     |
-| content     | TEXT        | NOT NULL                                     |
-| created_at  | TIMESTAMPTZ | NOT NULL DEFAULT NOW()                       |
-| updated_at  | TIMESTAMPTZ | NOT NULL DEFAULT NOW()                       |
+### follows
 
-### Primary Key
-- `PRIMARY KEY (id)`
+Represents follower → expert/user relationships.
 
-### Foreign Keys
-- `FOREIGN KEY (author_id) REFERENCES users(id) ON DELETE CASCADE`
-- `FOREIGN KEY (community_id) REFERENCES communities(id) ON DELETE SET NULL`
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| id | INTEGER | PK | Primary key |
+| follower_id | INTEGER | FK → users.id, NOT NULL | Following user |
+| followed_id | INTEGER | FK → users.id, NOT NULL | Followed user |
+| created_at | DATETIME | DEFAULT now() | Follow timestamp |
 
-### Indexes & Constraints
-- `CREATE INDEX idx_posts_author_id ON posts(author_id);`
-- `CREATE INDEX idx_posts_community_id_created_at ON posts(community_id, created_at DESC);`
-- `CREATE INDEX idx_posts_created_at ON posts(created_at DESC);` (for global feed)
+**Constraint:** Unique (follower_id, followed_id) - prevent duplicate follows.
 
-### Relationships
-- One `user` → many `posts`.
-- One `community` → many `posts`.
-- One `post` → many `post_images`, `likes`, `comments`.
+### messages
 
----
+Stores direct messages between users or in community channels.
 
-## post_images
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| id | INTEGER | PK | Primary key |
+| sender_id | INTEGER | FK → users.id, NOT NULL | Message sender |
+| receiver_id | INTEGER | FK → users.id, NULLABLE | Direct recipient (user-to-user) |
+| community_id | INTEGER | FK → communities.id, NULLABLE | Community channel |
+| content | TEXT | NOT NULL | Message content |
+| created_at | DATETIME | DEFAULT now() | Creation timestamp |
 
-### Purpose
-Stores image metadata for posts, allowing 0..N images per post while keeping `posts` lightweight.
-
-### Columns
-
-| Column      | Type        | Constraints                          |
-|------------|-------------|--------------------------------------|
-| id         | UUID        | PK, `DEFAULT gen_random_uuid()`     |
-| post_id    | UUID        | NOT NULL FK → `posts(id)`           |
-| url        | TEXT        | NOT NULL                             |
-| position   | INT         | NOT NULL DEFAULT 0                   |
-| created_at | TIMESTAMPTZ | NOT NULL DEFAULT NOW()               |
-
-### Primary Key
-- `PRIMARY KEY (id)`
-
-### Foreign Keys
-- `FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE`
-
-### Indexes & Constraints
-- `CREATE INDEX idx_post_images_post_id_position ON post_images(post_id, position);`
-
-### Relationships
-- One `post` → many `post_images`.
+**Notes:**
+- For direct messages: receiver_id is set, community_id is NULL
+- For community messages: community_id is set, receiver_id is NULL
+- No conversations table for MVP - direct message based
 
 ---
 
-## likes
+## Role-Based Access Control (RBAC)
 
-### Purpose
-Tracks which users have liked which posts (many-to-many: users ↔ posts).
+### Architecture
+- `roles` table is the source of truth for role definitions
+- `users.role_id` is the canonical reference for role assignment
+- `users.role` (string) is kept for backward compatibility with legacy code
+- The `is_admin()` method checks `role_obj.name == "admin"` first, falls back to legacy string
 
-### Columns
+### Default Roles
+| ID | Name | Description |
+|----|------|-------------|
+| 1 | user | Default role for all new users |
+| 2 | admin | Administrator with elevated privileges |
 
-| Column      | Type        | Constraints                          |
-|------------|-------------|--------------------------------------|
-| user_id    | UUID        | NOT NULL FK → `users(id)`           |
-| post_id    | UUID        | NOT NULL FK → `posts(id)`           |
-| created_at | TIMESTAMPTZ | NOT NULL DEFAULT NOW()               |
-
-### Primary Key
-- `PRIMARY KEY (user_id, post_id)` (each user can like a post at most once)
-
-### Foreign Keys
-- `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
-- `FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE`
-
-### Indexes & Constraints
-- Composite PK serves uniqueness.
-- `CREATE INDEX idx_likes_post_id ON likes(post_id);` (for like count queries)
-
-### Relationships
-- Many `users` ↔ many `posts` via `likes`.
+### Role Assignment
+New users are assigned the 'user' role via `User.set_role_by_name("user")`.
 
 ---
 
-## comments
+## Indexes
 
-### Purpose
-Stores comments that users leave on posts.
-
-### Columns
-
-| Column      | Type        | Constraints                          |
-|------------|-------------|--------------------------------------|
-| id         | UUID        | PK, `DEFAULT gen_random_uuid()`     |
-| post_id    | UUID        | NOT NULL FK → `posts(id)`           |
-| author_id  | UUID        | NOT NULL FK → `users(id)`           |
-| content    | TEXT        | NOT NULL                             |
-| created_at | TIMESTAMPTZ | NOT NULL DEFAULT NOW()               |
-
-### Primary Key
-- `PRIMARY KEY (id)`
-
-### Foreign Keys
-- `FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE`
-- `FOREIGN KEY (author_id) REFERENCES users(id) ON DELETE CASCADE`
-
-### Indexes & Constraints
-- `CREATE INDEX idx_comments_post_id_created_at ON comments(post_id, created_at ASC);`
-
-### Relationships
-- One `post` → many `comments`.
-- One `user` → many `comments`.
+Key indexes for performance:
+- `idx_users_email` on users(email)
+- `idx_users_role_id` on users(role_id)
+- `idx_posts_author_id` on posts(author_id)
+- `idx_posts_community_id` on posts(community_id)
+- `idx_posts_created_at` on posts(created_at DESC)
+- `idx_messages_sender_id` on messages(sender_id)
+- `idx_messages_receiver_id` on messages(receiver_id)
+- `idx_messages_community_id` on messages(community_id)
+- `idx_community_memberships_user_id` on community_memberships(user_id)
+- `idx_community_memberships_community_id` on community_memberships(community_id)
 
 ---
 
-## follows
+## Future Migrations (Planned)
 
-### Purpose
-Represents follower → expert relationships (users following expert users).
-
-### Columns
-
-| Column       | Type        | Constraints                          |
-|-------------|-------------|--------------------------------------|
-| follower_id | UUID        | NOT NULL FK → `users(id)`           |
-| expert_id   | UUID        | NOT NULL FK → `users(id)`           |
-| created_at  | TIMESTAMPTZ | NOT NULL DEFAULT NOW()               |
-
-### Primary Key
-- `PRIMARY KEY (follower_id, expert_id)`
-
-### Foreign Keys
-- `FOREIGN KEY (follower_id) REFERENCES users(id) ON DELETE CASCADE`
-- `FOREIGN KEY (expert_id) REFERENCES users(id) ON DELETE CASCADE`
-
-### Indexes & Constraints
-- CHECK to prevent self-follow: `CHECK (follower_id <> expert_id)`
-- Optional: CHECK ensuring `expert_id` user has `is_expert = TRUE` via application logic or trigger.
-- `CREATE INDEX idx_follows_expert_id ON follows(expert_id);` (for followers of expert)
-
-### Relationships
-- Many `users` (followers) ↔ many `users` (experts) via `follows`.
+1. **UUID Primary Keys**: Replace INTEGER PKs with UUIDs for better security and distribution
+2. **Expert Role**: Add 'expert' role to roles table and filter users by it
+3. **Conversations Table**: For richer messaging (read receipts, typing indicators, etc.)
+4. **PostgreSQL Full-Text Search**: Add tsvector columns for search functionality
 
 ---
 
-## conversations
+## API Endpoints
 
-### Purpose
-Logical grouping for messaging, representing either user-to-user threads or community channels.
+### Authentication
+- `POST /api/auth/register` - Register new user
+- `POST /api/auth/login` - Login user
+- `POST /api/auth/logout` - Logout user
+- `GET /api/auth/me` - Get current user
 
-### Columns
+### Users
+- `GET /api/users` - List users (admin, paginated)
+- `GET /api/users/experts` - List experts (paginated)
+- `GET /api/users/inbox` - Get user inbox (paginated)
+- `GET /api/users/<id>` - Get user by ID
+- `PATCH /api/users/<id>` - Update user
+- `DELETE /api/users/<id>` - Delete user (admin)
+- `POST /api/users/<id>/follow` - Follow user
+- `DELETE /api/users/<id>/follow` - Unfollow user
+- `GET /api/users/<id>/followers` - Get followers
+- `GET /api/users/<id>/following` - Get following
 
-| Column      | Type        | Constraints                                            |
-|------------|-------------|--------------------------------------------------------|
-| id         | UUID        | PK, `DEFAULT gen_random_uuid()`                       |
-| type       | VARCHAR(20) | NOT NULL, CHECK (`type` IN ('user','community'))      |
-| community_id | UUID      | NULLABLE FK → `communities(id)` (for `type='community'`) |
-| created_at | TIMESTAMPTZ | NOT NULL DEFAULT NOW()                                 |
+### Posts
+- `GET /api/posts` - List posts (paginated)
+- `POST /api/posts` - Create post
+- `GET /api/posts/<id>` - Get post
+- `PATCH /api/posts/<id>` - Update post
+- `DELETE /api/posts/<id>` - Delete post
+- `POST /api/posts/<id>/images` - Add image to post
+- `POST /api/posts/<id>/comments` - Add comment
+- `DELETE /api/posts/comments/<id>` - Delete comment
+- `POST /api/posts/<id>/like` - Like post
+- `DELETE /api/posts/<id>/like` - Unlike post
 
-### Primary Key
-- `PRIMARY KEY (id)`
+### Communities
+- `GET /api/communities` - List communities (paginated)
+- `POST /api/communities` - Create community
+- `POST /api/communities/<id>/join` - Join community
+- `DELETE /api/communities/<id>/leave` - Leave community
+- `GET /api/communities/<id>/members` - List members (paginated)
+- `GET /api/communities/<id>/posts` - List community posts (paginated)
+- `DELETE /api/communities/<id>` - Delete community (admin)
 
-### Foreign Keys
-- `FOREIGN KEY (community_id) REFERENCES communities(id) ON DELETE CASCADE`
+### Messages
+- `POST /api/messages` - Send message
+- `DELETE /api/messages/<id>` - Delete message
+- `GET /api/messages/user/<id>` - Get conversation with user (paginated)
+- `GET /api/messages/community/<id>` - Get community messages (paginated)
 
-### Indexes & Constraints
-- For `type='community'`, enforce `community_id IS NOT NULL` via CHECK or app logic.
-- `CREATE INDEX idx_conversations_type ON conversations(type);`
-
-### Relationships
-- One `conversation` → many `conversation_participants` and `messages`.
-- For community-type conversations, related `community` is referenced.
-
----
-
-## conversation_participants
-
-### Purpose
-Join table connecting users to conversations, enabling both user-to-user and community conversations.
-
-### Columns
-
-| Column          | Type        | Constraints                          |
-|----------------|-------------|--------------------------------------|
-| conversation_id| UUID        | NOT NULL FK → `conversations(id)`   |
-| user_id        | UUID        | NOT NULL FK → `users(id)`           |
-| joined_at      | TIMESTAMPTZ | NOT NULL DEFAULT NOW()               |
-
-### Primary Key
-- `PRIMARY KEY (conversation_id, user_id)`
-
-### Foreign Keys
-- `FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE`
-- `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
-
-### Indexes & Constraints
-- Composite PK enforces uniqueness.
-- `CREATE INDEX idx_conversation_participants_user_id ON conversation_participants(user_id);`
-
-### Relationships
-- Many `users` ↔ many `conversations` via `conversation_participants`.
-- Permissions in messaging are enforced via membership in this table.
-
----
-
-## messages
-
-### Purpose
-Stores individual messages exchanged in conversations (user-to-user or community channels).
-
-### Columns
-
-| Column          | Type        | Constraints                                   |
-|----------------|-------------|-----------------------------------------------|
-| id             | UUID        | PK, `DEFAULT gen_random_uuid()`              |
-| conversation_id| UUID        | NOT NULL FK → `conversations(id)`            |
-| sender_id      | UUID        | NOT NULL FK → `users(id)`                    |
-| content        | TEXT        | NOT NULL                                      |
-| created_at     | TIMESTAMPTZ | NOT NULL DEFAULT NOW()                        |
-| is_read        | BOOLEAN     | NOT NULL DEFAULT FALSE                        |
-
-### Primary Key
-- `PRIMARY KEY (id)`
-
-### Foreign Keys
-- `FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE`
-- `FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE`
-
-### Indexes & Constraints
-- `CREATE INDEX idx_messages_conversation_created_at ON messages(conversation_id, created_at ASC);`
-- Optional: CHECK or application logic ensures `sender_id` is a participant in the conversation.
-
-### Relationships
-- One `conversation` → many `messages`.
-- One `user` → many sent `messages`.
-
----
-
-## Key Relationships Summary
-
-- **Users & Profiles**
-  - `users` is the root entity for all user-related data.
-- **Experts & Following**
-  - Many-to-many between `users` (followers) and `users` (experts) via `follows`.
-- **Communities**
-  - Many-to-many between `users` and `communities` via `community_memberships`.
-  - `posts` optionally belong to a `community`.
-- **Posts & Images**
-  - One-to-many from `posts` to `post_images`.
-- **Likes & Comments**
-  - Many-to-many between `users` and `posts` via `likes`.
-  - One-to-many from `posts` to `comments`; each comment authored by a `user`.
-- **Messaging**
-  - `conversations` represent message threads (user or community).
-  - Many-to-many between `users` and `conversations` via `conversation_participants`.
-  - One-to-many from `conversations` to `messages`; each message authored by a `user`.
-
----
-
-## Indexing & Constraints Notes
-
-- Use UUIDs for primary keys to avoid coupling with sequence values and simplify client-generated IDs if needed.
-- Time-ordered feeds (posts, comments, messages) rely on compound indexes `(foreign_id, created_at)` to support efficient pagination.
-- Many-to-many tables (`community_memberships`, `likes`, `follows`, `conversation_participants`) use composite primary keys to:
-  - Enforce uniqueness
-  - Speed up existence checks (e.g., “already liked?”, “already member?”)
-- Critical business rules enforced by constraints:
-  - `follows`: prevent self-follow via `CHECK (follower_id <> expert_id)`.
-  - Role and type columns limited via `CHECK` constraints to valid enum-like sets.
-- Additional integrity rules (e.g., ensuring experts are `is_expert = TRUE`, ensuring `sender_id` is a participant in a conversation) should be enforced via application logic and/or triggers depending on team preference for the MVP.
