@@ -2,46 +2,49 @@ import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/input'
-import { ArrowLeft, Tractor, GraduationCap } from 'lucide-react'
+import { ArrowLeft, Tractor, GraduationCap, AlertCircle, CheckCircle2 } from 'lucide-react'
 import { motion } from 'framer-motion'
-
-const API_URL = 'BACKEND LINK'
+import { apiRequest, API_ENDPOINTS } from '../config/api'
 
 export function RegisterPage() {
   const navigate = useNavigate()
   const [role, setRole] = useState('Farmer')
   const [isLoading, setIsLoading] = useState(false)
-  const [name, setName] = useState('')
+  const [username, setUsername] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+  const [passwordErrors, setPasswordErrors] = useState([])
 
   const handleRegister = async (e) => {
     e.preventDefault()
     setIsLoading(true)
+    setError('')
+    setPasswordErrors([])
 
     try {
-      const response = await fetch(`${API_URL}/auth/register`, {
+      const data = await apiRequest(API_ENDPOINTS.auth.register, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
-          name,
+          username,
           email,
           password,
           role,
         }),
       })
 
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Registration failed')
-      }
-
-      navigate('/login')
+      // Registration successful, redirect to login
+      navigate('/login', {
+        state: { message: 'Account created successfully! Please log in.' }
+      })
     } catch (error) {
-      console.error(error.message)
+      // Display error message
+      setError(error.message || 'Registration failed. Please try again.')
+
+      // If password requirements weren't met, display them
+      if (error.data && error.data.requirements) {
+        setPasswordErrors(error.data.requirements)
+      }
     } finally {
       setIsLoading(false)
     }
@@ -100,11 +103,30 @@ export function RegisterPage() {
         </div>
 
         <form onSubmit={handleRegister} className="space-y-4">
+          {error && (
+            <div className="p-4 rounded-lg bg-red-50 border border-red-200 flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-sm text-red-800 font-medium">{error}</p>
+                {passwordErrors.length > 0 && (
+                  <ul className="mt-2 space-y-1">
+                    {passwordErrors.map((err, idx) => (
+                      <li key={idx} className="text-xs text-red-700 flex items-start gap-1">
+                        <span className="text-red-500">•</span>
+                        <span>{err}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+          )}
+
           <Input
-            label="Full Name"
-            placeholder="John Doe"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
+            label="Username"
+            placeholder="johndoe"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
             required
           />
 
@@ -117,14 +139,33 @@ export function RegisterPage() {
             required
           />
 
-          <Input
-            label="Password"
-            type="password"
-            placeholder="Create a password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
+          <div>
+            <Input
+              label="Password"
+              type="password"
+              placeholder="Create a strong password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+            <div className="mt-2 p-3 rounded-lg bg-gray-50 border border-gray-200">
+              <p className="text-xs font-medium text-gray-700 mb-2">Password requirements:</p>
+              <ul className="space-y-1 text-xs text-gray-600">
+                <li className="flex items-center gap-2">
+                  <CheckCircle2 className="w-3 h-3 text-gray-400" />
+                  At least 12 characters
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle2 className="w-3 h-3 text-gray-400" />
+                  One uppercase and one lowercase letter
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle2 className="w-3 h-3 text-gray-400" />
+                  One number and one special character
+                </li>
+              </ul>
+            </div>
+          </div>
 
           <Button type="submit" fullWidth size="lg" isLoading={isLoading}>
             Create Account
