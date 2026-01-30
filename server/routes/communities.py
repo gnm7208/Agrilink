@@ -15,8 +15,27 @@ def health():
 @bp.get("")
 @login_required
 def list_communities():
-    communities = Community.query.order_by(Community.created_at.desc()).all()
-    return jsonify([c.to_dict() for c in communities])
+    """List all communities with pagination.
+    
+    Query params:
+        page: Page number (default: 1)
+        per_page: Items per page (default: 20, max: 100)
+    """
+    page = request.args.get("page", 1, type=int)
+    per_page = min(request.args.get("per_page", 20, type=int), 100)
+    
+    pagination = Community.query.order_by(Community.created_at.desc()).paginate(
+        page=page, per_page=per_page, error_out=False
+    )
+    communities = [c.to_dict() for c in pagination.items]
+    
+    return jsonify({
+        "communities": communities,
+        "total": pagination.total,
+        "page": pagination.page,
+        "pages": pagination.pages,
+        "per_page": per_page
+    })
 
 
 @bp.post("")
@@ -65,20 +84,66 @@ def join_community(community_id):
     return jsonify(membership.to_dict()), 201
 
 
+@bp.delete("/<int:community_id>/leave")
+@login_required
+def leave_community(community_id):
+    """Leave a community the current user is a member of."""
+    community = Community.query.get_or_404(community_id)
+    membership = CommunityMembership.query.filter_by(
+        user_id=g.current_user.id,
+        community_id=community.id
+    ).first()
+    if not membership:
+        return jsonify({"error": "not a member"}), 400
+
+    db.session.delete(membership)
+    db.session.commit()
+    return jsonify({"message": "left community"})
+
+
 @bp.get("/<int:community_id>/members")
 @login_required
 def community_members(community_id):
+    """Get all members of a community with pagination."""
+    page = request.args.get("page", 1, type=int)
+    per_page = min(request.args.get("per_page", 20, type=int), 100)
+    
     Community.query.get_or_404(community_id)
-    memberships = CommunityMembership.query.filter_by(community_id=community_id).all()
-    return jsonify([m.to_dict() for m in memberships])
+    pagination = CommunityMembership.query.filter_by(community_id=community_id).paginate(
+        page=page, per_page=per_page, error_out=False
+    )
+    members = [m.to_dict() for m in pagination.items]
+    
+    return jsonify({
+        "members": members,
+        "total": pagination.total,
+        "page": pagination.page,
+        "pages": pagination.pages,
+        "per_page": per_page
+    })
 
 
 @bp.get("/<int:community_id>/posts")
 @login_required
 def community_posts(community_id):
+    """Get all posts in a community with pagination."""
+    page = request.args.get("page", 1, type=int)
+    per_page = min(request.args.get("per_page", 20, type=int), 100)
+    
     Community.query.get_or_404(community_id)
-    posts = Post.query.filter_by(community_id=community_id).order_by(Post.created_at.desc()).all()
-    return jsonify([p.to_dict() for p in posts])
+    pagination = Post.query.filter_by(community_id=community_id) \
+        .order_by(Post.created_at.desc()) \
+        .paginate(page=page, per_page=per_page, error_out=False)
+    
+    posts = [p.to_dict() for p in pagination.items]
+    
+    return jsonify({
+        "posts": posts,
+        "total": pagination.total,
+        "page": pagination.page,
+        "pages": pagination.pages,
+        "per_page": per_page
+    })
 
 
 @bp.delete("/<int:community_id>")
