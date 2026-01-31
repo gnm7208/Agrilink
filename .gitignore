@@ -12,3 +12,5 @@ venv/
 
 # Node
 node_modules/
+# .md files 
+SECURITY_FIXES.md
