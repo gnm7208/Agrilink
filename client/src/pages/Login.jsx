@@ -2,44 +2,41 @@ import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/input'
-import { Sprout } from 'lucide-react'
+import { Sprout, AlertCircle } from 'lucide-react'
 import { motion } from 'framer-motion'
-
-const API_URL = 'BACKEND LINK'
+import { apiRequest, API_ENDPOINTS } from '../config/api'
 
 export function LoginPage() {
   const navigate = useNavigate()
   const [isLoading, setIsLoading] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
 
   const handleLogin = async (e) => {
     e.preventDefault()
     setIsLoading(true)
+    setError('')
 
     try {
-      const response = await fetch(`${API_URL}/auth/login`, {
+      const data = await apiRequest(API_ENDPOINTS.auth.login, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
           email,
           password,
         }),
       })
 
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Login failed')
+      // Store user data if needed (consider using context/state management)
+      if (data.user) {
+        localStorage.setItem('user', JSON.stringify(data.user))
       }
 
-    
-
+      // Navigate to home page
       navigate('/')
     } catch (error) {
-      console.error(error.message)
+      // Display user-friendly error message
+      setError(error.message || 'Login failed. Please check your credentials and try again.')
     } finally {
       setIsLoading(false)
     }
@@ -61,6 +58,13 @@ export function LoginPage() {
         </div>
 
         <form onSubmit={handleLogin} className="space-y-6">
+          {error && (
+            <div className="p-4 rounded-lg bg-red-50 border border-red-200 flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-red-800">{error}</p>
+            </div>
+          )}
+
           <Input
             label="Email Address"
             type="email"
