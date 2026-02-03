@@ -33,7 +33,7 @@ const SideNav = () => {
           <Sprout size={24} />
         </div>
         <span className="text-xl font-bold text-gray-900 tracking-tight">
-          AgriConnect
+          Agrilink
         </span>
       </div>
 
