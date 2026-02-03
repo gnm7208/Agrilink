@@ -1,5 +1,7 @@
 from flask import Blueprint, jsonify, request, g
 from sqlalchemy.exc import IntegrityError
+import os
+import requests
 
 from extensions import db, limiter
 from models import Post, Comment, Like, PostImage, Community
@@ -14,39 +16,69 @@ CREATE_POST_RATE_LIMIT = "10 per hour"
 CREATE_COMMENT_RATE_LIMIT = "20 per hour"
 
 
+# ------------------------------
+# Health check
+# ------------------------------
 @bp.route("/health", methods=["GET"])
 def health():
     return jsonify({"status": "posts service running"})
 
 
+# ------------------------------
+# Fetch news from NewsAPI
+# ------------------------------
+@bp.get("/news")
+@limiter.limit(DEFAULT_RATE_LIMIT)
+def fetch_news():
+    NEWS_API_KEY = os.environ.get("NEWSAPI_KEY")
+    if not NEWS_API_KEY:
+        return jsonify({"error": "Server misconfiguration", "message": "Missing NEWSAPI_KEY"}), 500
+
+    url = "https://newsapi.org/v2/everything"
+    params = {
+        "q": "agriculture OR farming",
+        "language": "en",
+        "pageSize": 10,
+        "apiKey": NEWS_API_KEY
+    }
+
+    try:
+        resp = requests.get(url, params=params, timeout=10)
+        print("🔥 NewsAPI status code:", resp.status_code)
+        print("🔥 NewsAPI response text (first 500 chars):", resp.text[:500])
+        resp.raise_for_status()  # raises HTTPError for 4xx/5xx
+
+        data = resp.json()
+        articles = data.get("articles", [])
+        return jsonify(articles), 200
+
+    except requests.exceptions.HTTPError as e:
+        print(f"🔥 HTTP error: {e}")
+        return jsonify({"error": "NewsAPI HTTP error", "details": str(e), "response": resp.text}), 500
+
+    except requests.exceptions.RequestException as e:
+        print(f"🔥 RequestException: {e}")
+        return jsonify({"error": "NewsAPI request failed", "details": str(e)}), 500
+
+    except ValueError as e:
+        print(f"🔥 JSON decode error: {e}")
+        return jsonify({"error": "Invalid response from NewsAPI", "details": str(e)}), 500
+
+
+# ------------------------------
+# List posts with optional community filter
+# ------------------------------
 @bp.get("")
 @limiter.limit(DEFAULT_RATE_LIMIT)
 def list_posts():
-    """
-    List all posts with pagination.
-
-    Query params:
-        page: Page number (default: 1)
-        per_page: Items per page (default: 20, max: 100)
-        community_id: Filter by community (optional)
-
-    Note: Authentication is optional for viewing public posts.
-    """
     page = request.args.get("page", 1, type=int)
     per_page = min(request.args.get("per_page", 20, type=int), 100)
     community_id = request.args.get("community_id", type=int)
 
-    # Validate pagination parameters
     if page < 1:
-        return jsonify({
-            "error": "Invalid parameter",
-            "message": "Page must be >= 1"
-        }), 400
+        return jsonify({"error": "Invalid parameter", "message": "Page must be >= 1"}), 400
 
-    # Build query
     query = Post.query
-
-    # Filter by community if specified
     if community_id:
         query = query.filter_by(community_id=community_id)
 
@@ -65,64 +97,34 @@ def list_posts():
     }), 200
 
 
+# ------------------------------
+# Create a new post
+# ------------------------------
 @bp.post("")
 @login_required
 @limiter.limit(CREATE_POST_RATE_LIMIT)
 def create_post():
-    """
-    Create a new post in the user's feed or a community.
-
-    Security features:
-    - Rate limiting to prevent spam
-    - Input validation and sanitization
-    - Length limits on title and content
-    - Community membership validation
-    """
     data = request.get_json() or {}
     title = sanitize_text_input(data.get("title", ""), max_length=255)
     content = data.get("content", "").strip()
     community_id = data.get("community_id")
 
-    # Validate content
     if not content:
-        return jsonify({
-            "error": "Missing required field",
-            "message": "Content is required"
-        }), 400
-
+        return jsonify({"error": "Missing required field", "message": "Content is required"}), 400
     if len(content) < 10:
-        return jsonify({
-            "error": "Invalid content",
-            "message": "Content must be at least 10 characters"
-        }), 400
-
+        return jsonify({"error": "Invalid content", "message": "Content must be at least 10 characters"}), 400
     if len(content) > 10000:
-        return jsonify({
-            "error": "Invalid content",
-            "message": "Content must be less than 10,000 characters"
-        }), 400
+        return jsonify({"error": "Invalid content", "message": "Content must be less than 10,000 characters"}), 400
 
-    # Sanitize content to prevent XSS
     content = sanitize_html_content(content)
 
-    # Validate title if provided
     if title and len(title) > 255:
-        return jsonify({
-            "error": "Invalid title",
-            "message": "Title must be less than 255 characters"
-        }), 400
+        return jsonify({"error": "Invalid title", "message": "Title must be less than 255 characters"}), 400
 
-    # If posting to a community, verify user is a member
     if community_id:
         community = Community.query.get(community_id)
         if not community:
-            return jsonify({
-                "error": "Invalid community",
-                "message": "Community not found"
-            }), 404
-
-        # Check membership (implement this check based on your membership model)
-        # For now, allow any authenticated user to post
+            return jsonify({"error": "Invalid community", "message": "Community not found"}), 404
 
     try:
         post = Post(
@@ -134,26 +136,20 @@ def create_post():
         db.session.add(post)
         db.session.commit()
 
-        return jsonify({
-            "message": "Post created successfully",
-            "post": post.to_dict()
-        }), 201
+        return jsonify({"message": "Post created successfully", "post": post.to_dict()}), 201
 
-    except IntegrityError as e:
+    except IntegrityError:
         db.session.rollback()
-        return jsonify({
-            "error": "Database error",
-            "message": "Failed to create post"
-        }), 500
+        return jsonify({"error": "Database error", "message": "Failed to create post"}), 500
     except Exception as e:
         db.session.rollback()
-        print(f"Error creating post: {e}")
-        return jsonify({
-            "error": "Server error",
-            "message": "An unexpected error occurred"
-        }), 500
+        print(f"🔥 Error creating post: {e}")
+        return jsonify({"error": "Server error", "message": "An unexpected error occurred"}), 500
 
 
+# ------------------------------
+# Get a single post
+# ------------------------------
 @bp.get("/<int:post_id>")
 @login_required
 def get_post(post_id):
@@ -161,6 +157,9 @@ def get_post(post_id):
     return jsonify(post.to_dict())
 
 
+# ------------------------------
+# Update a post
+# ------------------------------
 @bp.patch("/<int:post_id>")
 @login_required
 def update_post(post_id):
@@ -175,6 +174,9 @@ def update_post(post_id):
     return jsonify(post.to_dict())
 
 
+# ------------------------------
+# Delete a post
+# ------------------------------
 @bp.delete("/<int:post_id>")
 @login_required
 def delete_post(post_id):
@@ -187,6 +189,9 @@ def delete_post(post_id):
     return jsonify({"message": "post deleted"})
 
 
+# ------------------------------
+# Add image to post
+# ------------------------------
 @bp.post("/<int:post_id>/images")
 @login_required
 def add_post_image(post_id):
@@ -205,10 +210,12 @@ def add_post_image(post_id):
     return jsonify(img.to_dict()), 201
 
 
+# ------------------------------
+# Add a comment
+# ------------------------------
 @bp.post("/<int:post_id>/comments")
 @login_required
 def add_comment(post_id):
-    """Add a comment to a post."""
     post = Post.query.get_or_404(post_id)
     data = request.get_json() or {}
     content = data.get("content", "").strip()
@@ -225,6 +232,9 @@ def add_comment(post_id):
     return jsonify(comment.to_dict()), 201
 
 
+# ------------------------------
+# Delete a comment
+# ------------------------------
 @bp.delete("/comments/<int:comment_id>")
 @login_required
 def delete_comment(comment_id):
@@ -237,6 +247,9 @@ def delete_comment(comment_id):
     return jsonify({"message": "comment deleted"})
 
 
+# ------------------------------
+# Like a post
+# ------------------------------
 @bp.post("/<int:post_id>/like")
 @login_required
 def like_post(post_id):
@@ -251,6 +264,9 @@ def like_post(post_id):
     return jsonify(like.to_dict()), 201
 
 
+# ------------------------------
+# Unlike a post
+# ------------------------------
 @bp.delete("/<int:post_id>/like")
 @login_required
 def unlike_post(post_id):
@@ -261,4 +277,3 @@ def unlike_post(post_id):
     db.session.delete(like)
     db.session.commit()
     return jsonify({"message": "unliked"})
-
