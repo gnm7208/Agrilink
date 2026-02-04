@@ -57,12 +57,13 @@ def create_app(config_name=None):
     )
 
     # Register blueprints
-    from routes import auth, users, posts, communities, messages
+    from routes import auth, users, posts, communities, messages, uploads
     app.register_blueprint(auth.bp, url_prefix='/api/auth')
     app.register_blueprint(users.bp, url_prefix='/api/users')
     app.register_blueprint(posts.bp, url_prefix='/api/posts')
     app.register_blueprint(communities.bp, url_prefix='/api/communities')
     app.register_blueprint(messages.bp, url_prefix='/api/messages')
+    app.register_blueprint(uploads.bp, url_prefix='/api/uploads')
 
     # Request preprocessing - load authenticated user with session security
     @app.before_request
