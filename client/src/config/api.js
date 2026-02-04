@@ -51,6 +51,10 @@ export const API_ENDPOINTS = {
     inCommunity: (id) => `${API_URL}/messages/community/${id}`,
     delete: (id) => `${API_URL}/messages/${id}`,
   },
+  // Upload endpoints
+  uploads: {
+    image: `${API_URL}/uploads/images`,
+  },
 };
 
 // Default fetch options with credentials for session cookies
@@ -99,6 +103,40 @@ export async function apiRequest(url, options = {}) {
     return data;
   } catch (error) {
     // Re-throw for handling in component
+    throw error;
+  }
+}
+
+/**
+ * Upload a file (image) to the server
+ * @param {string} url - Upload endpoint URL
+ * @param {File} file - File object to upload
+ * @param {string} fieldName - Form field name (default: 'image')
+ * @returns {Promise} - Response data with uploaded file URL
+ */
+export async function uploadFile(url, file, fieldName = 'image') {
+  const formData = new FormData();
+  formData.append(fieldName, file);
+
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      credentials: 'include', // Include cookies for session auth
+      body: formData,
+      // Note: Don't set Content-Type header - browser sets it with boundary
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      const error = new Error(data.message || data.error || 'Upload failed');
+      error.status = response.status;
+      error.data = data;
+      throw error;
+    }
+
+    return data;
+  } catch (error) {
     throw error;
   }
 }
