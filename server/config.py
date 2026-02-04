@@ -31,6 +31,15 @@ class Config:
     # Rate Limiting Configuration
     RATELIMIT_STORAGE_URL = os.getenv("REDIS_URL", "memory://")
 
+    # Cloudinary Configuration
+    CLOUDINARY_CLOUD_NAME = os.getenv("CLOUDINARY_CLOUD_NAME")
+    CLOUDINARY_API_KEY = os.getenv("CLOUDINARY_API_KEY")
+    CLOUDINARY_API_SECRET = os.getenv("CLOUDINARY_API_SECRET")
+
+    # Image upload constraints
+    MAX_IMAGE_SIZE_MB = 5  # Maximum upload size in megabytes
+    ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp"}
+
     @classmethod
     def validate(cls):
         """Validate required configuration at startup."""
