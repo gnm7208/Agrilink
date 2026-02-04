@@ -1,72 +1,100 @@
-import React, { useEffect, useState } from 'react';
-import PostCard from '../components/PostCard';
-import { Bell, Search } from 'lucide-react';
-import { motion } from 'framer-motion';
+import React, { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import PostCard from '../components/PostCard'
+import { Bell, Search } from 'lucide-react'
+import { motion } from 'framer-motion'
 
 export function HomeFeed() {
-  const [posts, setPosts] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [posts, setPosts] = useState([])
+  const [page, setPage] = useState(1)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
+  const [hasMore, setHasMore] = useState(true)
+
+  const navigate = useNavigate()
+  const PAGE_SIZE = 20
 
   useEffect(() => {
-    async function fetchNews() {
-      try {
-        const res = await fetch('http://localhost:5000/api/posts/news'); 
-        const data = await res.json();
+    fetchArticles()
+  }, [page])
 
-        
-        const formattedPosts = data.map((article, index) => ({
-          id: index,
-          title: article.title,
-          description: article.description,
-          image: article.urlToImage,
-          author: article.source.name,
-          timeAgo: new Date(article.publishedAt).toLocaleDateString(),
-          likes: Math.floor(Math.random() * 100), 
-          comments: Math.floor(Math.random() * 20), 
-        }));
+  async function fetchArticles() {
+    try {
+      setLoading(true)
+      setError(null)
 
-        setPosts(formattedPosts);
-      } catch (err) {
-        console.error("Failed to fetch news:", err);
-      } finally {
-        setLoading(false);
-      }
+      const res = await fetch(
+        `http://localhost:5000/api/posts/news?page=${page}&page_size=${PAGE_SIZE}`
+      )
+
+      if (!res.ok) throw new Error("Failed to fetch articles")
+
+      const data = await res.json()
+
+      const formatted = data.articles.map(article => ({
+        id: article.id,
+        title: article.title,
+        description: article.description,
+        image: article.image,
+        author: article.author,
+        timeAgo: new Date(article.publishedAt).toLocaleDateString(),
+        likes: Math.floor(Math.random() * 100),
+        comments: Math.floor(Math.random() * 20)
+      }))
+
+      setPosts(prev => [...prev, ...formatted])
+      setHasMore(data.hasMore)
+    } catch (err) {
+      setError("Unable to load articles")
+    } finally {
+      setLoading(false)
     }
-
-    fetchNews();
-  }, []);
-
-  if (loading) return <p className="text-center mt-10">Loading articles...</p>;
+  }
 
   return (
     <div className="pb-20">
-      <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-gray-100 px-4 py-3 flex items-center justify-between">
+      <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b px-4 py-3 flex justify-between">
         <h1 className="text-xl font-bold text-green-700">Agrilink</h1>
-        <div className="flex items-center space-x-4">
-          <button className="text-gray-500 hover:text-gray-900">
-            <Search size={24} />
-          </button>
-          <button className="text-gray-500 hover:text-gray-900 relative">
-            <Bell size={24} />
-            <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
-          </button>
+        <div className="flex gap-4">
+          <Search />
+          <Bell />
         </div>
       </header>
 
       <main className="p-4 space-y-4">
-        <div className="space-y-4">
-          {posts.map((post, index) => (
-            <motion.div
-              key={post.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-            >
-              <PostCard {...post} />
-            </motion.div>
-          ))}
-        </div>
+        {posts.map((post, index) => (
+          <motion.div
+            key={post.id}
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.05 }}
+          >
+            <PostCard
+              {...post}
+              onTitleClick={() =>
+                navigate(`/post/${post.id}`, { state: { article: post } })
+              }
+            />
+          </motion.div>
+        ))}
+
+        {loading && <p className="text-center text-gray-500">Loading…</p>}
+
+        {!loading && hasMore && (
+          <button
+            onClick={() => setPage(p => p + 1)}
+            className="w-full py-2 bg-green-700 text-white rounded"
+          >
+            Load More
+          </button>
+        )}
+
+        {!hasMore && (
+          <p className="text-center text-gray-400">No more articles</p>
+        )}
+
+        {error && <p className="text-center text-red-600">{error}</p>}
       </main>
     </div>
-  );
+  )
 }
