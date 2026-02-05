@@ -33,15 +33,15 @@ export function RegisterPage() {
         }),
       })
 
-      // Registration successful, redirect to login
+     
       navigate('/login', {
         state: { message: 'Account created successfully! Please log in.' }
       })
     } catch (error) {
-      // Display error message
+     
       setError(error.message || 'Registration failed. Please try again.')
 
-      // If password requirements weren't met, display them
+     
       if (error.data && error.data.requirements) {
         setPasswordErrors(error.data.requirements)
       }

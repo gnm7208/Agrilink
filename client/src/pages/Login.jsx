@@ -27,15 +27,15 @@ export function LoginPage() {
         }),
       })
 
-      // Store user data if needed (consider using context/state management)
+     
       if (data.user) {
         localStorage.setItem('user', JSON.stringify(data.user))
       }
 
-      // Navigate to home page
+    
       navigate('/')
     } catch (error) {
-      // Display user-friendly error message
+     
       setError(error.message || 'Login failed. Please check your credentials and try again.')
     } finally {
       setIsLoading(false)
@@ -53,7 +53,7 @@ export function LoginPage() {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-green-600 text-white mb-4">
             <Sprout size={32} />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">AgriConnect</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Agrilink</h1>
           <p className="text-gray-500">Welcome back</p>
         </div>
 
