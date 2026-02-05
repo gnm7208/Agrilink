@@ -2,9 +2,18 @@ import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/input'
-import { ArrowLeft, Tractor, GraduationCap, AlertCircle, CheckCircle2 } from 'lucide-react'
+import {
+  ArrowLeft,
+  Tractor,
+  GraduationCap,
+  AlertCircle,
+  CheckCircle2,
+} from 'lucide-react'
 import { motion } from 'framer-motion'
 import { apiRequest, API_ENDPOINTS } from '../config/api'
+
+// 👉 Change path if needed
+import bgImage from '../assets/reg.jpeg'
 
 export function RegisterPage() {
   const navigate = useNavigate()
@@ -23,7 +32,7 @@ export function RegisterPage() {
     setPasswordErrors([])
 
     try {
-      const data = await apiRequest(API_ENDPOINTS.auth.register, {
+      await apiRequest(API_ENDPOINTS.auth.register, {
         method: 'POST',
         body: JSON.stringify({
           username,
@@ -33,15 +42,12 @@ export function RegisterPage() {
         }),
       })
 
-     
       navigate('/login', {
-        state: { message: 'Account created successfully! Please log in.' }
+        state: { message: 'Account created successfully! Please log in.' },
       })
     } catch (error) {
-     
       setError(error.message || 'Registration failed. Please try again.')
 
-     
       if (error.data && error.data.requirements) {
         setPasswordErrors(error.data.requirements)
       }
@@ -51,80 +57,99 @@ export function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white p-6">
+    <div className="relative min-h-screen w-full flex items-center justify-center overflow-hidden">
+
+      {/* Background */}
+      <div
+        className="fixed inset-0 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: `url(${bgImage})` }}
+      />
+
+      {/* Gradient Overlay */}
+      <div className="fixed inset-0 bg-gradient-to-br from-black/70 via-black/40 to-black/70" />
+
+      {/* Back Button */}
       <Link
         to="/login"
-        className="inline-flex items-center text-gray-500 hover:text-gray-900 mb-8"
+        className="absolute top-6 left-6 flex items-center gap-2 text-white/80 hover:text-white z-10"
       >
-        <ArrowLeft size={20} className="mr-2" />
-        Back to Login
+        <ArrowLeft size={18} />
+        Back
       </Link>
 
+      {/* Glass Register Card */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="max-w-sm mx-auto space-y-8"
+        initial={{ opacity: 0, y: 25, scale: 0.97 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.35 }}
+        className="relative w-full max-w-md p-8 rounded-3xl
+                   bg-white/10 backdrop-blur-2xl
+                   border border-white/20
+                   shadow-2xl
+                   text-white"
       >
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Create Account
-          </h1>
-          <p className="text-gray-500">
-            Join our agricultural community.
+        {/* Header */}
+        <div className="mb-6 text-center">
+          <h1 className="text-2xl font-semibold">Create Account</h1>
+          <p className="text-sm text-white/80">
+            Join our agricultural community
           </p>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        {/* Role Selector */}
+        <div className="grid grid-cols-2 gap-3 mb-5">
           <button
             type="button"
             onClick={() => setRole('Farmer')}
-            className={`p-4 rounded-xl border-2 flex flex-col items-center ${
-              role === 'Farmer'
-                ? 'border-green-600 bg-green-50 text-green-700'
-                : 'border-gray-200'
-            }`}
+            className={`p-4 rounded-xl border text-sm flex flex-col items-center gap-1 transition
+              ${
+                role === 'Farmer'
+                  ? 'bg-green-600/80 border-green-400 text-white'
+                  : 'border-white/20 bg-white/5 hover:bg-white/10'
+              }`}
           >
-            <Tractor size={24} />
-            <span>I&apos;m a Farmer</span>
+            <Tractor size={22} />
+            I&apos;m a Farmer
           </button>
 
           <button
             type="button"
             onClick={() => setRole('Expert')}
-            className={`p-4 rounded-xl border-2 flex flex-col items-center ${
-              role === 'Expert'
-                ? 'border-blue-600 bg-blue-50 text-blue-700'
-                : 'border-gray-200'
-            }`}
+            className={`p-4 rounded-xl border text-sm flex flex-col items-center gap-1 transition
+              ${
+                role === 'Expert'
+                  ? 'bg-blue-600/80 border-blue-400 text-white'
+                  : 'border-white/20 bg-white/5 hover:bg-white/10'
+              }`}
           >
-            <GraduationCap size={24} />
-            <span>I&apos;m an Expert</span>
+            <GraduationCap size={22} />
+            I&apos;m an Expert
           </button>
         </div>
 
-        <form onSubmit={handleRegister} className="space-y-4">
-          {error && (
-            <div className="p-4 rounded-lg bg-red-50 border border-red-200 flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <p className="text-sm text-red-800 font-medium">{error}</p>
-                {passwordErrors.length > 0 && (
-                  <ul className="mt-2 space-y-1">
-                    {passwordErrors.map((err, idx) => (
-                      <li key={idx} className="text-xs text-red-700 flex items-start gap-1">
-                        <span className="text-red-500">•</span>
-                        <span>{err}</span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
+        {/* Error */}
+        {error && (
+          <div className="flex gap-2 p-3 mb-4 rounded-lg bg-red-500/20 border border-red-400/30">
+            <AlertCircle className="w-4 h-4 mt-0.5" />
+            <div className="text-xs">
+              <p>{error}</p>
+              {passwordErrors.length > 0 && (
+                <ul className="mt-1 space-y-1">
+                  {passwordErrors.map((err, i) => (
+                    <li key={i}>• {err}</li>
+                  ))}
+                </ul>
+              )}
             </div>
-          )}
+          </div>
+        )}
+
+      
+        <form onSubmit={handleRegister} className="space-y-4">
 
           <Input
             label="Username"
-            placeholder="johndoe"
+            placeholder="Huey"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             required
@@ -133,44 +158,52 @@ export function RegisterPage() {
           <Input
             label="Email Address"
             type="email"
-            placeholder="john@example.com"
+            placeholder="Huey@example.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
           />
 
-          <div>
-            <Input
-              label="Password"
-              type="password"
-              placeholder="Create a strong password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-            <div className="mt-2 p-3 rounded-lg bg-gray-50 border border-gray-200">
-              <p className="text-xs font-medium text-gray-700 mb-2">Password requirements:</p>
-              <ul className="space-y-1 text-xs text-gray-600">
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="w-3 h-3 text-gray-400" />
-                  At least 12 characters
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="w-3 h-3 text-gray-400" />
-                  One uppercase and one lowercase letter
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="w-3 h-3 text-gray-400" />
-                  One number and one special character
-                </li>
-              </ul>
-            </div>
+          <Input
+            label="Password"
+            type="password"
+            placeholder="Create a strong password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+
+          {/* Password Requirements */}
+          <div className="text-xs text-white/80 bg-white/5 border border-white/10 rounded-lg p-3">
+            <p className="mb-1 font-medium">Password must contain:</p>
+            <ul className="space-y-1">
+              <li className="flex items-center gap-2">
+                <CheckCircle2 size={12} /> At least 12 characters
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckCircle2 size={12} /> Uppercase & lowercase letter
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckCircle2 size={12} /> Number & special character
+              </li>
+            </ul>
           </div>
 
-          <Button type="submit" fullWidth size="lg" isLoading={isLoading}>
+          <Button type="submit" fullWidth isLoading={isLoading}>
             Create Account
           </Button>
         </form>
+
+        {/* Footer */}
+        <p className="text-center text-sm text-white/80 mt-6">
+          Already have an account?{' '}
+          <Link
+            to="/login"
+            className="text-green-400 font-semibold hover:underline"
+          >
+            Sign In
+          </Link>
+        </p>
       </motion.div>
     </div>
   )
