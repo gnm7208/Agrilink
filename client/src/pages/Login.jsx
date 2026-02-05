@@ -6,6 +6,8 @@ import { Sprout, AlertCircle } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { apiRequest, API_ENDPOINTS } from '../config/api'
 
+import bgImage from '../assets/Agriculture Sprayers Market Size, Share, and Growth Analysis 2024-2032.jpeg'
+
 export function LoginPage() {
   const navigate = useNavigate()
   const [isLoading, setIsLoading] = useState(false)
@@ -21,49 +23,64 @@ export function LoginPage() {
     try {
       const data = await apiRequest(API_ENDPOINTS.auth.login, {
         method: 'POST',
-        body: JSON.stringify({
-          email,
-          password,
-        }),
+        body: JSON.stringify({ email, password }),
       })
 
-     
       if (data.user) {
         localStorage.setItem('user', JSON.stringify(data.user))
       }
 
-    
       navigate('/')
     } catch (error) {
-     
-      setError(error.message || 'Login failed. Please check your credentials and try again.')
+      setError(error.message || 'Invalid email or password')
     } finally {
       setIsLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center p-6">
+    <div className="relative min-h-screen w-full flex items-center justify-center overflow-hidden">
+
+      {/* Background */}
+      <div
+        className="fixed inset-0 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: `url(${bgImage})` }}
+      />
+
+      {/* Dark Gradient Overlay */}
+      <div className="fixed inset-0 bg-gradient-to-br from-black/70 via-black/40 to-black/70" />
+
+      {/* Glass Login Card */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-sm space-y-8"
+        initial={{ opacity: 0, y: 20, scale: 0.97 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.35 }}
+        className="relative w-full max-w-sm p-8 rounded-3xl 
+                   bg-white/10 backdrop-blur-2xl 
+                   border border-white/20 
+                   shadow-2xl 
+                   text-white"
       >
-        <div className="text-center space-y-2">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-green-600 text-white mb-4">
-            <Sprout size={32} />
+        {/* Header */}
+        <div className="text-center mb-6">
+          <div className="mx-auto w-14 h-14 flex items-center justify-center rounded-2xl bg-green-600 text-white shadow-md">
+            <Sprout size={26} />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">Agrilink</h1>
-          <p className="text-gray-500">Welcome back</p>
+
+          <h1 className="text-2xl font-semibold mt-3">Agrilink</h1>
+          <p className="text-sm text-white/80">Sign in to your account</p>
         </div>
 
-        <form onSubmit={handleLogin} className="space-y-6">
-          {error && (
-            <div className="p-4 rounded-lg bg-red-50 border border-red-200 flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-              <p className="text-sm text-red-800">{error}</p>
-            </div>
-          )}
+        {/* Error */}
+        {error && (
+          <div className="flex gap-2 p-3 mb-4 rounded-lg bg-red-500/20 border border-red-400/30">
+            <AlertCircle className="w-4 h-4 mt-0.5" />
+            <p className="text-xs">{error}</p>
+          </div>
+        )}
+
+        {/* Form */}
+        <form onSubmit={handleLogin} className="space-y-4">
 
           <Input
             label="Email Address"
@@ -83,16 +100,17 @@ export function LoginPage() {
             required
           />
 
-          <Button type="submit" fullWidth size="lg" isLoading={isLoading}>
+          <Button type="submit" fullWidth isLoading={isLoading}>
             Sign In
           </Button>
         </form>
 
-        <p className="text-center text-sm text-gray-500">
+        {/* Footer */}
+        <p className="text-center text-sm text-white/80 mt-6">
           Don&apos;t have an account?{' '}
           <Link
             to="/register"
-            className="font-semibold text-green-600 hover:underline"
+            className="text-green-400 font-semibold hover:underline"
           >
             Create Account
           </Link>
