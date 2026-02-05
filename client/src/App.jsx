@@ -17,16 +17,14 @@ import  {ChatInterface}  from './pages/Chatinterface'
 
 function MainLayout() {
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col lg:flex-row">
+    <div className="min-h-screen bg-black flex flex-col lg:flex-row">
      
       <SideNav />
 
       
-      <main className="flex-1 lg:ml-64 min-h-screen relative">
-        <div className="max-w-md mx-auto lg:max-w-2xl xl:max-w-3xl w-full pb-20 lg:pb-8 lg:pt-6">
-          <Outlet />
-        </div>
-      </main>
+      <main className="flex-1   min-h-screen ">
+  <Outlet />
+</main>
 
       <BottomNav />
     </div>
