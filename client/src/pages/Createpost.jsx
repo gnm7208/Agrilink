@@ -1,35 +1,86 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Image as ImageIcon, Camera, X } from 'lucide-react';
+import { ArrowLeft, Image as ImageIcon, Camera, X, Loader2 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
-import { Input } from "../components/ui/input";
 import { Avatar } from '../components/ui/Avatar';
-import { currentUser } from '../data/mockData';
+import { apiRequest, API_ENDPOINTS } from '../config/api';
+import { useImageUpload } from '../hooks/useImageUpload';
+import { currentUser } from '../data/mockData'; // TODO: Replace with auth context
 
 export function CreatePost() {
   const navigate = useNavigate();
-  const [image, setImage] = useState(null);
+  const [title, setTitle] = useState('');
+  const [content, setContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
 
-  const handleImageUpload = (e) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImage(reader.result);
+  const {
+    preview,
+    uploading,
+    error: uploadError,
+    hasFile,
+    handleFileSelect,
+    clearFile,
+    upload,
+  } = useImageUpload();
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSubmitError(null);
+
+    // Validate content
+    if (!content.trim()) {
+      setSubmitError('Please write some content for your post');
+      return;
+    }
+
+    if (content.trim().length < 10) {
+      setSubmitError('Content must be at least 10 characters');
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      // Step 1: Upload image if selected
+      let imageUrl = null;
+      if (hasFile) {
+        imageUrl = await upload();
+      }
+
+      // Step 2: Create the post
+      const postData = {
+        title: title.trim() || undefined,
+        content: content.trim(),
       };
-      reader.readAsDataURL(file);
+
+      const response = await apiRequest(API_ENDPOINTS.posts.create, {
+        method: 'POST',
+        body: JSON.stringify(postData),
+      });
+
+      const postId = response.post?.id;
+
+      // Step 3: Attach image to post if uploaded
+      if (imageUrl && postId) {
+        await apiRequest(`${API_ENDPOINTS.posts.byId(postId)}/images`, {
+          method: 'POST',
+          body: JSON.stringify({ image_url: imageUrl }),
+        });
+      }
+
+      // Success - navigate to home or post
+      navigate('/');
+    } catch (err) {
+      console.error('Failed to create post:', err);
+      setSubmitError(err.message || 'Failed to create post. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
-      navigate('/');
-    }, 1500);
-  };
+  const error = submitError || uploadError;
+  const isLoading = isSubmitting || uploading;
 
   return (
     <div className="min-h-screen bg-white pb-20">
@@ -43,14 +94,22 @@ export function CreatePost() {
         <Button
           size="sm"
           onClick={handleSubmit}
-          isLoading={isSubmitting}
+          isLoading={isLoading}
+          disabled={isLoading || !content.trim()}
           className="rounded-full px-6"
         >
-          Post
+          {uploading ? 'Uploading...' : 'Post'}
         </Button>
       </header>
 
       <div className="p-4">
+        {/* Error Display */}
+        {error && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+            {error}
+          </div>
+        )}
+
         <div className="flex items-center space-x-3 mb-6">
           <Avatar src={currentUser.avatar} fallback={currentUser.name} />
           <div>
@@ -63,29 +122,42 @@ export function CreatePost() {
           </div>
         </div>
 
-        <form className="space-y-4">
+        <form className="space-y-4" onSubmit={handleSubmit}>
           <input
             type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
             placeholder="Give your post a title..."
-            className="w-full text-xl font-bold placeholder-gray-400 border-none focus:ring-0 p-0"
+            className="w-full text-xl font-bold placeholder-gray-400 border-none focus:ring-0 p-0 focus:outline-none"
+            maxLength={255}
           />
 
           <textarea
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
             placeholder="Share your farming experience or ask a question..."
-            className="w-full min-h-[200px] text-base text-gray-700 placeholder-gray-400 border-none focus:ring-0 p-0 resize-none"
+            className="w-full min-h-[200px] text-base text-gray-700 placeholder-gray-400 border-none focus:ring-0 p-0 resize-none focus:outline-none"
+            maxLength={10000}
           />
 
-          {image && (
+          {/* Image Preview */}
+          {preview && (
             <div className="relative rounded-2xl overflow-hidden mb-4 group">
               <img
-                src={image}
+                src={preview}
                 alt="Upload preview"
                 className="w-full h-auto max-h-80 object-cover"
               />
+              {uploading && (
+                <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                  <Loader2 className="w-8 h-8 text-white animate-spin" />
+                </div>
+              )}
               <button
                 type="button"
-                onClick={() => setImage(null)}
-                className="absolute top-2 right-2 p-1.5 bg-black/50 text-white rounded-full hover:bg-black/70 transition-colors"
+                onClick={clearFile}
+                disabled={uploading}
+                className="absolute top-2 right-2 p-1.5 bg-black/50 text-white rounded-full hover:bg-black/70 transition-colors disabled:opacity-50"
               >
                 <X size={16} />
               </button>
@@ -94,20 +166,30 @@ export function CreatePost() {
         </form>
       </div>
 
+      {/* Bottom Actions */}
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-100">
         <div className="flex items-center space-x-4 max-w-md mx-auto">
           <label className="p-3 text-green-600 bg-green-50 rounded-xl cursor-pointer hover:bg-green-100 transition-colors">
             <input
               type="file"
-              accept="image/*"
+              accept="image/jpeg,image/png,image/gif,image/webp"
               className="hidden"
-              onChange={handleImageUpload}
+              onChange={handleFileSelect}
+              disabled={uploading}
             />
             <ImageIcon size={24} />
           </label>
-          <button className="p-3 text-green-600 bg-green-50 rounded-xl hover:bg-green-100 transition-colors">
+          <label className="p-3 text-green-600 bg-green-50 rounded-xl cursor-pointer hover:bg-green-100 transition-colors">
+            <input
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="hidden"
+              onChange={handleFileSelect}
+              disabled={uploading}
+            />
             <Camera size={24} />
-          </button>
+          </label>
         </div>
       </div>
     </div>
