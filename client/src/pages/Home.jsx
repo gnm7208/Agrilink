@@ -11,6 +11,7 @@ export function HomeFeed() {
   const [error, setError] = useState(null)
   const [hasMore, setHasMore] = useState(true)
 
+
   const navigate = useNavigate()
   const PAGE_SIZE = 20
 
@@ -60,7 +61,6 @@ export function HomeFeed() {
           <Bell />
         </div>
       </header>
-
       <main className="p-4 space-y-4">
         {posts.map((post, index) => (
           <motion.div
@@ -77,9 +77,7 @@ export function HomeFeed() {
             />
           </motion.div>
         ))}
-
         {loading && <p className="text-center text-gray-500">Loading…</p>}
-
         {!loading && hasMore && (
           <button
             onClick={() => setPage(p => p + 1)}
