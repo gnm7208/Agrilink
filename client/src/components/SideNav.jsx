@@ -8,92 +8,108 @@ import {
   User,
   Sprout,
   LogOut,
+  Settings,
 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { Avatar } from './ui/Avatar'
 import { currentUser } from '../data/mockData'
 
 const SideNav = () => {
-  const location = useLocation()
-  const currentPath = location.pathname
+  const { pathname } = useLocation()
 
   const tabs = [
     { id: 'home', icon: Home, label: 'Home', path: '/' },
     { id: 'communities', icon: Users, label: 'Communities', path: '/communities' },
-    { id: 'create', icon: PlusSquare, label: 'Create Post', path: '/create' },
+    { id: 'create', icon: PlusSquare, label: 'Create', path: '/create', primary: true },
     { id: 'messages', icon: MessageSquare, label: 'Messages', path: '/messages' },
     { id: 'profile', icon: User, label: 'Profile', path: '/profile' },
   ]
 
   return (
-    <aside className="hidden lg:flex flex-col w-64 fixed left-0 top-0 bottom-0 bg-white border-r border-gray-100 z-50">
-      
-      <div className="p-6 flex items-center space-x-3">
-        <div className="bg-green-600 p-2 rounded-xl text-white shadow-lg shadow-green-200">
-          <Sprout size={24} />
+    <aside className="
+  hidden lg:flex fixed inset-y-0 left-0 w-64 flex-col
+  bg-white/40
+  backdrop-blur-xl
+  border-r border-white/10
+  shadow-2xl
+  z-50
+">
+     
+      <div className="px-6 py-5 flex items-center gap-3">
+        <div className="p-2 rounded-2xl bg-green-600 text-white shadow-lg">
+          <Sprout size={22} />
         </div>
-        <span className="text-xl font-bold text-gray-900 tracking-tight">
-          Agrilink
-        </span>
+        <h1 className="text-xl font-bold text-white tracking-tight">Agrilink</h1>
       </div>
 
-     
-      <nav className="flex-1 px-4 py-6 space-y-2">
+      
+      <nav className="flex-1 px-4 space-y-1">
         {tabs.map((tab) => {
-          const isActive = currentPath === tab.path
+          const isActive = pathname === tab.path
           const Icon = tab.icon
 
           return (
             <Link
               key={tab.id}
               to={tab.path}
-              className={`relative flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 group ${
+              className={`relative flex items-center gap-3 px-4 py-3 rounded-2xl transition-all group overflow-hidden ${
                 isActive
-                  ? 'bg-green-50 text-green-700 font-medium'
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-              }`}
+                  ? 'text-white'
+                  : 'text-white/70 hover:text-white'
+              } ${tab.primary ? 'mt-4' : ''}`}
             >
               {isActive && (
                 <motion.div
-                  layoutId="sidenav-indicator"
-                  className="absolute left-0 w-1 h-8 bg-green-500 rounded-r-full"
-                  transition={{
-                    type: 'spring',
-                    stiffness: 500,
-                    damping: 30,
-                  }}
+                  layoutId="active-pill"
+                  className="absolute inset-0 bg-gradient-to-r from-green-600/80 to-emerald-500/80 rounded-2xl"
+                  transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                 />
               )}
 
-              <Icon size={22} strokeWidth={isActive ? 2.5 : 2} />
-              <span>{tab.label}</span>
+              <span className="relative z-10">
+                <Icon size={20} strokeWidth={isActive ? 2.5 : 2} />
+              </span>
+              <span className="relative z-10 font-medium text-sm">
+                {tab.label}
+              </span>
+
+              {tab.primary && (
+                <span className="ml-auto relative z-10 text-[10px] px-2 py-0.5 rounded-full bg-green-500/20 text-green-300">
+                  New
+                </span>
+              )}
             </Link>
           )
         })}
       </nav>
 
-     
-      <div className="p-4 border-t border-gray-100">
-        <div className="flex items-center p-3 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer group">
+      {/* FOOTER / USER */}
+      <div className="p-4 border-t border-white/10">
+        <div className="flex items-center gap-3 p-3 rounded-2xl hover:bg-white/10 transition group cursor-pointer">
           <Avatar
-            src={currentUser.avatar}
+            src={currentUser.avata}
             fallback={currentUser.name}
             size="md"
           />
 
-          <div className="ml-3 flex-1 min-w-0">
-            <p className="text-sm font-semibold text-gray-900 truncate">
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-white truncate">
               {currentUser.name}
             </p>
-            <p className="text-xs text-gray-500 truncate">
+            <p className="text-xs text-white/60 truncate">
               @{currentUser.role.toLowerCase()}
             </p>
           </div>
 
-          <LogOut
-            size={18}
-            className="text-gray-400 group-hover:text-red-500 transition-colors"
-          />
+          <div className="flex items-center gap-2 text-white/50">
+            <Settings size={16} className="hover:text-white" />
+            <Link to="/login">
+  <LogOut
+    size={16}
+    className="hover:text-red-400 transition cursor-pointer"
+  />
+</Link>
+          </div>
         </div>
       </div>
     </aside>
