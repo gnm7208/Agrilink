@@ -2,8 +2,6 @@ import os
 import secrets
 import requests
 
-import requests
-
 from dotenv import load_dotenv
 
 
@@ -44,8 +42,7 @@ class Config:
     
     RATELIMIT_STORAGE_URL = os.getenv("REDIS_URL", "memory://")
 
-<<<<<<< HEAD
-    # Cloudinary Configuration
+    # Cloudinary Configuration (optional)
     CLOUDINARY_CLOUD_NAME = os.getenv("CLOUDINARY_CLOUD_NAME")
     CLOUDINARY_API_KEY = os.getenv("CLOUDINARY_API_KEY")
     CLOUDINARY_API_SECRET = os.getenv("CLOUDINARY_API_SECRET")
@@ -53,10 +50,9 @@ class Config:
     # Image upload constraints
     MAX_IMAGE_SIZE_MB = 5  # Maximum upload size in megabytes
     ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp"}
-=======
-    
-    NEWSAPI_KEY = os.getenv("NEWSAPI_KEY")  
->>>>>>> f29b477 (initial commit)
+
+    # Optional third-party keys
+    NEWSAPI_KEY = os.getenv("NEWSAPI_KEY")
 
     @classmethod
     def validate(cls):
@@ -67,9 +63,7 @@ class Config:
         
         if not cls.SECRET_KEY:
             if os.getenv("FLASK_ENV") in ["development", "testing"] or os.getenv("FLASK_DEBUG") == "true":
-            if os.getenv("FLASK_ENV") in ["development", "testing"] or os.getenv("FLASK_DEBUG") == "true":
                 cls.SECRET_KEY = secrets.token_hex(32)
-                print("WARNING: Using auto-generated SECRET_KEY for development. Set SECRET_KEY in production!")
                 print("WARNING: Using auto-generated SECRET_KEY for development. Set SECRET_KEY in production!")
             else:
                 raise ValueError(
@@ -90,10 +84,6 @@ class Config:
         
         if os.getenv("FLASK_ENV") == "production" and cls.FRONTEND_ORIGINS == "*":
             raise ValueError("FRONTEND_ORIGINS cannot be '*' in production")
-
-        
-        if os.getenv("FLASK_ENV") == "production" and not cls.NEWSAPI_KEY:
-            raise ValueError("NEWSAPI_KEY is required in production")
 
         
         if os.getenv("FLASK_ENV") == "production" and not cls.NEWSAPI_KEY:

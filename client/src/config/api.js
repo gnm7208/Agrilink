@@ -15,6 +15,9 @@ export const API_ENDPOINTS = {
     login: `${API_URL}/auth/login`,
     logout: `${API_URL}/auth/logout`,
     me: `${API_URL}/auth/me`,
+    requestPasswordReset: `${API_URL}/auth/request-password-reset`,
+    verifyResetToken: (token) => `${API_URL}/auth/verify-reset-token/${token}`,
+    resetPassword: `${API_URL}/auth/reset-password`,
   },
   // User endpoints
   users: {
