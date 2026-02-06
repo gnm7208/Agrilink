@@ -2,7 +2,7 @@ from datetime import datetime
 from flask import Blueprint, jsonify, request, session, g
 from sqlalchemy.exc import IntegrityError
 from extensions import db, limiter
-from models import User
+from models import User, PasswordResetToken
 from rbac import login_required
 from utils import validate_password, validate_email, validate_username
 
@@ -200,4 +200,191 @@ def me():
         "authenticated": True,
         "user": g.current_user.to_dict(include_email=True)
     }), 200
+
+
+@bp.post("/request-password-reset")
+@limiter.limit("5 per hour")
+def request_password_reset():
+    """
+    Request a password reset token for user email.
+
+    Security features:
+    - Rate limiting to prevent abuse (5 per hour)
+    - Generic response (doesn't reveal if email exists) to prevent enumeration
+    - Email validation before processing
+    - Invalidates previous unused tokens
+
+    Request body:
+    {
+        "email": "user@example.com"
+    }
+
+    Response:
+    {
+        "message": "If an account exists with this email, a password reset link will be sent"
+    }
+    """
+    data = request.get_json() or {}
+    email = data.get("email", "").strip().lower()
+
+    if not email:
+        return jsonify({
+            "error": "Missing required field",
+            "message": "Email is required"
+        }), 400
+
+    # Validate email format
+    email_validation = validate_email(email)
+    if not email_validation["valid"]:
+        # Return generic message for security (don't reveal if email exists)
+        return jsonify({
+            "message": "If an account exists with this email, a password reset link will be sent"
+        }), 200
+
+    # Check if user exists
+    user = User.query.filter_by(email=email).first()
+    if not user:
+        # Return generic message for security (don't reveal if email exists)
+        return jsonify({
+            "message": "If an account exists with this email, a password reset link will be sent"
+        }), 200
+
+    try:
+        # Create password reset token
+        reset_token = PasswordResetToken.create_token(user.id)
+
+        # TODO: Send email with reset link
+        # The reset link should be: frontend_url/reset-password?token=<token>
+        # For now, log the token for development purposes
+        reset_link = f"http://localhost:5173/reset-password?token={reset_token.token}"
+        print(f"Password reset link for {email}: {reset_link}")
+
+        return jsonify({
+            "message": "If an account exists with this email, a password reset link will be sent"
+        }), 200
+
+    except Exception as e:
+        print(f"Password reset request error: {e}")
+        return jsonify({
+            "message": "If an account exists with this email, a password reset link will be sent"
+        }), 200
+
+
+@bp.get("/verify-reset-token/<token>")
+@limiter.limit("30 per hour")
+def verify_reset_token(token: str):
+    """
+    Verify if a password reset token is valid.
+
+    This endpoint allows the frontend to check if a token is valid before
+    showing the password reset form to the user.
+
+    Response:
+    {
+        "valid": true,
+        "message": "Token is valid"
+    }
+    or
+    {
+        "valid": false,
+        "message": "Token is invalid or has expired"
+    }
+    """
+    if not token or not isinstance(token, str) or len(token) < 10:
+        return jsonify({
+            "valid": False,
+            "message": "Invalid token format"
+        }), 400
+
+    reset_token = PasswordResetToken.get_valid_token(token)
+    if not reset_token:
+        return jsonify({
+            "valid": False,
+            "message": "Token is invalid or has expired"
+        }), 400
+
+    return jsonify({
+        "valid": True,
+        "message": "Token is valid"
+    }), 200
+
+
+@bp.post("/reset-password")
+@limiter.limit("5 per hour")
+def reset_password():
+    """
+    Reset user password using a valid reset token.
+
+    Security features:
+    - Rate limiting to prevent abuse (5 per hour)
+    - Token validation (not expired, not used)
+    - Strong password requirements
+    - Token marked as used after successful reset
+    - Does not create session (user must login again)
+
+    Request body:
+    {
+        "token": "reset-token-string",
+        "password": "newpassword123"
+    }
+
+    Response:
+    {
+        "message": "Password reset successful. Please login with your new password."
+    }
+    """
+    data = request.get_json() or {}
+    token = data.get("token", "").strip()
+    password = data.get("password", "")
+
+    if not token or not password:
+        return jsonify({
+            "error": "Missing required fields",
+            "message": "Token and password are required"
+        }), 400
+
+    # Validate password strength
+    password_validation = validate_password(password)
+    if not password_validation["valid"]:
+        return jsonify({
+            "error": "Weak password",
+            "message": "Password does not meet security requirements",
+            "requirements": password_validation["errors"]
+        }), 400
+
+    # Get valid token
+    reset_token = PasswordResetToken.get_valid_token(token)
+    if not reset_token:
+        return jsonify({
+            "error": "Invalid token",
+            "message": "The password reset link is invalid or has expired"
+        }), 400
+
+    try:
+        # Get the user associated with the token
+        user = User.query.get(reset_token.user_id)
+        if not user:
+            return jsonify({
+                "error": "Invalid token",
+                "message": "The password reset link is invalid or has expired"
+            }), 400
+
+        # Update password
+        user.set_password(password)
+        # Mark token as used
+        reset_token.mark_used()
+
+        db.session.commit()
+
+        return jsonify({
+            "message": "Password reset successful. Please login with your new password."
+        }), 200
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"Password reset error: {e}")
+        return jsonify({
+            "error": "Reset failed",
+            "message": "An unexpected error occurred. Please try again."
+        }), 500
 
