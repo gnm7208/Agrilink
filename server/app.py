@@ -9,8 +9,11 @@ from dotenv import load_dotenv
 
 load_dotenv()  # Load .env variables
 
+load_dotenv("/home/maish/Agrilink/server/.env")
 from config import get_config
 from extensions import db, migrate, cors, limiter
+
+DEFAULT_RATE_LIMIT = "100 per hour"  # Adjust as needed
 
 DEFAULT_RATE_LIMIT = "100 per hour"  # Adjust as needed
 
@@ -25,6 +28,7 @@ def create_app(config_name=None):
     config_class = get_config(config_name)
     app.config.from_object(config_class)
     config_class.validate()  # Validate required settings
+    config_class.validate()  # Validate required settings
 
     # Initialize extensions
     db.init_app(app)
@@ -36,8 +40,10 @@ def create_app(config_name=None):
     cors.init_app(
         app,
         resources={r"/api/*": {"origins": origins_list, "supports_credentials": True}}
+        resources={r"/api/*": {"origins": origins_list, "supports_credentials": True}}
     )
 
+    # Rate limiter
     # Rate limiter
     limiter.init_app(app)
 
@@ -66,6 +72,7 @@ def create_app(config_name=None):
                 created_time = datetime.fromisoformat(session_created)
                 session_age = datetime.utcnow() - created_time
                 max_age = timedelta(seconds=app.config.get("PERMANENT_SESSION_LIFETIME", 86400))
+                max_age = timedelta(seconds=app.config.get("PERMANENT_SESSION_LIFETIME", 86400))
 
                 if session_age > max_age:
                     session.clear()
@@ -76,10 +83,13 @@ def create_app(config_name=None):
                 session.clear()
                 g.current_user = None
                 app.logger.warning(f"Invalid session timestamp: {e}")
+                app.logger.warning(f"Invalid session timestamp: {e}")
                 return
 
         g.current_user = User.query.get(user_id) if user_id else None
+        g.current_user = User.query.get(user_id) if user_id else None
 
+    # Structured error handlers
     # Structured error handlers
     @app.errorhandler(400)
     def bad_request(error):
@@ -110,8 +120,10 @@ def create_app(config_name=None):
 
 
 # Logging configuration
+# Logging configuration
 logging.basicConfig(
     level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
