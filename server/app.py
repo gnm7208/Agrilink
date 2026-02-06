@@ -15,7 +15,6 @@ from extensions import db, migrate, cors, limiter
 
 DEFAULT_RATE_LIMIT = "100 per hour"  # Adjust as needed
 
-DEFAULT_RATE_LIMIT = "100 per hour"  # Adjust as needed
 
 
 def create_app(config_name=None):
@@ -28,7 +27,7 @@ def create_app(config_name=None):
     config_class = get_config(config_name)
     app.config.from_object(config_class)
     config_class.validate()  # Validate required settings
-    config_class.validate()  # Validate required settings
+    
 
     # Initialize extensions
     db.init_app(app)
@@ -39,7 +38,6 @@ def create_app(config_name=None):
     origins_list = [o.strip() for o in frontend_origins.split(",")] if frontend_origins else []
     cors.init_app(
         app,
-        resources={r"/api/*": {"origins": origins_list, "supports_credentials": True}}
         resources={r"/api/*": {"origins": origins_list, "supports_credentials": True}}
     )
 
@@ -72,7 +70,7 @@ def create_app(config_name=None):
                 created_time = datetime.fromisoformat(session_created)
                 session_age = datetime.utcnow() - created_time
                 max_age = timedelta(seconds=app.config.get("PERMANENT_SESSION_LIFETIME", 86400))
-                max_age = timedelta(seconds=app.config.get("PERMANENT_SESSION_LIFETIME", 86400))
+                
 
                 if session_age > max_age:
                     session.clear()
@@ -87,7 +85,7 @@ def create_app(config_name=None):
                 return
 
         g.current_user = User.query.get(user_id) if user_id else None
-        g.current_user = User.query.get(user_id) if user_id else None
+        
 
     # Structured error handlers
     # Structured error handlers
@@ -120,11 +118,10 @@ def create_app(config_name=None):
 
 
 # Logging configuration
-# Logging configuration
+# Configure basic logging for the application
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger(__name__)
 
