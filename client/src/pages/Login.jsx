@@ -100,6 +100,15 @@ export function LoginPage() {
             required
           />
 
+          <div className="text-right">
+            <Link
+              to="/forgot-password"
+              className="text-xs text-green-400 hover:text-green-300 font-semibold transition-colors"
+            >
+              Forgot password?
+            </Link>
+          </div>
+
           <Button type="submit" fullWidth isLoading={isLoading}>
             Sign In
           </Button>
