@@ -2,7 +2,10 @@ import os
 import secrets
 import requests
 
+import requests
+
 from dotenv import load_dotenv
+
 
 
 load_dotenv()
@@ -12,12 +15,15 @@ class Config:
     """Base configuration class with security validations."""
 
    
+
+   
     SQLALCHEMY_DATABASE_URI = os.getenv(
         "DATABASE_URL",
         "postgresql://localhost/agrilink"
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
+    
     
     SECRET_KEY = os.getenv("SECRET_KEY")
     SESSION_COOKIE_SECURE = os.getenv("SESSION_COOKIE_SECURE", "true").lower() == "true"
@@ -26,11 +32,15 @@ class Config:
     PERMANENT_SESSION_LIFETIME = 86400  # 24 hours
 
    
+    PERMANENT_SESSION_LIFETIME = 86400  # 24 hours
+
+   
     FRONTEND_ORIGINS = os.getenv(
         "FRONTEND_ORIGINS",
         "http://localhost:5173,http://localhost:3000"
     )
 
+    
     
     RATELIMIT_STORAGE_URL = os.getenv("REDIS_URL", "memory://")
 
@@ -53,9 +63,13 @@ class Config:
         """Validate required configuration at startup."""
 
         
+
+        
         if not cls.SECRET_KEY:
             if os.getenv("FLASK_ENV") in ["development", "testing"] or os.getenv("FLASK_DEBUG") == "true":
+            if os.getenv("FLASK_ENV") in ["development", "testing"] or os.getenv("FLASK_DEBUG") == "true":
                 cls.SECRET_KEY = secrets.token_hex(32)
+                print("WARNING: Using auto-generated SECRET_KEY for development. Set SECRET_KEY in production!")
                 print("WARNING: Using auto-generated SECRET_KEY for development. Set SECRET_KEY in production!")
             else:
                 raise ValueError(
@@ -73,8 +87,13 @@ class Config:
             raise ValueError("SECRET_KEY must be at least 32 characters long")
 
         
+        
         if os.getenv("FLASK_ENV") == "production" and cls.FRONTEND_ORIGINS == "*":
             raise ValueError("FRONTEND_ORIGINS cannot be '*' in production")
+
+        
+        if os.getenv("FLASK_ENV") == "production" and not cls.NEWSAPI_KEY:
+            raise ValueError("NEWSAPI_KEY is required in production")
 
         
         if os.getenv("FLASK_ENV") == "production" and not cls.NEWSAPI_KEY:
@@ -91,6 +110,7 @@ class ProductionConfig(Config):
     DEBUG = False
     TESTING = False
     SESSION_COOKIE_SECURE = True  
+    SESSION_COOKIE_SECURE = True  
     SESSION_COOKIE_SAMESITE = "Strict"
 
 
@@ -98,6 +118,8 @@ class TestingConfig(Config):
     TESTING = True
     SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
     SECRET_KEY = "test-secret-key-for-testing-only"
+    WTF_CSRF_ENABLED = False  
+
     WTF_CSRF_ENABLED = False  
 
 
@@ -112,6 +134,8 @@ config_by_name = {
 
 def get_config(env=None):
    
+   
     if env is None:
         env = os.getenv("FLASK_ENV", "development")
     return config_by_name.get(env, DevelopmentConfig)
+
