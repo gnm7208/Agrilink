@@ -80,11 +80,11 @@ import {
   export const experts = [
     {
       id: 'e1',
-      name: '. Jurrien Timber',
+      name: 'Dr. Jurrien Timber',
       specialty: 'Crop Pathology',
       followers: '5.2k',
       avatar:
-        'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80',
+        'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e',
     },
     {
       id: 'e2',
@@ -92,17 +92,42 @@ import {
       specialty: 'Sustainable Irrigation',
       followers: '3.8k',
       avatar:
-        'https://images.unsplash.com/photo-1544005313-94ddf0286df2?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80',
+        'https://images.unsplash.com/photo-1544005313-94ddf0286df2',
     },
     {
       id: 'e3',
-      name: 'Green Valley Co-op',
-      specialty: 'Community Group',
-      followers: '12k',
+      name: 'Dr. Emily Green',
+      specialty: 'Soil Science',
+      followers: '6.1k',
       avatar:
-        'https://images.unsplash.com/photo-1530836369250-ef72a3f5cda8?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80',
+        'https://images.unsplash.com/photo-1438761681033-6461ffad8d80',
+    },
+    {
+      id: 'e4',
+      name: 'Samuel Kibet',
+      specialty: 'Agri-Business & Market Access',
+      followers: '2.9k',
+      avatar:
+        'https://images.unsplash.com/photo-1500648767791-00dcc994a43e',
+    },
+    {
+      id: 'e5',
+      name: 'Grace Mwangi',
+      specialty: 'Organic Farming',
+      followers: '4.4k',
+      avatar:
+        'https://images.unsplash.com/photo-1580489944761-15a19d654956',
+    },
+    {
+      id: 'e6',
+      name: 'Eng. Paul Otieno',
+      specialty: 'Farm Mechanization',
+      followers: '3.1k',
+      avatar:
+        'https://images.unsplash.com/photo-1527980965255-d3b416303d12',
     },
   ]
+  
   
   export const messages = [
     {
@@ -129,22 +154,57 @@ import {
     },
   ]
   
-  export const comments = [
+  export const communities = [
     {
       id: 'c1',
-      author: 'Alice Cooper',
+      name: 'Green Valley Farmers',
+      category: 'Mixed Farming',
+      members: '12k',
+      description:
+        'A cooperative of small-scale farmers sharing best practices in crop and livestock farming.',
       avatar:
-        'https://images.unsplash.com/photo-1580489944761-15a19d654956?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80',
-      text: 'This is incredibly helpful, thank you!',
-      timeAgo: '1h ago',
+        'https://images.unsplash.com/photo-1530836369250-ef72a3f5cda8',
     },
     {
       id: 'c2',
-      author: 'Bob Smith',
+      name: 'Organic Growers Hub',
+      category: 'Organic Farming',
+      members: '8.4k',
+      description:
+        'Everything organic — soil health, composting, natural pest control, and certification tips.',
       avatar:
-        'https://images.unsplash.com/photo-1531427186611-ecfd6d936c79?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80',
-      text: 'I tried this last season and saw a 20% increase in yield.',
-      timeAgo: '30m ago',
+        'https://images.unsplash.com/photo-1501004318641-b39e6451bec6',
+    },
+    {
+      id: 'c3',
+      name: 'Young Agripreneurs',
+      category: 'Agri-Business',
+      members: '5.9k',
+      description:
+        'For young farmers building profitable, tech-enabled agricultural businesses.',
+      avatar:
+        'https://images.unsplash.com/photo-1521737604893-d14cc237f11d',
+    },
+    {
+      id: 'c4',
+      name: 'Climate-Smart Farming',
+      category: 'Sustainability',
+      members: '10.2k',
+      description:
+        'Learn climate-resilient practices to protect yields in changing weather conditions.',
+      avatar:
+        'https://images.unsplash.com/photo-1464226184884-fa280b87c399',
+    },
+    {
+      id: 'c5',
+      name: 'Dairy Farmers Network',
+      category: 'Livestock',
+      members: '7.1k',
+      description:
+        'A space for dairy farmers to discuss feeds, breeds, disease control, and milk markets.',
+      avatar:
+        'https://images.unsplash.com/photo-1604908554161-84c1d4b2c4b1',
     },
   ]
+  
   
