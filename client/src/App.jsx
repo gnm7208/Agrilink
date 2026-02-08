@@ -6,6 +6,9 @@ import  SideNav  from './components/SideNav'
 
 import { LoginPage } from './pages/Login'
 import { RegisterPage } from './pages/Register'
+import { ForgotPasswordPage } from './pages/ForgotPassword'
+import { ResetPasswordPage } from './pages/ResetPassword'
+import { VerifyEmailPage } from './pages/VerifyEmail'
 import { HomeFeed } from './pages/Home'
 import { PostDetails } from './pages/PostDetails'
 import { CreatePost } from './pages/Createpost'
@@ -50,6 +53,9 @@ export function App() {
         <Route element={<FullScreenLayout />}>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/verify-email" element={<VerifyEmailPage />} />
           <Route path="/post/:id" element={<PostDetails />} />
           <Route path="/create" element={<CreatePost />} />
           <Route path="/chat/:id" element={<ChatInterface />} />
