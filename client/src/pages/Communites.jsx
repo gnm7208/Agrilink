@@ -56,14 +56,10 @@ export function CommunitiesPage() {
           'url(https://images.unsplash.com/photo-1500382017468-9049fed747ef)',
       }}
     >
-      
       <div className="min-h-screen bg-black/40 backdrop-blur-sm pb-24 ml-20">
-       
         <div className="w-full pt-10">
-         
           <div className="mx-auto px-7 lg:px-8 max-w-2xl lg:ml-[320px]">
-            
-           
+          
             <div className="mb-6">
               <h1 className="text-xl font-bold text-white mb-4 ml-60">
                 Discover
@@ -75,13 +71,19 @@ export function CommunitiesPage() {
                   className="absolute left-4 top-1/2 -translate-y-1/2 text-white/50"
                 />
                 <input
-                  placeholder="Search experts, topics, or communities..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder={`Search ${
+                    activeTab === 'experts'
+                      ? 'experts'
+                      : 'communities'
+                  }...`}
                   className="w-full rounded-xl bg-white/10 backdrop-blur-xl pl-11 pr-4 py-3 text-sm text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-green-500/40"
                 />
               </div>
             </div>
 
-            
+           
             <div className="flex bg-white/10 backdrop-blur-xl rounded-xl p-1 mb-6">
               <button
                 onClick={() => setActiveTab('experts')}
@@ -106,7 +108,7 @@ export function CommunitiesPage() {
               </button>
             </div>
 
-            {/* CONTENT */}
+          
             <motion.div
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
@@ -156,7 +158,6 @@ export function CommunitiesPage() {
                 )
               )}
             </motion.div>
-
           </div>
         </div>
       </div>
