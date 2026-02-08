@@ -1,18 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Image as ImageIcon, Camera, X, Loader2 } from 'lucide-react';
+import { Image as ImageIcon, Camera, X, Loader2 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Avatar } from '../components/ui/Avatar';
 import { apiRequest, API_ENDPOINTS } from '../config/api';
 import { useImageUpload } from '../hooks/useImageUpload';
-import { currentUser } from '../data/mockData'; // TODO: Replace with auth context
+import { useAuth } from '../hooks/useAuth';
 
 export function CreatePost() {
   const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate('/login');
+    }
+  }, [user, authLoading, navigate]);
 
   const {
     preview,
@@ -48,28 +55,19 @@ export function CreatePost() {
         imageUrl = await upload();
       }
 
-      // Step 2: Create the post
+      // Step 2: Create the post (with image_url if uploaded)
       const postData = {
         title: title.trim() || undefined,
         content: content.trim(),
+        image_url: imageUrl || undefined,
       };
 
-      const response = await apiRequest(API_ENDPOINTS.posts.create, {
+      await apiRequest(API_ENDPOINTS.posts.create, {
         method: 'POST',
         body: JSON.stringify(postData),
       });
 
-      const postId = response.post?.id;
-
-      // Step 3: Attach image to post if uploaded
-      if (imageUrl && postId) {
-        await apiRequest(`${API_ENDPOINTS.posts.byId(postId)}/images`, {
-          method: 'POST',
-          body: JSON.stringify({ image_url: imageUrl }),
-        });
-      }
-
-      // Success - navigate to home or post
+      // Success - navigate to home
       navigate('/');
     } catch (err) {
       console.error('Failed to create post:', err);
@@ -81,6 +79,18 @@ export function CreatePost() {
 
   const error = submitError || uploadError;
   const isLoading = isSubmitting || uploading;
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-green-600 animate-spin" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-white pb-20">
@@ -111,9 +121,9 @@ export function CreatePost() {
         )}
 
         <div className="flex items-center space-x-3 mb-6">
-          <Avatar src={currentUser.avatar} fallback={currentUser.name} />
+          <Avatar src={user.profile_image_url} fallback={user.username} />
           <div>
-            <p className="font-semibold text-gray-900">{currentUser.name}</p>
+            <p className="font-semibold text-gray-900">{user.username}</p>
             <div className="flex items-center space-x-2 text-xs text-gray-500">
               <span className="bg-gray-100 px-2 py-0.5 rounded-full">
                 Public

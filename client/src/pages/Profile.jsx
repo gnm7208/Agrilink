@@ -5,20 +5,56 @@ import { Avatar } from '../components/ui/Avatar';
 import PostCard from '../components/PostCard';
 import { EditProfileModal } from '../components/EditProfileModal';
 import { apiRequest, API_ENDPOINTS } from '../config/api';
-import { posts as mockPosts } from '../data/mockData'; // Fallback for posts
 
 export function ProfilePage() {
   const [user, setUser] = useState(null);
+  const [posts, setPosts] = useState([]);
+  const [postsLoading, setPostsLoading] = useState(true);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
   const [resendSent, setResendSent] = useState(false);
 
-  // Fetch current user on mount
   useEffect(() => {
     fetchCurrentUser();
   }, []);
+
+  useEffect(() => {
+    if (user?.id) {
+      fetchUserPosts();
+    }
+  }, [user?.id]);
+
+  const fetchUserPosts = async () => {
+    try {
+      setPostsLoading(true);
+      const response = await apiRequest(
+        `${API_ENDPOINTS.posts.list}?author_id=${user.id}&per_page=20`
+      );
+      const postsData = response.posts || [];
+      setPosts(postsData.map((p) => ({
+        id: p.id,
+        author: p.author ? {
+          name: p.author.username,
+          avatar: p.author.profile_image_url,
+          role: p.author.role || 'Farmer',
+        } : { name: 'Unknown', avatar: null, role: 'User' },
+        title: p.title || '',
+        description: p.content,
+        image: p.image_url || (p.images?.[0]?.image_url),
+        likes: p.likes_count || 0,
+        comments: p.comments_count || 0,
+        timeAgo: p.created_at ? new Date(p.created_at).toLocaleDateString() : '',
+        tags: [],
+      })));
+    } catch (err) {
+      console.error('Failed to fetch posts:', err);
+      setPosts([]);
+    } finally {
+      setPostsLoading(false);
+    }
+  };
 
   const fetchCurrentUser = async () => {
     try {
@@ -189,10 +225,17 @@ export function ProfilePage() {
       {/* Recent Posts Section */}
       <div className="px-4 space-y-4">
         <h3 className="font-bold text-gray-900 text-lg">Recent Posts</h3>
-        {/* TODO: Fetch user's posts from API */}
-        {mockPosts.map((post) => (
-          <PostCard key={post.id} {...post} />
-        ))}
+        {postsLoading ? (
+          <div className="flex justify-center py-8">
+            <Loader2 className="w-6 h-6 text-green-600 animate-spin" />
+          </div>
+        ) : posts.length === 0 ? (
+          <p className="text-gray-500 py-6">No posts yet.</p>
+        ) : (
+          posts.map((post) => (
+            <PostCard key={post.id} {...post} />
+          ))
+        )}
       </div>
 
       {/* Edit Profile Modal */}

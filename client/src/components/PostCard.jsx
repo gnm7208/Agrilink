@@ -3,6 +3,7 @@ import { Heart, MessageCircle, Share2, MoreHorizontal } from 'lucide-react'
 import { Card } from './ui/Card'
 import { Avatar } from './ui/Avatar'
 import { Link } from 'react-router-dom'
+/* eslint-disable-next-line no-unused-vars -- motion used in JSX */
 import { motion } from 'framer-motion'
 
 const PostCard = ({
