@@ -47,6 +47,43 @@ def send_message():
     return jsonify(msg.to_dict()), 201
 
 
+@bp.get("/conversations")
+@login_required
+def list_conversations():
+    """
+    List direct message conversations for the current user.
+    Returns unique users we've exchanged messages with, plus last message and unread count.
+    """
+    msgs = (
+        Message.query.filter(
+            (Message.sender_id == g.current_user.id) | (Message.receiver_id == g.current_user.id),
+            Message.receiver_id.isnot(None),
+        )
+        .order_by(Message.created_at.desc())
+        .all()
+    )
+
+    conversations_map = {}
+    for m in msgs:
+        other_id = m.receiver_id if m.sender_id == g.current_user.id else m.sender_id
+        if other_id not in conversations_map:
+            other_user = User.query.get(other_id)
+            conversations_map[other_id] = {
+                "user_id": other_id,
+                "user": other_user.to_dict() if other_user else None,
+                "last_message": {
+                    "id": m.id,
+                    "content": m.content,
+                    "created_at": m.created_at.isoformat() if m.created_at else None,
+                    "sender_id": m.sender_id,
+                },
+                "unread_count": 0,
+            }
+
+    conversations = list(conversations_map.values())
+    return jsonify({"conversations": conversations})
+
+
 @bp.delete("/<int:message_id>")
 @login_required
 def delete_message(message_id):
