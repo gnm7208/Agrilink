@@ -1,197 +1,138 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Image as ImageIcon, Camera, X, Loader2 } from 'lucide-react';
-import { Button } from '../components/ui/Button';
-import { Avatar } from '../components/ui/Avatar';
-import { apiRequest, API_ENDPOINTS } from '../config/api';
-import { useImageUpload } from '../hooks/useImageUpload';
-import { currentUser } from '../data/mockData'; // TODO: Replace with auth context
+import { useState } from "react";
+import { motion } from "framer-motion";
+import { ImagePlus, X, Sprout, MapPin, Leaf, Camera } from "lucide-react";
+import { Card } from "../components/ui/Card";
+import { Button } from "../components/ui/Button";
+import { Avatar } from "../components/ui/Avatar";
 
-export function CreatePost() {
-  const navigate = useNavigate();
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState(null);
+export  function CreatePost() {
+  const [images, setImages] = useState([]);
+  const [text, setText] = useState("");
+  const [tag, setTag] = useState("Advice");
 
-  const {
-    preview,
-    uploading,
-    error: uploadError,
-    hasFile,
-    handleFileSelect,
-    clearFile,
-    upload,
-  } = useImageUpload();
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setSubmitError(null);
-
-    // Validate content
-    if (!content.trim()) {
-      setSubmitError('Please write some content for your post');
-      return;
-    }
-
-    if (content.trim().length < 10) {
-      setSubmitError('Content must be at least 10 characters');
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    try {
-      // Step 1: Upload image if selected
-      let imageUrl = null;
-      if (hasFile) {
-        imageUrl = await upload();
-      }
-
-      // Step 2: Create the post
-      const postData = {
-        title: title.trim() || undefined,
-        content: content.trim(),
-      };
-
-      const response = await apiRequest(API_ENDPOINTS.posts.create, {
-        method: 'POST',
-        body: JSON.stringify(postData),
-      });
-
-      const postId = response.post?.id;
-
-      // Step 3: Attach image to post if uploaded
-      if (imageUrl && postId) {
-        await apiRequest(`${API_ENDPOINTS.posts.byId(postId)}/images`, {
-          method: 'POST',
-          body: JSON.stringify({ image_url: imageUrl }),
-        });
-      }
-
-      // Success - navigate to home or post
-      navigate('/');
-    } catch (err) {
-      console.error('Failed to create post:', err);
-      setSubmitError(err.message || 'Failed to create post. Please try again.');
-    } finally {
-      setIsSubmitting(false);
-    }
+  const addImage = (e) => {
+    const files = Array.from(e.target.files);
+    setImages((prev) => [...prev, ...files]);
   };
 
-  const error = submitError || uploadError;
-  const isLoading = isSubmitting || uploading;
+  const removeImage = (index) => {
+    setImages(images.filter((_, i) => i !== index));
+  };
 
   return (
-    <div className="min-h-screen bg-white pb-20">
-      <header className="sticky top-0 z-40 bg-white border-b border-gray-100 px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <button onClick={() => navigate(-1)} className="text-gray-600">
-            <X size={24} />
-          </button>
-          <h1 className="font-semibold text-gray-900">Create Post</h1>
-        </div>
-        <Button
-          size="sm"
-          onClick={handleSubmit}
-          isLoading={isLoading}
-          disabled={isLoading || !content.trim()}
-          className="rounded-full px-6"
-        >
-          {uploading ? 'Uploading...' : 'Post'}
-        </Button>
-      </header>
-
-      <div className="p-4">
-        {/* Error Display */}
-        {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-            {error}
-          </div>
-        )}
-
-        <div className="flex items-center space-x-3 mb-6">
-          <Avatar src={currentUser.avatar} fallback={currentUser.name} />
-          <div>
-            <p className="font-semibold text-gray-900">{currentUser.name}</p>
-            <div className="flex items-center space-x-2 text-xs text-gray-500">
-              <span className="bg-gray-100 px-2 py-0.5 rounded-full">
-                Public
-              </span>
+    <div className="min-h-screen bg-gradient-to-b from-green-50 via-white to-white p-4 md:p-8">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="mx-auto max-w-4xl"
+      >
+        {/* Header */}
+        <div className="mb-6 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Avatar className="h-10 w-10" />
+            <div>
+              <p className="text-sm font-semibold text-gray-800">Create a post</p>
+              <p className="text-xs text-gray-500">Share knowledge with the Agrilink community</p>
             </div>
           </div>
+          <Button className="rounded-full bg-green-600 px-6 hover:bg-green-700">
+            Publish
+          </Button>
         </div>
 
-        <form className="space-y-4" onSubmit={handleSubmit}>
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Give your post a title..."
-            className="w-full text-xl font-bold placeholder-gray-400 border-none focus:ring-0 p-0 focus:outline-none"
-            maxLength={255}
-          />
+       
+        <Card className="overflow-hidden rounded-2xl bg-white shadow-xl">
+          <CardContent className="p-0">
+           
+            {images.length > 0 && (
+              <div className="grid grid-cols-2 gap-1 bg-gray-100 md:grid-cols-3">
+                {images.map((img, i) => (
+                  <div key={i} className="group relative aspect-square">
+                    <img
+                      src={URL.createObjectURL(img)}
+                      alt="preview"
+                      className="h-full w-full object-cover"
+                    />
+                    <button
+                      onClick={() => removeImage(i)}
+                      className="absolute right-2 top-2 rounded-full bg-black/60 p-1 text-white opacity-0 transition group-hover:opacity-100"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
 
-          <textarea
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            placeholder="Share your farming experience or ask a question..."
-            className="w-full min-h-[200px] text-base text-gray-700 placeholder-gray-400 border-none focus:ring-0 p-0 resize-none focus:outline-none"
-            maxLength={10000}
-          />
-
-          {/* Image Preview */}
-          {preview && (
-            <div className="relative rounded-2xl overflow-hidden mb-4 group">
-              <img
-                src={preview}
-                alt="Upload preview"
-                className="w-full h-auto max-h-80 object-cover"
+            {/* Content Area */}
+            <div className="space-y-4 p-5">
+              <textarea
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                placeholder="What’s growing on your farm today? 🌱"
+                className="w-full resize-none rounded-xl border border-gray-200 p-4 text-sm focus:border-green-500 focus:outline-none"
+                rows={4}
               />
-              {uploading && (
-                <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                  <Loader2 className="w-8 h-8 text-white animate-spin" />
-                </div>
-              )}
-              <button
-                type="button"
-                onClick={clearFile}
-                disabled={uploading}
-                className="absolute top-2 right-2 p-1.5 bg-black/50 text-white rounded-full hover:bg-black/70 transition-colors disabled:opacity-50"
-              >
-                <X size={16} />
-              </button>
-            </div>
-          )}
-        </form>
-      </div>
 
-      {/* Bottom Actions */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-100">
-        <div className="flex items-center space-x-4 max-w-md mx-auto">
-          <label className="p-3 text-green-600 bg-green-50 rounded-xl cursor-pointer hover:bg-green-100 transition-colors">
-            <input
-              type="file"
-              accept="image/jpeg,image/png,image/gif,image/webp"
-              className="hidden"
-              onChange={handleFileSelect}
-              disabled={uploading}
-            />
-            <ImageIcon size={24} />
-          </label>
-          <label className="p-3 text-green-600 bg-green-50 rounded-xl cursor-pointer hover:bg-green-100 transition-colors">
-            <input
-              type="file"
-              accept="image/*"
-              capture="environment"
-              className="hidden"
-              onChange={handleFileSelect}
-              disabled={uploading}
-            />
-            <Camera size={24} />
-          </label>
+              {/* Tags */}
+              <div className="flex flex-wrap gap-2">
+                {["Advice", "Question", "Marketplace", "Success Story"].map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => setTag(t)}
+                    className={`rounded-full px-4 py-1.5 text-xs font-medium transition ${
+                      tag === t
+                        ? "bg-green-600 text-white"
+                        : "bg-green-50 text-green-700 hover:bg-green-100"
+                    }`}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
+
+              {/* Actions */}
+              <div className="flex items-center justify-between pt-2">
+                <div className="flex gap-2">
+                  <label className="flex cursor-pointer items-center gap-2 rounded-full bg-gray-100 px-4 py-2 text-xs text-gray-600 hover:bg-gray-200">
+                    <ImagePlus size={14} />
+                    Images
+                    <input type="file" multiple hidden onChange={addImage} />
+                  </label>
+                  <button className="flex items-center gap-2 rounded-full bg-gray-100 px-4 py-2 text-xs text-gray-600 hover:bg-gray-200">
+                    <Camera size={14} />
+                    Camera
+                  </button>
+                  <button className="flex items-center gap-2 rounded-full bg-gray-100 px-4 py-2 text-xs text-gray-600 hover:bg-gray-200">
+                    <MapPin size={14} />
+                    Location
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-1 text-xs text-green-700">
+                  <Leaf size={14} />
+                  Agrilink verified content
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Inspiration strip */}
+        <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4">
+          {["Maize tips", "Organic farming", "Market prices", "Irrigation"].map((idea) => (
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              key={idea}
+              className="rounded-xl bg-white p-4 shadow-md"
+            >
+              <Sprout className="mb-2 text-green-600" size={20} />
+              <p className="text-xs font-semibold text-gray-700">{idea}</p>
+              <p className="mt-1 text-[11px] text-gray-500">Trending topic</p>
+            </motion.div>
+          ))}
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }

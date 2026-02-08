@@ -15,16 +15,16 @@ export function CommunitiesPage() {
           'url(https://images.unsplash.com/photo-1500382017468-9049fed747ef)',
       }}
     >
-      {/* Overlay */}
-      <div className="min-h-screen bg-black/40 backdrop-blur-sm pb-24">
-        {/* CONTENT WRAPPER */}
-        <div className="w-full pt-6">
-          {/* This is the magic container */}
-          <div className="mx-auto px-4 lg:px-8 max-w-2xl lg:ml-[320px]">
+      
+      <div className="min-h-screen bg-black/40 backdrop-blur-sm pb-24 ml-20">
+       
+        <div className="w-full pt-10">
+         
+          <div className="mx-auto px-7 lg:px-8 max-w-2xl lg:ml-[320px]">
             
-            {/* HEADER */}
+           
             <div className="mb-6">
-              <h1 className="text-xl font-bold text-white mb-4">
+              <h1 className="text-xl font-bold text-white mb-4 ml-60">
                 Discover
               </h1>
 
@@ -40,7 +40,7 @@ export function CommunitiesPage() {
               </div>
             </div>
 
-            {/* TABS */}
+            
             <div className="flex bg-white/10 backdrop-blur-xl rounded-xl p-1 mb-6">
               <button
                 onClick={() => setActiveTab('experts')}

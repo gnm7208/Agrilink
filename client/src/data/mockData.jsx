@@ -10,7 +10,7 @@ import {
   
   export const currentUser = {
     id: 'u1',
-    name: 'David Chen',
+    name: 'polly Gray',
     role: 'Farmer',
     avatar:
       'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80',
@@ -24,7 +24,7 @@ import {
     {
       id: 'p1',
       author: {
-        name: 'Sarah Miller',
+        name: 'Julius Ceaser',
         role: 'Expert',
         avatar:
           'https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80',
@@ -42,7 +42,7 @@ import {
     {
       id: 'p2',
       author: {
-        name: 'James Wilson',
+        name: 'James Winston',
         role: 'Farmer',
         avatar:
           'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80',
@@ -80,7 +80,7 @@ import {
   export const experts = [
     {
       id: 'e1',
-      name: 'Dr. Alan Grant',
+      name: '. Jurrien Timber',
       specialty: 'Crop Pathology',
       followers: '5.2k',
       avatar:
@@ -88,7 +88,7 @@ import {
     },
     {
       id: 'e2',
-      name: 'Maria Rodriguez',
+      name: 'Zlatan Murithii',
       specialty: 'Sustainable Irrigation',
       followers: '3.8k',
       avatar:
