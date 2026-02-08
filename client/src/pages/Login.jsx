@@ -6,11 +6,13 @@ import { Sprout, AlertCircle } from 'lucide-react'
 /* eslint-disable-next-line no-unused-vars -- motion used in JSX */
 import { motion } from 'framer-motion'
 import { apiRequest, API_ENDPOINTS } from '../config/api'
+import { useAuth } from '../context/AuthContext'
 
 import bgImage from '../assets/Agriculture Sprayers Market Size, Share, and Growth Analysis 2024-2032.jpeg'
 
 export function LoginPage() {
   const navigate = useNavigate()
+  const { refreshUser } = useAuth()
   const [isLoading, setIsLoading] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -40,6 +42,7 @@ export function LoginPage() {
         return
       }
 
+      await refreshUser()
       navigate('/')
     } catch (err) {
       setError(err.message || 'Invalid email or password')

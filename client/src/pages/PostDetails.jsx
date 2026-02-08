@@ -1,70 +1,101 @@
 import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { ArrowLeft, Send, Heart, Share2, MessageCircle } from "lucide-react";
-/* eslint-disable-next-line no-unused-vars -- motion used in JSX */
-import { motion } from "framer-motion";
 import CommentItem from "../components/Commentitem";
+import { apiRequest, API_ENDPOINTS } from "../config/api";
+import { useAuth } from "../context/AuthContext";
+
+const isNumericId = (str) => /^\d+$/.test(str);
 
 export function PostDetails() {
   const { id } = useParams();
+  const { user: currentUser } = useAuth();
   const [post, setPost] = useState(null);
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isUserPost, setIsUserPost] = useState(false);
 
   useEffect(() => {
-    async function fetchPost() {
-      try {
-        setLoading(true);
-        setError(null);
-
-       
-        const res = await fetch(
-          "http://localhost:5000/api/posts/news?page=1&page_size=20"
-        );
-        if (!res.ok) throw new Error("Failed to fetch posts");
-        const data = await res.json();
-
-        
-        const articles = Array.isArray(data.articles) ? data.articles : [];
-
-       
-        const foundPost = articles
-          .map((article, index) => ({
-            ...article,
-            id: `${article.publishedAt}-${index}`,
-          }))
-          .find((p) => p.id === id);
-
-        if (!foundPost) throw new Error("Post not found");
-        setPost(foundPost);
-
-      
-        setComments([
-          { id: 1, author: "John Doe", content: "Great article!" },
-          { id: 2, author: "Jane Smith", content: "Very informative." },
-        ]);
-      } catch (err) {
-        console.error(err);
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    }
-
     fetchPost();
   }, [id]);
 
-  const handleCommentSubmit = (e) => {
+  async function fetchPost() {
+    try {
+      setLoading(true);
+      setError(null);
+
+      if (isNumericId(id)) {
+        const postData = await apiRequest(API_ENDPOINTS.posts.byId(id));
+        setIsUserPost(true);
+        setPost({
+          id: postData.id,
+          title: postData.title || "",
+          description: postData.content,
+          author: postData.author?.username,
+          publishedAt: postData.created_at,
+          image: postData.image_url,
+          urlToImage: postData.image_url,
+          likes_count: postData.likes_count,
+          comments_count: postData.comments_count,
+        });
+        const commentsRes = await apiRequest(API_ENDPOINTS.posts.comments(id));
+        setComments(
+          (commentsRes.comments || []).map((c) => ({
+            id: c.id,
+            author: c.author?.username || "Unknown",
+            avatar: c.author?.profile_image_url,
+            text: c.content,
+            timeAgo: c.created_at
+              ? new Date(c.created_at).toLocaleDateString()
+              : "",
+          }))
+        );
+      } else {
+        const newsData = await apiRequest(API_ENDPOINTS.posts.newsById(id));
+        setIsUserPost(false);
+        setPost({
+          ...newsData,
+          description: newsData.description,
+          image: newsData.image,
+          urlToImage: newsData.image,
+          likes_count: 0,
+          comments_count: 0,
+        });
+        setComments([]);
+      }
+    } catch (err) {
+      setError(err.message || "Post not found");
+      setPost(null);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const handleCommentSubmit = async (e) => {
     e.preventDefault();
-    if (!newComment.trim()) return;
+    if (!newComment.trim() || !isUserPost || !currentUser) return;
 
-    const newC = { id: Date.now(), author: "ME", content: newComment };
-    setComments((prev) => [newC, ...prev]);
-    setNewComment("");
-
- 
+    try {
+      const res = await apiRequest(API_ENDPOINTS.posts.comments(id), {
+        method: "POST",
+        body: JSON.stringify({ content: newComment.trim() }),
+      });
+      setComments((prev) => [
+        {
+          id: res.id,
+          author: currentUser.username,
+          avatar: currentUser.profile_image_url,
+          text: res.content,
+          timeAgo: "Just now",
+        },
+        ...prev,
+      ]);
+      setNewComment("");
+    } catch (err) {
+      console.error("Failed to add comment:", err);
+    }
   };
 
   if (loading)
@@ -88,7 +119,10 @@ export function PostDetails() {
         
         <h1 className="text-xl font-bold text-gray-900 mb-3">{post.title}</h1>
         <p className="text-gray-500 text-sm mb-2">
-          {new Date(post.publishedAt).toLocaleDateString()} • {post.source?.name}
+          {post.publishedAt
+            ? new Date(post.publishedAt).toLocaleDateString()
+            : ""}{" "}
+          {post.author ? `• ${post.author}` : ""}
         </p>
         <p className="text-gray-700 leading-relaxed mb-4">
           {post.description || "No description available."}
@@ -132,25 +166,29 @@ export function PostDetails() {
         </div>
       </div>
 
-      
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-100">
-        <div className="flex items-center space-x-3 max-w-md mx-auto">
-          <input
-            type="text"
-            placeholder="Add a comment..."
-            className="flex-1 bg-gray-100 rounded-full px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500/20"
-            value={newComment}
-            onChange={(e) => setNewComment(e.target.value)}
-          />
-          <button
-            onClick={handleCommentSubmit}
-            disabled={!newComment.trim()}
-            className="p-2 bg-green-600 text-white rounded-full hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+      {isUserPost && currentUser && (
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-100">
+          <form
+            onSubmit={handleCommentSubmit}
+            className="flex items-center space-x-3 max-w-md mx-auto"
           >
-            <Send size={16} />
-          </button>
+            <input
+              type="text"
+              placeholder="Add a comment..."
+              className="flex-1 bg-gray-100 rounded-full px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500/20"
+              value={newComment}
+              onChange={(e) => setNewComment(e.target.value)}
+            />
+            <button
+              type="submit"
+              disabled={!newComment.trim()}
+              className="p-2 bg-green-600 text-white rounded-full hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Send size={16} />
+            </button>
+          </form>
         </div>
-      </div>
+      )}
     </div>
   );
 }
