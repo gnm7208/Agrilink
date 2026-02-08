@@ -43,7 +43,7 @@ export function RegisterPage() {
       })
 
       navigate('/login', {
-        state: { message: 'Account created successfully! Please log in.' },
+        state: { message: 'Account created. Please check your email to verify your account, then log in.' },
       })
     } catch (error) {
       setError(error.message || 'Registration failed. Please try again.')

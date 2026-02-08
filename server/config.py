@@ -37,6 +37,17 @@ class Config:
         "FRONTEND_ORIGINS",
         "http://localhost:5173,http://localhost:3000"
     )
+    FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
+    EMAIL_FROM = os.getenv("EMAIL_FROM", "noreply@agrilink.example.com")
+    EMAIL_VERIFICATION_TOKEN_EXPIRY_HOURS = int(
+        os.getenv("EMAIL_VERIFICATION_TOKEN_EXPIRY_HOURS", "24")
+    )
+    # Optional SMTP (if not set, verification links are logged only)
+    MAIL_SERVER = os.getenv("MAIL_SERVER")
+    MAIL_PORT = int(os.getenv("MAIL_PORT", "587"))
+    MAIL_USE_TLS = os.getenv("MAIL_USE_TLS", "true").lower() == "true"
+    MAIL_USERNAME = os.getenv("MAIL_USERNAME")
+    MAIL_PASSWORD = os.getenv("MAIL_PASSWORD")
 
     
     
