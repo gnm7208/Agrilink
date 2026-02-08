@@ -62,15 +62,31 @@ def sample_admin_data():
 @pytest.fixture
 def create_user(app):
     """Factory fixture to create a user."""
-    def _create_user(username="testuser", email="test@example.com", password="SecurePass123!@#", role="user"):
+    def _create_user(username="testuser", email="test@example.com", password="SecurePass123!@#", role="user", email_verified=True):
         with app.app_context():
             user = User(username=username, email=email)
             user.set_password(password)
             user.set_role_by_name(role)
+            user.email_verified = email_verified
             db.session.add(user)
             db.session.commit()
             return user.id
     return _create_user
+
+
+@pytest.fixture
+def create_unverified_user(app):
+    """Factory fixture to create an unverified user."""
+    def _create_unverified_user(username="unverified", email="unverified@example.com", password="SecurePass123!@#", role="user"):
+        with app.app_context():
+            user = User(username=username, email=email)
+            user.set_password(password)
+            user.set_role_by_name(role)
+            user.email_verified = False
+            db.session.add(user)
+            db.session.commit()
+            return user.id
+    return _create_unverified_user
 
 
 @pytest.fixture
