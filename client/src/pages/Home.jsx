@@ -34,6 +34,7 @@ export function HomeFeed() {
       const res = await fetch(
         `http://localhost:5000/api/posts/news?page=${page}&page_size=${PAGE_SIZE}`
       );
+
       if (!res.ok) throw new Error("Failed to fetch posts");
 
       const data = await res.json();
@@ -108,7 +109,7 @@ export function HomeFeed() {
 
   return (
     <div
-      className="min-h-screen  bg-cover bg-center lg:ml-64 "
+      className="min-h-screen bg-cover bg-center lg:ml-64"
       style={{
         backgroundImage:
           "url(https://images.unsplash.com/photo-1500382017468-9049fed747ef)",
@@ -131,6 +132,7 @@ export function HomeFeed() {
                   className="bg-transparent outline-none text-white placeholder-white/70 w-40 text-sm"
                 />
               </div>
+
               <button>
                 <Bell size={20} className="text-white hover:text-green-200" />
               </button>
@@ -227,9 +229,7 @@ export function HomeFeed() {
             </motion.div>
           ))}
 
-          {loading && (
-            <p className="text-center text-white">Loading…</p>
-          )}
+          {loading && <p className="text-center text-white">Loading…</p>}
 
           {!loading && hasMore && (
             <button
@@ -242,7 +242,7 @@ export function HomeFeed() {
 
           {!hasMore && !loading && (
             <p className="text-center text-white/70 py-4">
-               No more articles
+              No more articles
             </p>
           )}
 
