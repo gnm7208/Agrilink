@@ -6,6 +6,9 @@ import  SideNav  from './components/SideNav'
 
 import { LoginPage } from './pages/Login'
 import { RegisterPage } from './pages/Register'
+import { ForgotPasswordPage } from './pages/ForgotPassword'
+import { ResetPasswordPage } from './pages/ResetPassword'
+import { VerifyEmailPage } from './pages/VerifyEmail'
 import { HomeFeed } from './pages/Home'
 import { PostDetails } from './pages/PostDetails'
 import { CreatePost } from './pages/Createpost'
@@ -17,16 +20,14 @@ import  {ChatInterface}  from './pages/Chatinterface'
 
 function MainLayout() {
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col lg:flex-row">
+    <div className="min-h-screen bg-black flex flex-col lg:flex-row">
      
       <SideNav />
 
       
-      <main className="flex-1 lg:ml-64 min-h-screen relative">
-        <div className="max-w-md mx-auto lg:max-w-2xl xl:max-w-3xl w-full pb-20 lg:pb-8 lg:pt-6">
-          <Outlet />
-        </div>
-      </main>
+      <main className="flex-1   min-h-screen ">
+  <Outlet />
+</main>
 
       <BottomNav />
     </div>
@@ -52,6 +53,9 @@ export function App() {
         <Route element={<FullScreenLayout />}>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/verify-email" element={<VerifyEmailPage />} />
           <Route path="/post/:id" element={<PostDetails />} />
           <Route path="/create" element={<CreatePost />} />
           <Route path="/chat/:id" element={<ChatInterface />} />

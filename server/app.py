@@ -1,61 +1,94 @@
 import logging
 import os
-from flask import Flask, jsonify
+from datetime import datetime, timedelta
+from flask import Flask, jsonify, session, g
 from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from dotenv import load_dotenv
 
-from config import Config
+load_dotenv()  # Load .env variables
+
+load_dotenv("/home/maish/Agrilink/server/.env")
+from config import get_config
 from extensions import db, migrate, cors, limiter
 
+DEFAULT_RATE_LIMIT = "100 per hour"  # Adjust as needed
 
-def create_app(config_class=Config):
+
+
+def create_app(config_name=None):
     """
     Application factory for AgriLink backend.
-    
-    Initializes Flask app with database, migrations, CORS, and rate limiting.
     """
     app = Flask(__name__)
+
+    # Load configuration
+    config_class = get_config(config_name)
     app.config.from_object(config_class)
+    config_class.validate()  # Validate required settings
+    
 
     # Initialize extensions
     db.init_app(app)
     migrate.init_app(app, db)
-    
-    # CORS configuration - allow configurable frontend origins
-    # In production, avoid using '*' - specify exact origins
-    frontend_origins = app.config.get('FRONTEND_ORIGINS', '*')
-    cors.init_app(app, resources={r"/api/*": {"origins": frontend_origins}})
-    
-    # Rate limiter configuration
-    limiter.init_app(app)
 
-    # Import all model classes AFTER db.init_app
-    from models import (
-        Role, User, Community, CommunityMembership, 
-        Post, PostImage, Like, Comment, Follow, Message
+    # CORS configuration
+    frontend_origins = app.config.get("FRONTEND_ORIGINS", "")
+    origins_list = [o.strip() for o in frontend_origins.split(",")] if frontend_origins else []
+    cors.init_app(
+        app,
+        resources={r"/api/*": {"origins": origins_list, "supports_credentials": True}}
     )
 
-    # Register blueprints
-    from routes import auth, users, posts, communities, messages
-    app.register_blueprint(auth.bp, url_prefix='/api/auth')
-    app.register_blueprint(users.bp, url_prefix='/api/users')
-    app.register_blueprint(posts.bp, url_prefix='/api/posts')
-    app.register_blueprint(communities.bp, url_prefix='/api/communities')
-    app.register_blueprint(messages.bp, url_prefix='/api/messages')
+    # Rate limiter
+    # Rate limiter
+    limiter.init_app(app)
 
-    # Request preprocessing - load authenticated user
+    # Import models AFTER db.init_app
+    from models import Role, User, Community, CommunityMembership, Post, PostImage, Like, Comment, Follow, Message
+
+    # Import blueprints
+    from routes import auth, users, posts, communities, messages, uploads
+
+    # Register blueprints
+    app.register_blueprint(auth.bp, url_prefix="/api/auth")
+    app.register_blueprint(users.bp, url_prefix="/api/users")
+    app.register_blueprint(posts.bp, url_prefix="/api/posts")
+    app.register_blueprint(communities.bp, url_prefix="/api/communities")
+    app.register_blueprint(messages.bp, url_prefix="/api/messages")
+    app.register_blueprint(uploads.bp, url_prefix="/api/uploads")
+
     @app.before_request
     def load_current_user():
         """Load authenticated user from session into g.current_user."""
-        from flask import session, g
         user_id = session.get("user_id")
-        if user_id is not None:
-            g.current_user = User.query.get(user_id)
-        else:
-            g.current_user = None
+        session_created = session.get("session_created_at")
 
-    # Structured error handlers for consistent API responses
+        if session_created and user_id:
+            try:
+                created_time = datetime.fromisoformat(session_created)
+                session_age = datetime.utcnow() - created_time
+                max_age = timedelta(seconds=app.config.get("PERMANENT_SESSION_LIFETIME", 86400))
+                
+
+                if session_age > max_age:
+                    session.clear()
+                    g.current_user = None
+                    app.logger.info(f"Session expired for user_id={user_id}")
+                    return
+            except (ValueError, TypeError) as e:
+                session.clear()
+                g.current_user = None
+                app.logger.warning(f"Invalid session timestamp: {e}")
+                app.logger.warning(f"Invalid session timestamp: {e}")
+                return
+
+        g.current_user = User.query.get(user_id) if user_id else None
+        
+
+    # Structured error handlers
+    # Structured error handlers
     @app.errorhandler(400)
     def bad_request(error):
         return jsonify({"error": "Bad request", "message": str(error.description)}), 400
@@ -84,19 +117,30 @@ def create_app(config_class=Config):
     return app
 
 
-# Basic production-safe logging configuration
+# Logging configuration
+# Configure basic logging for the application
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger(__name__)
 
-
 if __name__ == "__main__":
-    app = create_app()
+    env = os.getenv("FLASK_ENV", "development")
+    app = create_app(config_name=env)
     host = os.getenv("FLASK_HOST", "0.0.0.0")
     port = int(os.getenv("FLASK_PORT", 5000))
     debug = os.getenv("FLASK_DEBUG", "false").lower() == "true"
-    logger.info(f"Starting AgriLink backend on {host}:{port}")
-    app.run(host=host, port=port, debug=debug)
 
+    if debug:
+        logger.warning("=" * 60)
+        logger.warning("WARNING: Running in DEBUG mode!")
+        logger.warning("Never use DEBUG=True in production!")
+        logger.warning("=" * 60)
+
+    if env == "production" and host == "0.0.0.0":
+        logger.warning("Running production server directly is not recommended.")
+        logger.warning("Use a production WSGI server like gunicorn or uwsgi.")
+
+    logger.info(f"Starting AgriLink backend [{env}] on {host}:{port}")
+    app.run(host=host, port=port, debug=debug)
