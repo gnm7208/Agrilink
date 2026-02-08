@@ -5,10 +5,11 @@ import { Button } from '../components/ui/Button';
 import { Avatar } from '../components/ui/Avatar';
 import { apiRequest, API_ENDPOINTS } from '../config/api';
 import { useImageUpload } from '../hooks/useImageUpload';
-import { currentUser } from '../data/mockData'; // TODO: Replace with auth context
+import { useAuth } from '../hooks/useAuth';
 
 export function CreatePost() {
   const navigate = useNavigate();
+  const { user: currentUser } = useAuth();
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
