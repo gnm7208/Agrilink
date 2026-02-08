@@ -1,11 +1,52 @@
-import React, { useState } from 'react'
-import { Search } from 'lucide-react'
+import React, { useState, useEffect } from 'react'
+import { Search, Loader2 } from 'lucide-react'
+/* eslint-disable-next-line no-unused-vars -- motion used in JSX */
 import { motion } from 'framer-motion'
 import ExpertCard from '../components/ExpertCard'
-import { experts } from '../data/mockData'
+import { apiRequest, API_ENDPOINTS } from '../config/api'
 
 export function CommunitiesPage() {
   const [activeTab, setActiveTab] = useState('experts')
+  const [experts, setExperts] = useState([])
+  const [communities, setCommunities] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    if (activeTab === 'experts') {
+      fetchExperts()
+    } else {
+      fetchCommunities()
+    }
+  }, [activeTab])
+
+  const fetchExperts = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      const response = await apiRequest(API_ENDPOINTS.users.experts)
+      setExperts(response.experts || [])
+    } catch (err) {
+      setError(err.message || 'Failed to load experts')
+      setExperts([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const fetchCommunities = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      const response = await apiRequest(API_ENDPOINTS.communities.list)
+      setCommunities(response.communities || [])
+    } catch (err) {
+      setError(err.message || 'Failed to load communities')
+      setCommunities([])
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
     <div
@@ -72,25 +113,47 @@ export function CommunitiesPage() {
               transition={{ duration: 0.3 }}
               className="space-y-4"
             >
-              {activeTab === 'experts' &&
+              {loading ? (
+                <div className="flex justify-center py-12">
+                  <Loader2 className="w-8 h-8 text-white animate-spin" />
+                </div>
+              ) : error ? (
+                <p className="text-red-300 text-center py-6">{error}</p>
+              ) : activeTab === 'experts' ? (
                 experts.map((expert) => (
                   <ExpertCard
                     key={expert.id}
-                    {...expert}
+                    id={expert.id}
+                    name={expert.username}
+                    specialty={expert.bio || expert.role || 'Member'}
+                    followers={expert.followers_count ?? 0}
+                    avatar={expert.profile_image_url}
                     glass
                   />
-                ))}
-
-              {activeTab === 'communities' && (
-                <div className="text-center py-20">
-                  <p className="text-white/70 text-lg">
-                    Communities launching soon 🌱
-                  </p>
-                  <p className="text-white/40 text-sm mt-2 max-w-sm mx-auto">
-                    Spaces for farmers, cooperatives, and experts to grow
-                    together.
-                  </p>
-                </div>
+                ))
+              ) : (
+                communities.length === 0 ? (
+                  <div className="text-center py-20">
+                    <p className="text-white/70 text-lg">
+                      No communities yet
+                    </p>
+                    <p className="text-white/40 text-sm mt-2 max-w-sm mx-auto">
+                      Communities will appear here when they are created.
+                    </p>
+                  </div>
+                ) : (
+                  communities.map((community) => (
+                    <div
+                      key={community.id}
+                      className="bg-white/10 backdrop-blur-xl rounded-xl p-4 text-white"
+                    >
+                      <h3 className="font-bold">{community.name}</h3>
+                      {community.description && (
+                        <p className="text-sm text-white/80 mt-1">{community.description}</p>
+                      )}
+                    </div>
+                  ))
+                )
               )}
             </motion.div>
 
