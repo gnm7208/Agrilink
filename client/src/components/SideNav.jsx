@@ -1,5 +1,5 @@
 import React from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import {
   Home,
   Users,
@@ -13,10 +13,12 @@ import {
 /* eslint-disable-next-line no-unused-vars -- motion used in JSX */
 import { motion } from 'framer-motion'
 import { Avatar } from './ui/Avatar'
-import { currentUser } from '../data/mockData'
+import { useAuth } from '../context/AuthContext'
 
 const SideNav = () => {
   const { pathname } = useLocation()
+  const navigate = useNavigate()
+  const { user, loading, logout } = useAuth()
 
   const tabs = [
     { id: 'home', icon: Home, label: 'Home', path: '/' },
@@ -87,29 +89,49 @@ const SideNav = () => {
       {/* FOOTER / USER */}
       <div className="p-4 border-t border-white/10">
         <div className="flex items-center gap-3 p-3 rounded-2xl hover:bg-white/10 transition group cursor-pointer">
-          <Avatar
-            src={currentUser.avata}
-            fallback={currentUser.name}
-            size="md"
-          />
-
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-white truncate">
-              {currentUser.name}
-            </p>
-            <p className="text-xs text-white/60 truncate">
-              @{currentUser.role.toLowerCase()}
-            </p>
-          </div>
-
+          {loading ? (
+            <div className="w-10 h-10 rounded-full bg-white/20 animate-pulse" />
+          ) : user ? (
+            <>
+              <Avatar
+                src={user.profile_image_url}
+                fallback={user.username}
+                size="md"
+              />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-white truncate">
+                  {user.username}
+                </p>
+                <p className="text-xs text-white/60 truncate">
+                  @{(user.role || 'user').toLowerCase()}
+                </p>
+              </div>
+            </>
+          ) : (
+            <div className="flex-1 min-w-0">
+              <Link to="/login" className="text-sm font-semibold text-white hover:underline">
+                Sign in
+              </Link>
+            </div>
+          )}
           <div className="flex items-center gap-2 text-white/50">
             <Settings size={16} className="hover:text-white" />
-            <Link to="/login">
-  <LogOut
-    size={16}
-    className="hover:text-red-400 transition cursor-pointer"
-  />
-</Link>
+            {user ? (
+              <button
+                type="button"
+                onClick={async () => {
+                  await logout()
+                  navigate('/login')
+                }}
+                className="p-0 border-0 bg-transparent cursor-pointer"
+              >
+                <LogOut size={16} className="hover:text-red-400 transition" />
+              </button>
+            ) : (
+              <Link to="/login">
+                <LogOut size={16} className="hover:text-red-400 transition" />
+              </Link>
+            )}
           </div>
         </div>
       </div>

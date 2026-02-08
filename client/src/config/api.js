@@ -36,9 +36,11 @@ export const API_ENDPOINTS = {
     byId: (id) => `${API_URL}/posts/${id}`,
     create: `${API_URL}/posts`,
     update: (id) => `${API_URL}/posts/${id}`,
-    delete: (id) => `${API_URL}/posts/${id}`,
+    news: `${API_URL}/posts/news`,
+    newsById: (id) => `${API_URL}/posts/news/${id}`,
     like: (id) => `${API_URL}/posts/${id}/like`,
     comments: (id) => `${API_URL}/posts/${id}/comments`,
+    addImage: (id) => `${API_URL}/posts/${id}/images`,
   },
   // Community endpoints
   communities: {
@@ -52,6 +54,7 @@ export const API_ENDPOINTS = {
   // Message endpoints
   messages: {
     send: `${API_URL}/messages`,
+    conversations: `${API_URL}/messages/conversations`,
     withUser: (id) => `${API_URL}/messages/user/${id}`,
     inCommunity: (id) => `${API_URL}/messages/community/${id}`,
     delete: (id) => `${API_URL}/messages/${id}`,
