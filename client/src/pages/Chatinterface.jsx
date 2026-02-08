@@ -11,7 +11,7 @@ import {
 import { Avatar } from '../components/ui/Avatar'
 import ChatBubble from '../components/ChatBubble'
 import { apiRequest, API_ENDPOINTS } from '../config/api'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../hooks/useAuth'
 
 export function ChatInterface() {
   const { userId } = useParams()
@@ -28,7 +28,7 @@ export function ChatInterface() {
     try {
       const userData = await apiRequest(API_ENDPOINTS.users.byId(userId))
       setChatUser(userData)
-    } catch (err) {
+    } catch {
       setChatUser({ username: 'Unknown', profile_image_url: null })
     }
   }

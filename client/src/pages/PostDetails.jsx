@@ -3,7 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { ArrowLeft, Send, Heart, Share2, MessageCircle } from "lucide-react";
 import CommentItem from "../components/Commentitem";
 import { apiRequest, API_ENDPOINTS } from "../config/api";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../hooks/useAuth";
 
 const isNumericId = (str) => /^\d+$/.test(str);
 
