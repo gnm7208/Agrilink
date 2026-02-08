@@ -211,7 +211,7 @@ def me():
 
     return jsonify({
         "authenticated": True,
-        "user": g.current_user.to_dict(include_email=True)
+        "user": g.current_user.to_dict(include_email=True, include_stats=True)
     }), 200
 
 
