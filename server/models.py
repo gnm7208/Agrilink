@@ -81,7 +81,7 @@ class User(db.Model):
         """Verify password against stored hash."""
         return check_password_hash(self.password_hash, password)
 
-    def to_dict(self, include_email=False) -> dict:
+    def to_dict(self, include_email=False, include_stats=False) -> dict:
         data = {
             "id": self.id,
             "username": self.username,
@@ -94,6 +94,11 @@ class User(db.Model):
         }
         if include_email:
             data["email"] = self.email
+        if include_stats:
+            from models import Post, Follow
+            data["posts_count"] = Post.query.filter_by(author_id=self.id).count()
+            data["followers_count"] = Follow.query.filter_by(followed_id=self.id).count()
+            data["following_count"] = Follow.query.filter_by(follower_id=self.id).count()
         return data
     def __repr__(self):
         return f"<User {self.username}>"

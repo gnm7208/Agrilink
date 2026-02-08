@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/input'
 import { Sprout, AlertCircle, CheckCircle, ArrowLeft } from 'lucide-react'
+/* eslint-disable-next-line no-unused-vars -- motion used in JSX */
 import { motion } from 'framer-motion'
 import { apiRequest, API_ENDPOINTS } from '../config/api'
 
@@ -32,7 +33,7 @@ export function VerifyEmailPage() {
           body: JSON.stringify({ token }),
         })
         setSuccess(true)
-      } catch (err) {
+      } catch {
         setError('Invalid or expired verification link. You can request a new one below.')
       } finally {
         setIsVerifying(false)
