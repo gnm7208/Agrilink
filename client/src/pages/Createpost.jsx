@@ -5,7 +5,7 @@ import { Button } from '../components/ui/Button';
 import { Avatar } from '../components/ui/Avatar';
 import { apiRequest, API_ENDPOINTS } from '../config/api';
 import { useImageUpload } from '../hooks/useImageUpload';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 
 export function CreatePost() {
   const navigate = useNavigate();
