@@ -39,6 +39,9 @@ class User(db.Model):
     bio = db.Column(db.Text)
     location = db.Column(db.String(100))
     profile_image_url = db.Column(db.String(255))
+    email_verified = db.Column(db.Boolean, default=False, nullable=False)
+    email_verification_token = db.Column(db.String(255), nullable=True, index=True)
+    email_verification_expires = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, onupdate=datetime.utcnow)
 
@@ -86,6 +89,7 @@ class User(db.Model):
             "location": self.location,
             "profile_image_url": self.profile_image_url,
             "role": self.role,
+            "email_verified": self.email_verified,
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }
         if include_email:

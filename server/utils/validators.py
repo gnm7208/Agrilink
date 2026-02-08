@@ -149,11 +149,6 @@ def sanitize_html_content(content: str) -> str:
     Returns:
         Sanitized content string
     """
-    # Basic HTML entity escaping
-    # For production, install and use bleach library:
-    # import bleach
-    # return bleach.clean(content, tags=['p', 'br', 'strong', 'em'], strip=True)
-
     replacements = {
         '&': '&amp;',
         '<': '&lt;',
