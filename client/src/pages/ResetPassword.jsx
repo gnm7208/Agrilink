@@ -3,6 +3,7 @@ import { Link, useSearchParams, useNavigate } from 'react-router-dom'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/input'
 import { Sprout, AlertCircle, CheckCircle, ArrowLeft, Eye, EyeOff } from 'lucide-react'
+/* eslint-disable-next-line no-unused-vars -- motion used in JSX */
 import { motion } from 'framer-motion'
 import { apiRequest, API_ENDPOINTS } from '../config/api'
 
@@ -38,7 +39,7 @@ export function ResetPasswordPage() {
         })
         setTokenValid(true)
         setIsVerifying(false)
-      } catch (error) {
+      } catch {
         setError('Invalid or expired password reset link. Please request a new one.')
         setIsVerifying(false)
       }

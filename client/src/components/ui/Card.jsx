@@ -1,4 +1,5 @@
 import React from 'react'
+/* eslint-disable-next-line no-unused-vars -- motion used in JSX */
 import { motion } from 'framer-motion'
 
 export function Card({

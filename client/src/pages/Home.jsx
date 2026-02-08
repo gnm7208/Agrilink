@@ -8,6 +8,7 @@ import {
   Search,
   Send,
 } from "lucide-react";
+/* eslint-disable-next-line no-unused-vars -- motion used in JSX */
 import { motion } from "framer-motion";
 
 export function HomeFeed() {
@@ -24,6 +25,7 @@ export function HomeFeed() {
 
   useEffect(() => {
     fetchPosts();
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchPosts depends on page, intentional single run per page
   }, [page]);
 
   async function fetchPosts() {
@@ -54,7 +56,7 @@ export function HomeFeed() {
 
       setPosts((prev) => [...prev, ...formatted]);
       setHasMore(data.hasMore);
-    } catch (err) {
+    } catch {
       setError("Unable to load articles");
     } finally {
       setLoading(false);
