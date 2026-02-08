@@ -1,4 +1,5 @@
-from datetime import datetime
+from datetime import datetime, timedelta
+import secrets
 
 from extensions import db
 
@@ -38,6 +39,9 @@ class User(db.Model):
     bio = db.Column(db.Text)
     location = db.Column(db.String(100))
     profile_image_url = db.Column(db.String(255))
+    email_verified = db.Column(db.Boolean, default=False, nullable=False)
+    email_verification_token = db.Column(db.String(255), nullable=True, index=True)
+    email_verification_expires = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, onupdate=datetime.utcnow)
 
@@ -85,6 +89,7 @@ class User(db.Model):
             "location": self.location,
             "profile_image_url": self.profile_image_url,
             "role": self.role,
+            "email_verified": self.email_verified,
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }
         if include_email:
@@ -261,13 +266,73 @@ class Message(db.Model):
     content = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    def to_dict(self): 
-        return { 
-            "id": self.id, 
-            "sender_id": self.sender_id, 
-            "receiver_id": self.receiver_id, 
-            "community_id": self.community_id, 
-            "content": self.content, 
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "sender_id": self.sender_id,
+            "receiver_id": self.receiver_id,
+            "community_id": self.community_id,
+            "content": self.content,
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }
-    
+
+
+class PasswordResetToken(db.Model):
+    """Store password reset tokens with expiration."""
+    __tablename__ = "password_reset_tokens"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    token = db.Column(db.String(100), unique=True, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    expires_at = db.Column(db.DateTime, nullable=False)
+    used = db.Column(db.Boolean, default=False)
+
+    user = db.relationship("User", backref="reset_tokens")
+
+    # Token valid for 1 hour
+    TOKEN_EXPIRY_HOURS = 1
+
+    @classmethod
+    def create_token(cls, user_id: int) -> "PasswordResetToken":
+        """Generate a new password reset token for a user."""
+        # Invalidate any existing unused tokens for this user
+        cls.query.filter_by(user_id=user_id, used=False).update({"used": True})
+
+        token = secrets.token_urlsafe(32)
+        expires_at = datetime.utcnow() + timedelta(hours=cls.TOKEN_EXPIRY_HOURS)
+
+        reset_token = cls(
+            user_id=user_id,
+            token=token,
+            expires_at=expires_at
+        )
+        db.session.add(reset_token)
+        db.session.commit()
+        return reset_token
+
+    @classmethod
+    def get_valid_token(cls, token: str) -> "PasswordResetToken | None":
+        """Get a valid (non-expired, unused) token."""
+        return cls.query.filter(
+            cls.token == token,
+            cls.used == False,
+            cls.expires_at > datetime.utcnow()
+        ).first()
+
+    def mark_used(self) -> None:
+        """Mark the token as used."""
+        self.used = True
+        db.session.commit()
+
+    def is_valid(self) -> bool:
+        """Check if token is still valid."""
+        return not self.used and self.expires_at > datetime.utcnow()
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "expires_at": self.expires_at.isoformat() if self.expires_at else None,
+            "used": self.used,
+        }
