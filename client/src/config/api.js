@@ -77,39 +77,34 @@ export const defaultFetchOptions = {
  * @returns {Promise} - Response data or throws error
  */
 export async function apiRequest(url, options = {}) {
-  try {
-    const response = await fetch(url, {
-      ...defaultFetchOptions,
-      ...options,
-      headers: {
-        ...defaultFetchOptions.headers,
-        ...options.headers,
-      },
-    });
+  const response = await fetch(url, {
+    ...defaultFetchOptions,
+    ...options,
+    headers: {
+      ...defaultFetchOptions.headers,
+      ...options.headers,
+    },
+  });
 
-    // Handle different response types
-    const contentType = response.headers.get('content-type');
-    let data;
+  // Handle different response types
+  const contentType = response.headers.get('content-type');
+  let data;
 
-    if (contentType && contentType.includes('application/json')) {
-      data = await response.json();
-    } else {
-      data = await response.text();
-    }
+  if (contentType && contentType.includes('application/json')) {
+    data = await response.json();
+  } else {
+    data = await response.text();
+  }
 
-    // Throw error for non-OK responses
-    if (!response.ok) {
-      const error = new Error(data.message || data.error || 'An error occurred');
-      error.status = response.status;
-      error.data = data;
-      throw error;
-    }
-
-    return data;
-  } catch (error) {
-    // Re-throw for handling in component
+  // Throw error for non-OK responses
+  if (!response.ok) {
+    const error = new Error(data.message || data.error || 'An error occurred');
+    error.status = response.status;
+    error.data = data;
     throw error;
   }
+
+  return data;
 }
 
 /**
@@ -123,25 +118,21 @@ export async function uploadFile(url, file, fieldName = 'image') {
   const formData = new FormData();
   formData.append(fieldName, file);
 
-  try {
-    const response = await fetch(url, {
-      method: 'POST',
-      credentials: 'include', // Include cookies for session auth
-      body: formData,
-      // Note: Don't set Content-Type header - browser sets it with boundary
-    });
+  const response = await fetch(url, {
+    method: 'POST',
+    credentials: 'include', // Include cookies for session auth
+    body: formData,
+    // Note: Don't set Content-Type header - browser sets it with boundary
+  });
 
-    const data = await response.json();
+  const data = await response.json();
 
-    if (!response.ok) {
-      const error = new Error(data.message || data.error || 'Upload failed');
-      error.status = response.status;
-      error.data = data;
-      throw error;
-    }
-
-    return data;
-  } catch (error) {
+  if (!response.ok) {
+    const error = new Error(data.message || data.error || 'Upload failed');
+    error.status = response.status;
+    error.data = data;
     throw error;
   }
+
+  return data;
 }

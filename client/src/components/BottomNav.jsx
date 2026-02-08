@@ -1,6 +1,7 @@
 import React from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { Home, Users, PlusSquare, MessageSquare, User } from 'lucide-react'
+/* eslint-disable-next-line no-unused-vars -- motion used in JSX */
 import { motion } from 'framer-motion'
 
 const BottomNav = () => {
