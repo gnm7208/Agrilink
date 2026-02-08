@@ -12,6 +12,8 @@ export function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendSent, setResendSent] = useState(false);
 
   // Fetch current user on mount
   useEffect(() => {
@@ -38,6 +40,22 @@ export function ProfilePage() {
 
   const handleProfileUpdate = (updatedUser) => {
     setUser(updatedUser);
+  };
+
+  const handleResendVerification = async () => {
+    setResendLoading(true);
+    setResendSent(false);
+    try {
+      await apiRequest(API_ENDPOINTS.auth.resendVerification, {
+        method: 'POST',
+        body: JSON.stringify({}),
+      });
+      setResendSent(true);
+    } catch (err) {
+      setError(err?.message || 'Could not send verification email');
+    } finally {
+      setResendLoading(false);
+    }
   };
 
   // Format join date
@@ -74,6 +92,23 @@ export function ProfilePage() {
           <Settings size={24} />
         </button>
       </header>
+
+      {user && user.email_verified === false && (
+        <div className="mx-4 mt-4 p-4 rounded-xl bg-amber-50 border border-amber-200 flex flex-col sm:flex-row sm:items-center gap-3">
+          <p className="text-sm text-amber-800 flex-1">
+            Please verify your email to get full access.
+          </p>
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={handleResendVerification}
+            isLoading={resendLoading}
+            disabled={resendLoading}
+          >
+            {resendSent ? 'Sent — check your email' : 'Resend verification email'}
+          </Button>
+        </div>
+      )}
 
       <div className="bg-white pb-6 mb-4">
         {/* Cover / Banner */}

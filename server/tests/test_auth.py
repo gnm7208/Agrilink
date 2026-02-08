@@ -4,6 +4,7 @@ Tests for authentication endpoints.
 Covers: /api/auth/register, /api/auth/login, /api/auth/logout, /api/auth/me
 """
 import pytest
+from unittest.mock import patch
 
 
 class TestHealthCheck:
@@ -20,14 +21,17 @@ class TestRegister:
     """Test user registration endpoint."""
 
     def test_register_success(self, client, app, sample_user_data):
-        """Test successful user registration."""
-        response = client.post("/api/auth/register", json=sample_user_data)
+        """Test successful user registration (requires email verification)."""
+        with patch("routes.auth.send_verification_email"):
+            response = client.post("/api/auth/register", json=sample_user_data)
 
         assert response.status_code == 201
         data = response.get_json()
-        assert data["message"] == "Registration successful"
+        assert data["message"] == "Registration successful. Please verify your email."
+        assert data["email_verification_required"] is True
         assert data["user"]["username"] == sample_user_data["username"]
         assert data["user"]["email"] == sample_user_data["email"]
+        assert data["user"]["email_verified"] is False
         assert "password" not in data["user"]
 
     def test_register_missing_fields(self, client, app):
