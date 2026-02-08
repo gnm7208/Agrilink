@@ -59,7 +59,7 @@ def list_experts():
     
     # FIXME: Replace with role-based filtering when expert role is added to roles table
     pagination = User.query.paginate(page=page, per_page=per_page, error_out=False)
-    experts = [u.to_dict() for u in pagination.items]
+    experts = [u.to_dict(include_stats=True) for u in pagination.items]
     
     return jsonify({
         "experts": experts,
@@ -102,7 +102,10 @@ def user_inbox():
 @login_required
 def get_user(user_id):
     user = User.query.get_or_404(user_id)
-    return jsonify(user.to_dict(include_email=(g.current_user.is_admin() or g.current_user.id == user_id)))
+    return jsonify(user.to_dict(
+        include_email=(g.current_user.is_admin() or g.current_user.id == user_id),
+        include_stats=True,
+    ))
 
 
 @bp.patch("/<int:user_id>")

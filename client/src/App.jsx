@@ -1,8 +1,9 @@
 import React from 'react'
-import { BrowserRouter as Router, Routes, Route, Outlet } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, Outlet, Navigate } from 'react-router-dom'
 
-import  BottomNav  from './components/BottomNav'
-import  SideNav  from './components/SideNav'
+import BottomNav from './components/BottomNav'
+import SideNav from './components/SideNav'
+import { ProtectedRoute } from './components/ProtectedRoute'
 
 import { LoginPage } from './pages/Login'
 import { RegisterPage } from './pages/Register'
@@ -57,16 +58,18 @@ export function App() {
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/verify-email" element={<VerifyEmailPage />} />
           <Route path="/post/:id" element={<PostDetails />} />
-          <Route path="/create" element={<CreatePost />} />
-          <Route path="/chat/:id" element={<ChatInterface />} />
+          <Route path="/create" element={<ProtectedRoute><CreatePost /></ProtectedRoute>} />
+          <Route path="/chat/:userId" element={<ProtectedRoute><ChatInterface /></ProtectedRoute>} />
         </Route>
 
         <Route element={<MainLayout />}>
           <Route path="/" element={<HomeFeed />} />
-          <Route path="/communities" element={<CommunitiesPage />} />
-          <Route path="/messages" element={<MessagesList />} />
-          <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/communities" element={<ProtectedRoute><CommunitiesPage /></ProtectedRoute>} />
+          <Route path="/messages" element={<ProtectedRoute><MessagesList /></ProtectedRoute>} />
+          <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
         </Route>
+
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
   )
