@@ -152,6 +152,72 @@ import {
       time: 'Yesterday',
       unread: 0,
     },
+    {
+      id: 'm3',
+      sender: {
+        name: 'Dr. Emily Green',
+        avatar:
+          'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80',
+      },
+      lastMessage: 'I recommend testing soil pH before planting.',
+      time: 'Yesterday',
+      unread: 1,
+    },
+    {
+      id: 'm4',
+      sender: {
+        name: 'Zlatan Murithii',
+        avatar:
+          'https://images.unsplash.com/photo-1544005313-94ddf0286df2?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80',
+      },
+      lastMessage: 'Drip irrigation can save up to 40% water.',
+      time: 'Mon',
+      unread: 0,
+    },
+    {
+      id: 'm5',
+      sender: {
+        name: 'Grace Mwangi',
+        avatar:
+          'https://images.unsplash.com/photo-1580489944761-15a19d654956?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80',
+      },
+      lastMessage: 'Organic composting takes patience but it pays off 🌱',
+      time: 'Sun',
+      unread: 3,
+    },
+    {
+      id: 'm6',
+      sender: {
+        name: 'Green Valley Farmers',
+        avatar:
+          'https://images.unsplash.com/photo-1530836369250-ef72a3f5cda8?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80',
+      },
+      lastMessage: 'Community meeting scheduled for Friday.',
+      time: 'Sun',
+      unread: 0,
+    },
+    {
+      id: 'm7',
+      sender: {
+        name: 'Samuel Kibet',
+        avatar:
+          'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80',
+      },
+      lastMessage: 'Market prices are rising this week.',
+      time: 'Sat',
+      unread: 0,
+    },
+    {
+      id: 'm8',
+      sender: {
+        name: 'Young Agripreneurs',
+        avatar:
+          'https://images.unsplash.com/photo-1521737604893-d14cc237f11d?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80',
+      },
+      lastMessage: 'New funding opportunities just dropped 🚀',
+      time: 'Fri',
+      unread: 5,
+    },
   ]
   
   export const communities = [
