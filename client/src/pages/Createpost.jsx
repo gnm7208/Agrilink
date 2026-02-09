@@ -130,7 +130,7 @@ export function CreatePost() {
                   )}
                 </div>
 
-                {/* Actions */}
+             
                 <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
                   <div className="flex gap-2">
                     <label className="flex cursor-pointer items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-xs text-white/70 hover:bg-white/20">
@@ -163,7 +163,7 @@ export function CreatePost() {
               </div>
             </Card>
 
-            {/* Inspiration */}
+           
             <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4">
               {[
                 "Maize yield tips",
