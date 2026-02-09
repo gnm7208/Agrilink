@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
   ArrowLeft,
@@ -9,16 +9,14 @@ import {
   Paperclip,
 } from 'lucide-react'
 import { Avatar } from '../components/ui/Avatar'
-import  ChatBubble  from '../components/ChatBubble'
+import ChatBubble from '../components/ChatBubble'
 import { messages } from '../data/mockData'
 
 export function ChatInterface() {
   const { id } = useParams()
   const navigate = useNavigate()
   const [input, setInput] = useState('')
-  const messagesEndRef = useRef(null)
 
- 
   const [chatHistory, setChatHistory] = useState([
     {
       id: 1,
@@ -46,14 +44,6 @@ export function ChatInterface() {
     },
   ])
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }
-
-  useEffect(() => {
-    scrollToBottom()
-  }, [chatHistory])
-
   const handleSend = (e) => {
     e.preventDefault()
     if (!input.trim()) return
@@ -70,81 +60,105 @@ export function ChatInterface() {
         isSent: true,
       },
     ])
-
     setInput('')
   }
 
-  // Find user details from mock data
   const chatUser =
     messages.find((m) => m.id === id)?.sender || messages[0].sender
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-100 px-4 py-3 flex items-center justify-between shadow-sm z-10">
-        <div className="flex items-center space-x-3">
-          <button
-            onClick={() => navigate(-1)}
-            className="text-gray-600 hover:text-gray-900"
-          >
-            <ArrowLeft size={24} />
-          </button>
+    <div
+      className="min-h-screen bg-cover bg-center"
+      style={{
+        backgroundImage:
+          'url(https://images.unsplash.com/photo-1500382017468-9049fed747ef)',
+      }}
+    >
+      <div className="bg-black/40 backdrop-blur-md ml-64 min-h-screen">
+        
+        <header className="border-b border-white/10 bg-white/10 backdrop-blur-xl">
+          <div className="flex items-center justify-between px-5 py-4 max-w-5xl mx-auto">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => navigate(-1)}
+                className="text-white/70 hover:text-white transition"
+              >
+                <ArrowLeft size={22} />
+              </button>
 
-          <Avatar
-            src={chatUser.avatar}
-            fallback={chatUser.name}
-            size="sm"
-          />
+              <Avatar
+                src={chatUser.avatar}
+                fallback={chatUser.name}
+                size="sm"
+              />
 
-          <div>
-            <h3 className="font-bold text-gray-900 text-sm">
-              {chatUser.name}
-            </h3>
-            <span className="text-xs text-green-600 flex items-center">
-              <span className="w-1.5 h-1.5 bg-green-600 rounded-full mr-1" />
-              Online
-            </span>
+              <div>
+                <h3 className="font-semibold text-white text-sm">
+                  {chatUser.name}
+                </h3>
+                <span className="text-xs text-green-400 flex items-center">
+                  <span className="w-1.5 h-1.5 bg-green-400 rounded-full mr-1" />
+                  Online
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-4 text-white/70">
+              <Phone size={18} />
+              <Video size={18} />
+              <MoreVertical size={18} />
+            </div>
           </div>
+        </header>
+
+       
+        <div className="px-4 py-6 max-w-5xl mx-auto space-y-4">
+          {chatHistory.map((chat) => (
+            <ChatBubble key={chat.id} {...chat} />
+          ))}
         </div>
 
-        <div className="flex items-center space-x-4 text-gray-600">
-          <Phone size={20} />
-          <Video size={20} />
-          <MoreVertical size={20} />
-        </div>
-      </header>
-
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {chatHistory.map((chat) => (
-          <ChatBubble key={chat.id} {...chat} />
-        ))}
-        <div ref={messagesEndRef} />
-      </div>
-
-      <div className="bg-white border-t border-gray-100 p-4 pb-safe">
-        <form
-          onSubmit={handleSend}
-          className="flex items-center space-x-3 max-w-4xl mx-auto"
-        >
-          <button type="button" className="text-gray-400 hover:text-gray-600">
-            <Paperclip size={24} />
-          </button>
-
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Type a message..."
-            className="flex-1 bg-gray-100 rounded-full px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-500/20"
-          />
-
-          <button
-            type="submit"
-            disabled={!input.trim()}
-            className="p-3 bg-green-600 text-white rounded-full hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-green-200"
+        
+        <div className="border-t border-white/10 bg-white/10 backdrop-blur-xl px-4 py-4">
+          <form
+            onSubmit={handleSend}
+            className="flex items-center gap-3 max-w-5xl mx-auto"
           >
-            <Send size={20} />
-          </button>
-        </form>
+            <button
+              type="button"
+              className="text-white/50 hover:text-white transition"
+            >
+              <Paperclip size={20} />
+            </button>
+
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Type a message..."
+              className="
+                flex-1 rounded-full bg-white/10 backdrop-blur-xl
+                px-4 py-3 text-sm text-white
+                placeholder-white/50
+                border border-white/10
+                focus:outline-none focus:ring-2 focus:ring-green-500/40
+              "
+            />
+
+            <button
+              type="submit"
+              disabled={!input.trim()}
+              className="
+                p-3 rounded-full bg-green-600 text-white
+                hover:bg-green-500 transition
+                disabled:opacity-50
+                shadow-lg shadow-green-600/30
+              "
+            >
+              <Send size={18} />
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   )
