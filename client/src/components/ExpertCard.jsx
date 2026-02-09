@@ -1,5 +1,11 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 import React, { useState } from 'react'
+=======
+import { useState } from 'react'
+import { motion as Motion } from 'framer-motion'
+import { Users, Award } from 'lucide-react'
+>>>>>>> 056910e (solve lint errors)
 import { Avatar } from './ui/Avatar'
 import { Button } from './ui/Button'
 import { Card } from './ui/Card'
@@ -14,6 +20,7 @@ const ExpertCard = ({ id, name, specialty, followers, avatar, glass }) => {
     if (!id || loading) return
     setLoading(true)
     try {
+<<<<<<< HEAD
       if (isFollowing) {
         await apiRequest(API_ENDPOINTS.users.follow(id), {
           method: 'DELETE',
@@ -26,6 +33,14 @@ const ExpertCard = ({ id, name, specialty, followers, avatar, glass }) => {
       setIsFollowing(!isFollowing)
     } catch {
       // Keep state on error
+=======
+      await apiRequest(API_ENDPOINTS.users.follow(id), {
+        method: isFollowing ? 'DELETE' : 'POST',
+      })
+      setIsFollowing((prev) => !prev)
+    } catch (error) {
+      console.error('Follow toggle failed', error)
+>>>>>>> 056910e (solve lint errors)
     } finally {
       setLoading(false)
     }
@@ -94,12 +109,11 @@ export default function ExpertCard({
     'bg-white border-gray-100 text-gray-900'
 
   return (
-    <motion.div
+    <Motion.div
       whileHover={{ y: -2 }}
-      className={`${baseStyles} ${
-        glass ? glassStyles : solidStyles
-      }`}
+      className={`${baseStyles} ${glass ? glassStyles : solidStyles}`}
     >
+<<<<<<< HEAD
       <img
         src={avatar}
         alt={name}
@@ -110,6 +124,15 @@ export default function ExpertCard({
         <h3 className="font-semibold">{name}</h3>
         <p
           className={`text-sm ${
+=======
+      <Avatar src={avatar} fallback={name} size="lg" />
+
+      <div className="flex-1 min-w-0">
+        <h3 className="font-semibold truncate">{name}</h3>
+
+        <div
+          className={`flex items-center gap-1 text-sm ${
+>>>>>>> 056910e (solve lint errors)
             glass ? 'text-white/70' : 'text-gray-500'
           }`}
         >
@@ -126,8 +149,12 @@ export default function ExpertCard({
         </div>
       </div>
 
+<<<<<<< HEAD
       {/* Instagram-style Follow / Following */}
       <motion.button
+=======
+      <Motion.button
+>>>>>>> 056910e (solve lint errors)
         whileTap={{ scale: 0.95 }}
         onClick={onToggleFollow}
         className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition ${
@@ -142,7 +169,7 @@ export default function ExpertCard({
 >>>>>>> f03fbaf (Modified Community page)
       >
         {isFollowing ? 'Following' : 'Follow'}
-      </motion.button>
-    </motion.div>
+      </Motion.button>
+    </Motion.div>
   )
 }
