@@ -57,7 +57,6 @@ export function App() {
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/verify-email" element={<VerifyEmailPage />} />
           <Route path="/post/:id" element={<PostDetails />} />
-          <Route path="/chat/:id" element={<ChatInterface />} />
         </Route>
 
         <Route element={<MainLayout />}>
@@ -66,6 +65,7 @@ export function App() {
           <Route path="/create" element={<CreatePost />} />
           <Route path="/messages" element={<MessagesList />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/chat/:id" element={<ChatInterface />} />
         </Route>
       </Routes>
     </Router>
