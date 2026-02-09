@@ -58,15 +58,15 @@ export function App() {
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/verify-email" element={<VerifyEmailPage />} />
           <Route path="/post/:id" element={<PostDetails />} />
-          <Route path="/create" element={<ProtectedRoute><CreatePost /></ProtectedRoute>} />
-          <Route path="/chat/:userId" element={<ProtectedRoute><ChatInterface /></ProtectedRoute>} />
+          <Route path="/create" element={<CreatePost />} />
+          <Route path="/chat/:id" element={<ChatInterface />} />
         </Route>
 
         <Route element={<MainLayout />}>
           <Route path="/" element={<HomeFeed />} />
-          <Route path="/communities" element={<ProtectedRoute><CommunitiesPage /></ProtectedRoute>} />
-          <Route path="/messages" element={<ProtectedRoute><MessagesList /></ProtectedRoute>} />
-          <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+          <Route path="/communities" element={<CommunitiesPage />} />
+          <Route path="/messages" element={<MessagesList />} />
+          <Route path="/profile" element={<ProfilePage />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />
