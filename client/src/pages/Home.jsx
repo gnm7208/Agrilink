@@ -165,7 +165,7 @@ export function HomeFeed() {
           </div>
         </header>
 
-        {/* POSTS */}
+        
         <main className="max-w-6xl mx-auto px-6 py-6 space-y-6 overflow-x-hidden">
           {filteredPosts.map((post) => (
             <motion.div
@@ -194,7 +194,7 @@ export function HomeFeed() {
                   <span>{post.timeAgo}</span>
                 </div>
 
-                {/* ACTIONS */}
+               
                 <div className="flex gap-6 pt-2">
                   <button
                     onClick={() => toggleLike(post.id)}
@@ -236,7 +236,7 @@ export function HomeFeed() {
                   </button>
                 </div>
 
-                {/* COMMENT */}
+               
                 {activePost === post.id && (
                   <div className="flex gap-2 pt-3">
                     <input
