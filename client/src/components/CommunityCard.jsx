@@ -1,5 +1,5 @@
 import { Users } from 'lucide-react'
-import { motion } from 'framer-motion'
+import { motion as Motion } from 'framer-motion'
 
 export default function CommunityCard({
   name,
@@ -11,18 +11,16 @@ export default function CommunityCard({
   onToggleFollow,
 }) {
   return (
-    <motion.div
+    <Motion.div
       whileHover={{ y: -2 }}
       className="flex gap-4 bg-white/10 backdrop-blur-xl border border-white/10 rounded-2xl p-4 text-white"
     >
-      {/* Avatar */}
       <img
         src={avatar}
         alt={name}
         className="h-12 w-12 rounded-xl object-cover"
       />
 
-      {/* Content */}
       <div className="flex-1">
         <div className="flex items-center justify-between">
           <h3 className="font-semibold">{name}</h3>
@@ -41,8 +39,7 @@ export default function CommunityCard({
             {members} members
           </div>
 
-          {/* Instagram-style Follow / Following */}
-          <motion.button
+          <Motion.button
             whileTap={{ scale: 0.95 }}
             onClick={onToggleFollow}
             className={`text-xs font-semibold px-4 py-1.5 rounded-lg transition ${
@@ -52,9 +49,9 @@ export default function CommunityCard({
             }`}
           >
             {isFollowing ? 'Following' : 'Follow'}
-          </motion.button>
+          </Motion.button>
         </div>
       </div>
-    </motion.div>
+    </Motion.div>
   )
 }

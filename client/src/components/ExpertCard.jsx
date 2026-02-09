@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
-import { motion } from 'framer-motion'
+import { useState } from 'react'
+import { motion as Motion } from 'framer-motion'
 import { Users, Award } from 'lucide-react'
 import { Avatar } from './ui/Avatar'
 import { apiRequest, API_ENDPOINTS } from '../config/api'
@@ -21,18 +21,12 @@ export default function ExpertCard({
 
     setLoading(true)
     try {
-      if (isFollowing) {
-        await apiRequest(API_ENDPOINTS.users.follow(id), {
-          method: 'DELETE',
-        })
-      } else {
-        await apiRequest(API_ENDPOINTS.users.follow(id), {
-          method: 'POST',
-        })
-      }
+      await apiRequest(API_ENDPOINTS.users.follow(id), {
+        method: isFollowing ? 'DELETE' : 'POST',
+      })
       setIsFollowing((prev) => !prev)
-    } catch (err) {
-      console.error('Follow toggle failed', err)
+    } catch (error) {
+      console.error('Follow toggle failed', error)
     } finally {
       setLoading(false)
     }
@@ -48,16 +42,12 @@ export default function ExpertCard({
     'bg-white border-gray-100 text-gray-900'
 
   return (
-    <motion.div
+    <Motion.div
       whileHover={{ y: -2 }}
-      className={`${baseStyles} ${
-        glass ? glassStyles : solidStyles
-      }`}
+      className={`${baseStyles} ${glass ? glassStyles : solidStyles}`}
     >
-      {/* Avatar */}
       <Avatar src={avatar} fallback={name} size="lg" />
 
-      {/* Info */}
       <div className="flex-1 min-w-0">
         <h3 className="font-semibold truncate">{name}</h3>
 
@@ -80,8 +70,7 @@ export default function ExpertCard({
         </div>
       </div>
 
-      {/* Follow Button */}
-      <motion.button
+      <Motion.button
         whileTap={{ scale: 0.95 }}
         disabled={loading}
         onClick={toggleFollow}
@@ -96,7 +85,7 @@ export default function ExpertCard({
         } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
       >
         {isFollowing ? 'Following' : 'Follow'}
-      </motion.button>
-    </motion.div>
+      </Motion.button>
+    </Motion.div>
   )
 }
