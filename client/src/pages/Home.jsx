@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   Heart,
   MessageCircle,
@@ -8,7 +9,9 @@ import {
   Search,
   Send,
 } from "lucide-react";
+/* eslint-disable-next-line no-unused-vars -- motion used in JSX */
 import { motion } from "framer-motion";
+import { apiRequest, API_ENDPOINTS } from "../config/api";
 
 export function HomeFeed() {
   const [posts, setPosts] = useState([]);
@@ -24,6 +27,7 @@ export function HomeFeed() {
 
   useEffect(() => {
     fetchPosts();
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchPosts depends on page, intentional single run per page
   }, [page]);
 
   async function fetchPosts() {
@@ -31,31 +35,52 @@ export function HomeFeed() {
       setLoading(true);
       setError(null);
 
-      const res = await fetch(
-        `http://localhost:5000/api/posts/news?page=${page}&page_size=${PAGE_SIZE}`
-      );
+      const [newsData, postsData] = await Promise.allSettled([
+        apiRequest(`${API_ENDPOINTS.posts.news}?page=${page}&page_size=${PAGE_SIZE}`),
+        apiRequest(`${API_ENDPOINTS.posts.list}?page=${page}&per_page=${PAGE_SIZE}`),
+      ]);
 
-      if (!res.ok) throw new Error("Failed to fetch posts");
+      const newsArticles = newsData.status === "fulfilled" ? (newsData.value.articles || []) : [];
+      const userPosts = postsData.status === "fulfilled" ? (postsData.value.posts || []) : [];
 
-      const data = await res.json();
-
-      const formatted = data.articles.map((article) => ({
+      const formattedNews = newsArticles.map((article) => ({
         id: article.id,
         title: article.title,
         description: article.description,
         image: article.image,
         author: article.author,
-        timeAgo: new Date(article.publishedAt).toLocaleDateString(),
-        likes: Math.floor(Math.random() * 100),
+        timeAgo: new Date(article.publishedAt || 0).toLocaleDateString(),
+        sortDate: new Date(article.publishedAt || 0).getTime(),
+        likes: 0,
         comments: [],
         liked: false,
         saved: false,
       }));
 
-      setPosts((prev) => [...prev, ...formatted]);
-      setHasMore(data.hasMore);
-    } catch (err) {
-      setError("Unable to load articles");
+      const formattedPosts = userPosts.map((p) => ({
+        id: String(p.id),
+        title: p.title || "",
+        description: p.content,
+        image: p.image_url || (p.images?.[0]?.image_url),
+        author: p.author?.username || "User",
+        timeAgo: p.created_at ? new Date(p.created_at).toLocaleDateString() : "",
+        sortDate: p.created_at ? new Date(p.created_at).getTime() : 0,
+        likes: p.likes_count || 0,
+        comments: p.comments_count || 0,
+        liked: false,
+        saved: false,
+      }));
+
+      const merged = [...formattedPosts, ...formattedNews].sort(
+        (a, b) => (b.sortDate || 0) - (a.sortDate || 0)
+      );
+
+      setPosts((prev) => (page === 1 ? merged : [...prev, ...merged]));
+      const newsHasMore = newsData.status === "fulfilled" ? (newsData.value.hasMore ?? false) : false;
+      const postsHasMore = postsData.status === "fulfilled" && (postsData.value.posts?.length || 0) >= PAGE_SIZE;
+      setHasMore(newsHasMore || postsHasMore);
+    } catch {
+      setError("Unable to load posts");
     } finally {
       setLoading(false);
     }
@@ -140,7 +165,7 @@ export function HomeFeed() {
           </div>
         </header>
 
-        {/* POSTS */}
+        
         <main className="max-w-6xl mx-auto px-6 py-6 space-y-6 overflow-x-hidden">
           {filteredPosts.map((post) => (
             <motion.div
@@ -149,16 +174,19 @@ export function HomeFeed() {
               animate={{ opacity: 1, y: 0 }}
               className="bg-white/10 backdrop-blur-2xl rounded-2xl overflow-hidden shadow-lg text-white"
             >
-              {post.image && (
-                <img
-                  src={post.image}
-                  alt={post.title}
-                  className="w-full h-56 object-cover"
-                />
-              )}
-
+              <Link to={`/post/${post.id}`}>
+                {post.image && (
+                  <img
+                    src={post.image}
+                    alt={post.title}
+                    className="w-full h-56 object-cover"
+                  />
+                )}
+              </Link>
               <div className="p-5 space-y-3">
-                <h2 className="text-lg font-semibold">{post.title}</h2>
+                <Link to={`/post/${post.id}`}>
+                  <h2 className="text-lg font-semibold hover:text-green-200">{post.title}</h2>
+                </Link>
                 <p className="text-sm text-white/80">{post.description}</p>
 
                 <div className="flex justify-between text-sm text-white/70">
@@ -166,7 +194,7 @@ export function HomeFeed() {
                   <span>{post.timeAgo}</span>
                 </div>
 
-                {/* ACTIONS */}
+               
                 <div className="flex gap-6 pt-2">
                   <button
                     onClick={() => toggleLike(post.id)}
@@ -208,7 +236,7 @@ export function HomeFeed() {
                   </button>
                 </div>
 
-                {/* COMMENT */}
+               
                 {activePost === post.id && (
                   <div className="flex gap-2 pt-3">
                     <input

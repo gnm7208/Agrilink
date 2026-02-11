@@ -37,7 +37,7 @@ export function EditProfileModal({ user, onClose, onSave }) {
 
     try {
       await selectAndUpload(file);
-    } catch (err) {
+    } catch {
       // Error is handled by the hook
     }
   };

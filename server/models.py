@@ -39,6 +39,9 @@ class User(db.Model):
     bio = db.Column(db.Text)
     location = db.Column(db.String(100))
     profile_image_url = db.Column(db.String(255))
+    email_verified = db.Column(db.Boolean, default=False, nullable=False)
+    email_verification_token = db.Column(db.String(255), nullable=True, index=True)
+    email_verification_expires = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, onupdate=datetime.utcnow)
 
@@ -78,7 +81,7 @@ class User(db.Model):
         """Verify password against stored hash."""
         return check_password_hash(self.password_hash, password)
 
-    def to_dict(self, include_email=False) -> dict:
+    def to_dict(self, include_email=False, include_stats=False) -> dict:
         data = {
             "id": self.id,
             "username": self.username,
@@ -86,10 +89,16 @@ class User(db.Model):
             "location": self.location,
             "profile_image_url": self.profile_image_url,
             "role": self.role,
+            "email_verified": self.email_verified,
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }
         if include_email:
             data["email"] = self.email
+        if include_stats:
+            from models import Post, Follow
+            data["posts_count"] = Post.query.filter_by(author_id=self.id).count()
+            data["followers_count"] = Follow.query.filter_by(followed_id=self.id).count()
+            data["following_count"] = Follow.query.filter_by(follower_id=self.id).count()
         return data
     def __repr__(self):
         return f"<User {self.username}>"
