@@ -20,6 +20,7 @@ Agrilink is a centralized platform that connects farmers, agricultural experts, 
 
 ### User Management
 - User registration and authentication (JWT-based)
+- Email verification for new accounts
 - Role-based access control (Farmer, Expert, Admin)
 - Profile management with bio, location, and avatar
 - Password reset functionality
@@ -76,13 +77,25 @@ Agrilink is a centralized platform that connects farmers, agricultural experts, 
 
 ```
 Agrilink/
+├── .github/
+│   └── workflows/
+│       └── ci.yml         # CI/CD pipeline configuration
+│
 ├── client/                 # React frontend
 │   ├── src/
 │   │   ├── assets/        # Images and static files
 │   │   ├── components/    # Reusable UI components
+│   │   │   ├── ui/        # Base UI components
+│   │   │   ├── ProtectedRoute.jsx  # Route protection
+│   │   │   └── ...        # Other components
 │   │   ├── config/        # API configuration
+│   │   ├── context/       # React context providers
+│   │   │   └── AuthContext.jsx  # Authentication context
 │   │   ├── hooks/         # Custom React hooks
+│   │   │   └── useAuth.js # Authentication hook
 │   │   ├── pages/         # Page components
+│   │   │   ├── VerifyEmail.jsx  # Email verification
+│   │   │   └── ...        # Other pages
 │   │   └── main.jsx       # Entry point
 │   └── package.json
 │
@@ -94,12 +107,23 @@ Agrilink/
 │   │   ├── communities.py # Community management
 │   │   ├── messages.py   # Messaging system
 │   │   └── uploads.py    # Image upload handling
+│   ├── services/         # Business logic services
+│   │   └── email_service.py  # Email sending service
+│   ├── utils/            # Utility functions
+│   │   ├── validators.py # Input validation
+│   │   └── email_verification.py  # Email verification tokens
 │   ├── migrations/       # Database migrations
+│   │   └── versions/     # Migration scripts
 │   ├── tests/           # Backend tests
+│   │   ├── test_auth.py
+│   │   ├── test_email_verification.py
+│   │   └── ...          # Other test files
 │   ├── dbschema/        # Database documentation
 │   ├── models.py        # SQLAlchemy models
 │   ├── app.py           # Flask application
 │   ├── config.py        # Configuration
+│   ├── extensions.py    # Flask extensions
+│   ├── rbac.py          # Role-based access control
 │   └── requirements.txt
 │
 └── README.md
@@ -138,11 +162,23 @@ cp .env.example .env
 
 5. Configure environment variables:
 ```env
+# Security
+SECRET_KEY=your-secret-key-min-32-chars
+
+# Database
 DATABASE_URL=postgresql://username:password@localhost:5432/agrilink
-SECRET_KEY=your-secret-key
+
+# Cloudinary
 CLOUDINARY_CLOUD_NAME=your-cloud-name
 CLOUDINARY_API_KEY=your-api-key
 CLOUDINARY_API_SECRET=your-api-secret
+
+# Email Verification
+EMAIL_FROM=noreply@agrilink.example.com
+FRONTEND_URL=http://localhost:5173
+
+# CORS
+FRONTEND_ORIGINS=http://localhost:5173,http://localhost:3000
 ```
 
 6. Initialize the database:
@@ -213,6 +249,8 @@ Comprehensive API documentation is available in [server/dbschema/API_Documentati
 - `POST /api/auth/login` - Login user
 - `POST /api/auth/logout` - Logout user
 - `GET /api/auth/me` - Get current user
+- `POST /api/auth/verify-email` - Verify email address
+- `POST /api/auth/resend-verification` - Resend verification email
 
 #### Users
 - `GET /api/users/{id}` - Get user profile
@@ -255,12 +293,14 @@ Database schema documentation is available in [server/dbschema/Database_schema.m
 ## 🔒 Security Features
 
 - JWT-based authentication
+- Email verification for new accounts
 - Password hashing with Werkzeug
 - HTML sanitization with Bleach
 - Rate limiting on API endpoints
 - CORS configuration
 - SQL injection prevention via SQLAlchemy ORM
 - Secure password reset tokens with expiration
+- Protected routes with authentication context
 
 ## 📱 Mobile Responsiveness
 
