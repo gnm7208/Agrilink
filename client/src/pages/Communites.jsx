@@ -3,12 +3,17 @@ import { Search, Loader2 } from 'lucide-react'
 /* eslint-disable-next-line no-unused-vars -- motion used in JSX */
 import { motion } from 'framer-motion'
 import ExpertCard from '../components/ExpertCard'
+import CommunityCard from '../components/CommunityCard'
 import { apiRequest, API_ENDPOINTS } from '../config/api'
+import { useAuth } from '../hooks/useAuth'
 
 export function CommunitiesPage() {
+  const { user } = useAuth()
   const [activeTab, setActiveTab] = useState('experts')
   const [experts, setExperts] = useState([])
   const [communities, setCommunities] = useState([])
+  const [joinedCommunities, setJoinedCommunities] = useState(new Set())
+  const [followingIds, setFollowingIds] = useState(new Set())
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
@@ -18,14 +23,28 @@ export function CommunitiesPage() {
     } else {
       fetchCommunities()
     }
-  }, [activeTab])
+  }, [activeTab, user?.id])
 
   const fetchExperts = async () => {
     try {
       setLoading(true)
       setError(null)
+<<<<<<< HEAD
       const response = await apiRequest(API_ENDPOINTS.users.experts)
       setExperts(response.experts || [])
+=======
+      const [expertsRes, followingRes] = await Promise.all([
+        apiRequest(API_ENDPOINTS.users.experts),
+        user?.id
+          ? apiRequest(API_ENDPOINTS.users.following(user.id)).catch(() => [])
+          : Promise.resolve([]),
+      ])
+      setExperts(expertsRes.experts || [])
+      const ids = Array.isArray(followingRes)
+        ? new Set(followingRes.map((f) => f.followed_id).filter(Boolean))
+        : new Set()
+      setFollowingIds(ids)
+>>>>>>> 323936a (API integration)
     } catch (err) {
       setError(err.message || 'Failed to load experts')
       setExperts([])
@@ -38,8 +57,24 @@ export function CommunitiesPage() {
     try {
       setLoading(true)
       setError(null)
+<<<<<<< HEAD
       const response = await apiRequest(API_ENDPOINTS.communities.list)
       setCommunities(response.communities || [])
+=======
+      const res = await apiRequest(API_ENDPOINTS.communities.list)
+      const communitiesList = res.communities || res.posts || []
+      setCommunities(communitiesList)
+      
+      // Track which communities user has joined
+      if (user) {
+        const joined = new Set()
+        for (const community of communitiesList) {
+          // Check if user is a member (you may need to fetch members separately)
+          // For now, we'll track join state locally
+        }
+        setJoinedCommunities(joined)
+      }
+>>>>>>> 323936a (API integration)
     } catch (err) {
       setError(err.message || 'Failed to load communities')
       setCommunities([])
@@ -48,6 +83,58 @@ export function CommunitiesPage() {
     }
   }
 
+<<<<<<< HEAD
+=======
+  const toggleCommunityJoin = async (communityId) => {
+    if (!user) return
+    
+    const isJoined = joinedCommunities.has(communityId)
+    
+    try {
+      if (isJoined) {
+        await apiRequest(API_ENDPOINTS.communities.leave(communityId), {
+          method: 'DELETE',
+        })
+        setJoinedCommunities((prev) => {
+          const next = new Set(prev)
+          next.delete(communityId)
+          return next
+        })
+      } else {
+        await apiRequest(API_ENDPOINTS.communities.join(communityId), {
+          method: 'POST',
+        })
+        setJoinedCommunities((prev) => new Set(prev).add(communityId))
+      }
+    } catch (error) {
+      console.error('Failed to toggle community join:', error)
+    }
+  }
+
+  const query = searchQuery.toLowerCase()
+
+  const filteredExperts = useMemo(
+    () =>
+      experts.filter(
+        (e) =>
+          e.username?.toLowerCase().includes(query) ||
+          e.bio?.toLowerCase().includes(query) ||
+          e.role?.toLowerCase().includes(query)
+      ),
+    [experts, query]
+  )
+
+  const filteredCommunities = useMemo(
+    () =>
+      communities.filter(
+        (c) =>
+          c.name?.toLowerCase().includes(query) ||
+          c.description?.toLowerCase().includes(query)
+      ),
+    [communities, query]
+  )
+
+>>>>>>> 323936a (API integration)
   return (
     <div
       className="min-h-screen bg-cover bg-center"
@@ -122,6 +209,7 @@ export function CommunitiesPage() {
               ) : error ? (
                 <p className="text-red-300 text-center py-6">{error}</p>
               ) : activeTab === 'experts' ? (
+<<<<<<< HEAD
                 experts.map((expert) => (
                   <ExpertCard
                     key={expert.id}
@@ -131,6 +219,37 @@ export function CommunitiesPage() {
                     followers={expert.followers_count ?? 0}
                     avatar={expert.profile_image_url}
                     glass
+=======
+                filteredExperts.length ? (
+                  filteredExperts.map((expert) => (
+                    <ExpertCard
+                      key={expert.id}
+                      id={expert.id}
+                      name={expert.username}
+                      specialty={expert.bio || expert.role || 'Member'}
+                      followers={expert.followers_count ?? 0}
+                      avatar={expert.profile_image_url}
+                      glass
+                      initiallyFollowing={followingIds.has(expert.id)}
+                    />
+                  ))
+                ) : (
+                  <p className="text-center text-white/60 text-sm">
+                    No experts found
+                  </p>
+                )
+              ) : filteredCommunities.length ? (
+                filteredCommunities.map((community) => (
+                  <CommunityCard
+                    key={community.id}
+                    name={community.name}
+                    category="Community"
+                    members={community.members_count || 0}
+                    description={community.description || ''}
+                    avatar={community.image_url || 'https://via.placeholder.com/48'}
+                    isFollowing={joinedCommunities.has(community.id)}
+                    onToggleFollow={() => toggleCommunityJoin(community.id)}
+>>>>>>> 323936a (API integration)
                   />
                 ))
               ) : (

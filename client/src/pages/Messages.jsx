@@ -1,21 +1,24 @@
 <<<<<<< HEAD
 import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { Search, Edit, Loader2 } from 'lucide-react'
+import { Search, Edit, Loader2, Users } from 'lucide-react'
 import { Avatar } from '../components/ui/Avatar'
 import { apiRequest, API_ENDPOINTS } from '../config/api'
 
 export function MessagesList() {
   const [conversations, setConversations] = useState([])
+  const [communities, setCommunities] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
   useEffect(() => {
     fetchConversations()
+    fetchCommunities()
   }, [])
 
   const fetchConversations = async () => {
     try {
+<<<<<<< HEAD
       setLoading(true)
       setError(null)
       const response = await apiRequest(API_ENDPOINTS.messages.conversations)
@@ -23,6 +26,23 @@ export function MessagesList() {
     } catch (err) {
       setError(err.message || 'Failed to load conversations')
       setConversations([])
+=======
+      const response = await apiRequest(
+        API_ENDPOINTS.messages.conversations
+      )
+      setConversations(response.conversations || [])
+    } catch (err) {
+      setError(err.message || 'Failed to load conversations')
+    }
+  }
+
+  const fetchCommunities = async () => {
+    try {
+      const response = await apiRequest(API_ENDPOINTS.communities.list)
+      setCommunities(response.communities || response.posts || [])
+    } catch (err) {
+      console.error('Failed to load communities:', err)
+>>>>>>> 323936a (API integration)
     } finally {
       setLoading(false)
     }
@@ -135,6 +155,15 @@ export function MessagesList() {
       msg.lastMessage.toLowerCase().includes(query.toLowerCase())
   )
 
+  const filteredCommunities = communities.filter((comm) => {
+    const name = comm.name?.toLowerCase() || ''
+    const desc = comm.description?.toLowerCase() || ''
+    return (
+      name.includes(query.toLowerCase()) ||
+      desc.includes(query.toLowerCase())
+    )
+  })
+
   return (
     <div
       className="min-h-screen bg-cover bg-center"
@@ -183,6 +212,7 @@ export function MessagesList() {
 
         {/* Messages list */}
         <div className="max-w-5xl mx-auto px-6 py-6 space-y-3">
+<<<<<<< HEAD
           {filteredMessages.length === 0 && (
             <div className="text-center text-sm text-white/70 py-16">
               No conversations found 🌱
@@ -237,13 +267,105 @@ export function MessagesList() {
                     {msg.unread > 0 && (
                       <span className="ml-3 flex items-center justify-center min-w-[20px] h-5 px-1.5 bg-green-500 text-black text-[10px] font-bold rounded-full">
                         {msg.unread}
-                      </span>
-                    )}
+=======
+          {loading ? (
+            <div className="flex justify-center py-16">
+              <Loader2 className="w-8 h-8 text-green-400 animate-spin" />
+            </div>
+          ) : error ? (
+            <p className="text-center text-red-400 py-12">
+              {error}
+            </p>
+          ) : filteredConversations.length === 0 && filteredCommunities.length === 0 ? (
+            <p className="text-center text-white/70 py-16">
+              No conversations found 🌱
+            </p>
+          ) : (
+            <>
+              {/* User Conversations */}
+              {filteredConversations.map((conv) => (
+                <Link
+                  key={`user-${conv.user_id}`}
+                  to={`/chat/user/${conv.user_id}`}
+                  className="flex items-center gap-4 p-4 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/10 hover:bg-white/15 transition"
+                >
+                  <div className="relative">
+                    <Avatar
+                      src={conv.user?.profile_image_url}
+                      fallback={conv.user?.username}
+                      size="lg"
+                    />
+                    <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-400 rounded-full border-2 border-black/30" />
                   </div>
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between mb-1">
+                      <h3 className="font-semibold text-white truncate">
+                        {conv.user?.username || 'Unknown'}
+                      </h3>
+                      <span className="text-xs text-white/50">
+                        {conv.last_message?.created_at
+                          ? new Date(
+                              conv.last_message.created_at
+                            ).toLocaleTimeString([], {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })
+                          : ''}
+>>>>>>> 323936a (API integration)
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between">
+                      <p className="text-sm truncate text-white/70">
+                        {conv.last_message?.content || ''}
+                      </p>
+
+                      {conv.unread_count > 0 && (
+                        <span className="ml-3 min-w-[20px] h-5 px-1.5 bg-green-500 text-black text-[10px] font-bold rounded-full flex items-center justify-center">
+                          {conv.unread_count}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+<<<<<<< HEAD
                 </div>
               </Card>
             </Link>
           ))}
+=======
+                </Link>
+              ))}
+
+              {/* Community Conversations */}
+              {filteredCommunities.map((comm) => (
+                <Link
+                  key={`community-${comm.id}`}
+                  to={`/chat/community/${comm.id}`}
+                  className="flex items-center gap-4 p-4 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/10 hover:bg-white/15 transition"
+                >
+                  <div className="relative">
+                    <div className="w-12 h-12 rounded-full bg-green-600/20 flex items-center justify-center">
+                      <Users size={20} className="text-green-400" />
+                    </div>
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between mb-1">
+                      <h3 className="font-semibold text-white truncate">
+                        {comm.name || 'Community'}
+                      </h3>
+                    </div>
+
+                    <p className="text-sm truncate text-white/70">
+                      {comm.description || 'Community chat'}
+                    </p>
+                  </div>
+                </Link>
+              ))}
+            </>
+          )}
+>>>>>>> 323936a (API integration)
         </div>
       </div>
 >>>>>>> 59187ef (initial commit)

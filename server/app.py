@@ -7,11 +7,13 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from dotenv import load_dotenv
 
-load_dotenv()  # Load .env variables
-
-load_dotenv("/home/maish/Agrilink/server/.env")
+# Load environment variables from a .env file in the current working directory
+# or any parent directory. This avoids hardcoded, machine-specific paths.
+load_dotenv()
 from config import get_config
-from extensions import db, migrate, cors, limiter
+from csrf import validate_csrf, get_or_set_csrf_token
+from extensions import cors, db, limiter, migrate
+from seed_roles import seed_default_roles
 
 DEFAULT_RATE_LIMIT = "100 per hour"  # Adjust as needed
 
@@ -32,6 +34,18 @@ def create_app(config_name=None):
     # Initialize extensions
     db.init_app(app)
     migrate.init_app(app, db)
+
+    # Seed core RBAC roles (idempotent).
+    # This ensures that the canonical "user" and "admin" roles exist in the
+    # roles table before any requests (including registration) are handled.
+    # Controlled via AUTO_SEED_ROLES env var (defaults to true).
+    with app.app_context():
+        auto_seed = os.getenv("AUTO_SEED_ROLES", "true").lower() == "true"
+        if auto_seed:
+            try:
+                seed_default_roles()
+            except Exception as e:
+                app.logger.warning(f"Role seeding failed: {e}")
 
     # CORS configuration
     frontend_origins = app.config.get("FRONTEND_ORIGINS", "")
@@ -60,6 +74,19 @@ def create_app(config_name=None):
     app.register_blueprint(uploads.bp, url_prefix="/api/uploads")
 
     @app.before_request
+    def enforce_csrf():
+        """
+        Enforce CSRF protection for state-changing API requests.
+
+        Validation is skipped for safe HTTP methods (GET/HEAD/OPTIONS/TRACE),
+        non-API routes, and when the app is running in testing mode.
+        """
+        validation_result = validate_csrf()
+        if validation_result is not None:
+            response, status = validation_result
+            return response, status
+
+    @app.before_request
     def load_current_user():
         """Load authenticated user from session into g.current_user."""
         user_id = session.get("user_id")
@@ -85,7 +112,6 @@ def create_app(config_name=None):
                 return
 
         g.current_user = User.query.get(user_id) if user_id else None
-        
 
     # Structured error handlers
     # Structured error handlers
@@ -113,6 +139,18 @@ def create_app(config_name=None):
     @app.route("/health")
     def health():
         return jsonify({"status": "healthy", "service": "agrilink-backend"})
+
+    @app.route("/api/auth/csrf-token", methods=["GET"])
+    def csrf_token():
+        """
+        Return a CSRF token bound to the current session.
+
+        The frontend should store this value (e.g. in memory or localStorage)
+        and send it with all state-changing API requests in the
+        ``X-CSRF-Token`` header.
+        """
+        token = get_or_set_csrf_token()
+        return jsonify({"csrf_token": token}), 200
 
     return app
 

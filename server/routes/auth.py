@@ -7,6 +7,7 @@ from rbac import login_required
 from utils import validate_password, validate_email, validate_username
 from utils.email_verification import create_email_verification, verify_email_token
 from services.email_service import send_verification_email
+from csrf import get_or_set_csrf_token
 
 bp = Blueprint("auth", __name__, url_prefix="/auth")
 
@@ -27,7 +28,9 @@ def register():
     """
     Register a new user with username, email and password.
 
-    New users are assigned the 'user' role via set_role_by_name().
+    New users are assigned the canonical 'user' role via set_role_by_name().
+    Frontend-specific role labels (e.g. "farmer", "expert") are treated as
+    UI categories and currently map to this single canonical backend role.
 
     Security features:
     - Rate limiting to prevent abuse
@@ -110,7 +113,8 @@ def register():
         return jsonify({
             "message": "Registration successful. Please verify your email.",
             "email_verification_required": True,
-            "user": user.to_dict(include_email=True)
+            "user": user.to_dict(include_email=True),
+            "csrf_token": get_or_set_csrf_token(),
         }), 201
 
     except IntegrityError as e:
@@ -174,7 +178,8 @@ def login():
 
     payload = {
         "message": "Login successful",
-        "user": user.to_dict(include_email=True)
+        "user": user.to_dict(include_email=True),
+        "csrf_token": get_or_set_csrf_token(),
     }
     if not user.email_verified:
         payload["email_not_verified"] = True

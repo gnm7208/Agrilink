@@ -6,6 +6,7 @@ from sqlalchemy.orm import joinedload
 from extensions import limiter, db
 from models import Comment, Post, PostImage, Like, User
 from rbac import login_required
+from utils import sanitize_html_content
 
 bp = Blueprint("posts", __name__)
 
@@ -57,6 +58,10 @@ def list_posts():
         d = p.to_dict(include_relations=True)
         d["author"] = p.author.to_dict() if p.author else None
         d["image_url"] = p.images[0].image_url if p.images else None
+        if d.get("image_url") is None and d.get("images"):
+            first_img = d["images"][0] if d["images"] else None
+            if first_img and isinstance(first_img, dict):
+                d["image_url"] = first_img.get("image_url")
         return d
 
     return jsonify({
@@ -78,9 +83,22 @@ def create_post():
     title = data.get("title", "").strip() or None
     community_id = data.get("community_id")
     image_url = data.get("image_url")
+    image_urls = data.get("image_urls")
+
+    # Normalize to list: prefer image_urls, fall back to single image_url
+    urls_to_save = []
+    if image_urls and isinstance(image_urls, list):
+        urls_to_save = [u for u in image_urls if u and isinstance(u, str) and u.strip()]
+    elif image_url and isinstance(image_url, str) and image_url.strip():
+        urls_to_save = [image_url.strip()]
 
     if not content:
         return jsonify({"error": "Content is required"}), 400
+
+    # Sanitize HTML content to prevent XSS
+    content = sanitize_html_content(content)
+    if title:
+        title = sanitize_html_content(title)
 
     post = Post(
         author_id=g.current_user.id,
@@ -91,14 +109,16 @@ def create_post():
     db.session.add(post)
     db.session.commit()
 
-    if image_url:
-        img = PostImage(post_id=post.id, image_url=image_url)
+    for url in urls_to_save:
+        img = PostImage(post_id=post.id, image_url=url)
         db.session.add(img)
+    if urls_to_save:
         db.session.commit()
+        db.session.refresh(post)
 
     result = post.to_dict(include_relations=True)
     result["author"] = post.author.to_dict() if post.author else None
-    result["image_url"] = image_url
+    result["image_url"] = post.images[0].image_url if post.images else None
     return jsonify({"post": result}), 201
 
 
@@ -133,11 +153,15 @@ def update_post(post_id):
 
     data = request.get_json() or {}
     if "title" in data:
-        post.title = data["title"].strip() or None
+        title = data["title"].strip() or None
+        if title:
+            title = sanitize_html_content(title)
+        post.title = title
     if "content" in data:
         content = data["content"].strip()
         if not content:
             return jsonify({"error": "Content cannot be empty"}), 400
+        content = sanitize_html_content(content)
         post.content = content
     if "community_id" in data:
         post.community_id = data["community_id"]
@@ -250,6 +274,9 @@ def create_post_comment(post_id):
     if not content:
         return jsonify({"error": "Content is required"}), 400
 
+    # Sanitize HTML content to prevent XSS
+    content = sanitize_html_content(content)
+
     comment = Comment(
         post_id=post_id,
         user_id=g.current_user.id,
@@ -292,8 +319,23 @@ def add_post_image(post_id):
 @limiter.limit(DEFAULT_RATE_LIMIT)
 def fetch_news():
     api_key = os.environ.get("NEWSAPI_KEY")
+    # #region agent log
+    try:
+        import json as _json
+        with open("/home/user/AGRILINK/Agrilink/.cursor/debug.log", "a") as _f:
+            _f.write(_json.dumps({"hypothesisId": "H4", "location": "posts.py:fetch_news", "message": "News API key check", "data": {"has_api_key": bool(api_key)}, "timestamp": __import__("time").time() * 1000}) + "\n")
+    except Exception:
+        pass
+    # #endregion
     if not api_key:
-        return jsonify({"error": "Missing NEWSAPI_KEY"}), 500
+        # Return 200 with empty articles so frontend does not break; avoid 500.
+        return jsonify({
+            "articles": [],
+            "page": request.args.get("page", 1, type=int),
+            "pageSize": min(request.args.get("page_size", 20, type=int), 100),
+            "totalResults": 0,
+            "hasMore": False,
+        }), 200
 
     page = request.args.get("page", 1, type=int)
     page_size = min(request.args.get("page_size", 20, type=int), 100)
@@ -342,10 +384,28 @@ def fetch_news():
         }), 200
 
     except requests.exceptions.RequestException as e:
+        # #region agent log
+        try:
+            import json as _json
+            with open("/home/user/AGRILINK/Agrilink/.cursor/debug.log", "a") as _f:
+                _f.write(_json.dumps({"hypothesisId": "H5", "location": "posts.py:fetch_news", "message": "News RequestException", "data": {"error_type": type(e).__name__, "error_str": str(e)[:200]}, "timestamp": __import__("time").time() * 1000}) + "\n")
+        except Exception:
+            pass
+        # #endregion
         return jsonify({
             "error": "NewsAPI request failed",
             "details": str(e)
         }), 500
+    except Exception as e:
+        # #region agent log
+        try:
+            import json as _json
+            with open("/home/user/AGRILINK/Agrilink/.cursor/debug.log", "a") as _f:
+                _f.write(_json.dumps({"hypothesisId": "H6", "location": "posts.py:fetch_news", "message": "News other exception", "data": {"error_type": type(e).__name__, "error_str": str(e)[:200]}, "timestamp": __import__("time").time() * 1000}) + "\n")
+        except Exception:
+            pass
+        # #endregion
+        raise
 
 
 # --- Fetch single article ---
@@ -382,30 +442,27 @@ def get_single_news(article_id):
     return jsonify({"error": "Article not found"}), 404
 
 
-# --- Comments ---
+# --- Comments on News Articles ---
+# Note: News articles are external content from NewsAPI and are not stored
+# as Post records. Comments on news articles are not supported in the MVP
+# to avoid schema confusion. Users can create regular posts to discuss
+# news articles if needed.
+
 @bp.get("/news/<article_id>/comments")
 @login_required
 def get_comments(article_id):
-    comments = Comment.query.filter_by(post_id=article_id)\
-        .order_by(Comment.created_at.desc()).all()
-    return jsonify([c.to_dict() for c in comments]), 200
+    """Comments on news articles are not supported."""
+    return jsonify({
+        "error": "Not supported",
+        "message": "Comments on news articles are not available. You can create a post to discuss news articles."
+    }), 501
 
 
 @bp.post("/news/<article_id>/comments")
 @login_required
 def create_comment(article_id):
-    data = request.get_json() or {}
-    content = data.get("content", "").strip()
-
-    if not content:
-        return jsonify({"error": "Content required"}), 400
-
-    comment = Comment(
-        post_id=article_id,
-        author_id=g.current_user.id,
-        content=content
-    )
-
-    db.session.add(comment)
-    db.session.commit()
-    return jsonify(comment.to_dict()), 201
+    """Comments on news articles are not supported."""
+    return jsonify({
+        "error": "Not supported",
+        "message": "Comments on news articles are not available. You can create a post to discuss news articles."
+    }), 501

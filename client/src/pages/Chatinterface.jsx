@@ -22,14 +22,16 @@ import { messages } from '../data/mockData'
 >>>>>>> 59187ef (initial commit)
 
 export function ChatInterface() {
-  const { userId } = useParams()
+  const { userId, communityId } = useParams()
   const navigate = useNavigate()
   const { user: currentUser } = useAuth()
   const [input, setInput] = useState('')
 <<<<<<< HEAD
   const [chatUser, setChatUser] = useState(null)
+  const [chatCommunity, setChatCommunity] = useState(null)
   const [chatHistory, setChatHistory] = useState([])
   const messagesEndRef = useRef(null)
+  const isCommunityChat = !!communityId
 
 <<<<<<< HEAD
   const fetchOtherUser = async () => {
@@ -81,18 +83,25 @@ export function ChatInterface() {
   // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchConversation uses currentUser from closure
 =======
   useEffect(() => {
-    if (!userId) return
-
-    apiRequest(API_ENDPOINTS.users.byId(userId))
-      .then(setChatUser)
-      .catch(() =>
-        setChatUser({ username: 'Unknown', profile_image_url: null })
-      )
-  }, [userId])
+    if (isCommunityChat && communityId) {
+      apiRequest(API_ENDPOINTS.communities.byId(communityId))
+        .then(setChatCommunity)
+        .catch(() =>
+          setChatCommunity({ name: 'Unknown Community', image_url: null })
+        )
+    } else if (userId) {
+      apiRequest(API_ENDPOINTS.users.byId(userId))
+        .then(setChatUser)
+        .catch(() =>
+          setChatUser({ username: 'Unknown', profile_image_url: null })
+        )
+    }
+  }, [userId, communityId, isCommunityChat])
 
   useEffect(() => {
-    if (!userId || !currentUser?.id) return
+    if (!currentUser?.id) return
 
+<<<<<<< HEAD
     apiRequest(API_ENDPOINTS.messages.withUser(userId)).then((res) => {
       setChatHistory(
         (res.messages || []).map((m) => ({
@@ -104,6 +113,31 @@ export function ChatInterface() {
     })
 >>>>>>> 056910e (solve lint errors)
   }, [userId, currentUser?.id])
+=======
+    if (isCommunityChat && communityId) {
+      apiRequest(API_ENDPOINTS.messages.inCommunity(communityId)).then((res) => {
+        setChatHistory(
+          (res.messages || []).map((m) => ({
+            id: m.id,
+            message: m.content,
+            isSent: m.sender_id === currentUser.id,
+            sender: m.sender_id,
+          }))
+        )
+      })
+    } else if (userId) {
+      apiRequest(API_ENDPOINTS.messages.withUser(userId)).then((res) => {
+        setChatHistory(
+          (res.messages || []).map((m) => ({
+            id: m.id,
+            message: m.content,
+            isSent: m.sender_id === currentUser.id,
+          }))
+        )
+      })
+    }
+  }, [userId, communityId, currentUser?.id, isCommunityChat])
+>>>>>>> 323936a (API integration)
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -125,6 +159,7 @@ export function ChatInterface() {
     setInput('')
 >>>>>>> 056910e (solve lint errors)
 
+<<<<<<< HEAD
   const [chatHistory, setChatHistory] = useState([
     {
       id: 1,
@@ -151,6 +186,22 @@ export function ChatInterface() {
       isSent: true,
     },
   ])
+=======
+    const messageBody = isCommunityChat
+      ? {
+          content,
+          community_id: Number(communityId),
+        }
+      : {
+          content,
+          receiver_id: Number(userId),
+        }
+
+    await apiRequest(API_ENDPOINTS.messages.send, {
+      method: 'POST',
+      body: JSON.stringify(messageBody),
+    })
+>>>>>>> 323936a (API integration)
 
 <<<<<<< HEAD
   const handleSend = (e) => {
@@ -383,15 +434,27 @@ export function ChatInterface() {
               <ArrowLeft size={22} />
             </button>
 
-            <Avatar
-              src={chatUser?.profile_image_url}
-              fallback={chatUser?.username}
-              size="sm"
-            />
-
-            <span className="text-white font-semibold text-sm">
-              {chatUser?.username}
-            </span>
+            {isCommunityChat ? (
+              <>
+                <div className="w-8 h-8 rounded-full bg-green-600/20 flex items-center justify-center">
+                  <Users size={16} className="text-green-400" />
+                </div>
+                <span className="text-white font-semibold text-sm">
+                  {chatCommunity?.name || 'Community'}
+                </span>
+              </>
+            ) : (
+              <>
+                <Avatar
+                  src={chatUser?.profile_image_url}
+                  fallback={chatUser?.username}
+                  size="sm"
+                />
+                <span className="text-white font-semibold text-sm">
+                  {chatUser?.username}
+                </span>
+              </>
+            )}
           </div>
 
           <div className="flex gap-4 text-white/70">
