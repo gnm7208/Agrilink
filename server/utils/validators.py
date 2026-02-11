@@ -4,6 +4,8 @@ Utility functions for validation and sanitization.
 import re
 from typing import Dict, Optional
 
+import bleach
+
 
 def validate_password(password: str) -> Dict[str, any]:
     """
@@ -138,27 +140,38 @@ def sanitize_text_input(text: str, max_length: Optional[int] = None) -> str:
 
 def sanitize_html_content(content: str) -> str:
     """
-    Sanitize HTML content to prevent XSS attacks.
+    Sanitize HTML content to prevent XSS attacks using `bleach`.
 
-    Note: This is a basic implementation. For production,
-    use the 'bleach' library for comprehensive HTML sanitization.
-
-    Args:
-        content: HTML content to sanitize
-
-    Returns:
-        Sanitized content string
+    Apply this to any rich-text content (e.g. post bodies, comments) before
+    persisting it to the database.
     """
-    replacements = {
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#x27;',
-        '/': '&#x2F;',
+    if not content:
+        return ""
+
+    allowed_tags = [
+        "b",
+        "strong",
+        "i",
+        "em",
+        "u",
+        "ul",
+        "ol",
+        "li",
+        "p",
+        "br",
+        "span",
+        "a",
+    ]
+    allowed_attributes = {
+        "a": ["href", "title", "rel"],
+        "span": ["class"],
+        "*": ["class"],
     }
 
-    for char, entity in replacements.items():
-        content = content.replace(char, entity)
-
-    return content
+    cleaned = bleach.clean(
+        content,
+        tags=allowed_tags,
+        attributes=allowed_attributes,
+        strip=True,
+    )
+    return cleaned

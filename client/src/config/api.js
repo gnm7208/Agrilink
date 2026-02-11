@@ -20,6 +20,7 @@ export const API_ENDPOINTS = {
     requestPasswordReset: `${API_URL}/auth/request-password-reset`,
     verifyResetToken: (token) => `${API_URL}/auth/verify-reset-token/${token}`,
     resetPassword: `${API_URL}/auth/reset-password`,
+    csrfToken: `${API_URL}/auth/csrf-token`,
   },
   // User endpoints
   users: {
@@ -33,6 +34,7 @@ export const API_ENDPOINTS = {
   // Post endpoints
   posts: {
     list: `${API_URL}/posts`,
+    mine: (userId) => `${API_URL}/posts?author_id=${userId}`,
     byId: (id) => `${API_URL}/posts/${id}`,
     create: `${API_URL}/posts`,
     update: (id) => `${API_URL}/posts/${id}`,
@@ -73,6 +75,16 @@ export const defaultFetchOptions = {
   },
 };
 
+const SAFE_METHODS = ['GET', 'HEAD', 'OPTIONS', 'TRACE'];
+
+function getCsrfToken() {
+  try {
+    return localStorage.getItem('csrfToken');
+  } catch {
+    return null;
+  }
+}
+
 /**
  * API helper function with error handling
  * @param {string} url - API endpoint URL
@@ -80,13 +92,24 @@ export const defaultFetchOptions = {
  * @returns {Promise} - Response data or throws error
  */
 export async function apiRequest(url, options = {}) {
+  const method = (options.method || 'GET').toUpperCase();
+  const headers = {
+    ...defaultFetchOptions.headers,
+    ...options.headers,
+  };
+
+  if (!SAFE_METHODS.includes(method)) {
+    const csrfToken = getCsrfToken();
+    if (csrfToken) {
+      headers['X-CSRF-Token'] = csrfToken;
+    }
+  }
+
   const response = await fetch(url, {
     ...defaultFetchOptions,
     ...options,
-    headers: {
-      ...defaultFetchOptions.headers,
-      ...options.headers,
-    },
+    method,
+    headers,
   });
 
   // Handle different response types
@@ -121,11 +144,18 @@ export async function uploadFile(url, file, fieldName = 'image') {
   const formData = new FormData();
   formData.append(fieldName, file);
 
+  const headers = {};
+  const csrfToken = getCsrfToken();
+  if (csrfToken) {
+    headers['X-CSRF-Token'] = csrfToken;
+  }
+
   const response = await fetch(url, {
     method: 'POST',
     credentials: 'include', // Include cookies for session auth
     body: formData,
     // Note: Don't set Content-Type header - browser sets it with boundary
+    headers,
   });
 
   const data = await response.json();

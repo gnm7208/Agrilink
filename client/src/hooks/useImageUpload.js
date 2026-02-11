@@ -171,4 +171,111 @@ export function useImageUpload() {
   };
 }
 
+/**
+ * Hook for handling multiple image uploads with previews and validation.
+ * @returns {object} Multi-file upload state and handlers (files, previews, uploadedUrls, uploadAll, etc.)
+ */
+export function useMultiImageUpload() {
+  const [files, setFiles] = useState([]);
+  const [previews, setPreviews] = useState([]);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState(null);
+  const [uploadedUrls, setUploadedUrls] = useState([]);
+
+  const handleFileSelect = useCallback((e) => {
+    const selectedFiles = Array.from(e.target.files || []);
+    setError(null);
+    setUploadedUrls([]);
+
+    if (selectedFiles.length === 0) {
+      setFiles([]);
+      setPreviews.forEach((url) => URL.revokeObjectURL(url));
+      setPreviews([]);
+      return;
+    }
+
+    const validFiles = [];
+    const validPreviews = [];
+    let firstError = null;
+
+    for (const f of selectedFiles) {
+      const validation = validateImageFile(f);
+      if (!validation.valid) {
+        if (!firstError) firstError = validation.error;
+        continue;
+      }
+      validFiles.push(f);
+      validPreviews.push(URL.createObjectURL(f));
+    }
+
+    setPreviews((prev) => {
+      prev.forEach((url) => URL.revokeObjectURL(url));
+      return validPreviews;
+    });
+    setFiles(validFiles);
+    if (firstError && validFiles.length === 0) setError(firstError);
+    else setError(null);
+  }, []);
+
+  const clearFiles = useCallback(() => {
+    previews.forEach((url) => URL.revokeObjectURL(url));
+    setFiles([]);
+    setPreviews([]);
+    setError(null);
+    setUploadedUrls([]);
+  }, [previews]);
+
+  const removeFileAtIndex = useCallback((index) => {
+    setFiles((prev) => prev.filter((_, i) => i !== index));
+    setPreviews((prev) => {
+      if (prev[index]) URL.revokeObjectURL(prev[index]);
+      return prev.filter((_, i) => i !== index);
+    });
+    setUploadedUrls((prev) => prev.filter((_, i) => i !== index));
+  }, []);
+
+  /**
+   * Upload all selected files to the backend; returns array of URLs.
+   * @returns {Promise<string[]>}
+   */
+  const uploadAll = useCallback(async () => {
+    if (files.length === 0) {
+      return [];
+    }
+
+    setUploading(true);
+    setError(null);
+
+    try {
+      const urls = [];
+      for (const file of files) {
+        const result = await uploadFile(API_ENDPOINTS.uploads.image, file);
+        urls.push(result.url);
+      }
+      setUploadedUrls(urls);
+      return urls;
+    } catch (err) {
+      const errorMessage = err.message || 'Upload failed';
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setUploading(false);
+    }
+  }, [files]);
+
+  return {
+    files,
+    previews,
+    uploading,
+    error,
+    uploadedUrls,
+    hasFiles: files.length > 0,
+    handleFileSelect,
+    clearFiles,
+    removeFileAtIndex,
+    uploadAll,
+    validateImageFile,
+  };
+}
+
 export default useImageUpload;

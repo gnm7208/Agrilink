@@ -39,6 +39,15 @@ const ExpertCard = ({ id, name, specialty, followers, avatar, glass }) => {
       })
       setIsFollowing((prev) => !prev)
     } catch (error) {
+      const msg = (error?.data?.error ?? error?.message ?? '').toLowerCase()
+      if (msg.includes('already following')) {
+        setIsFollowing(true)
+        return
+      }
+      if (msg.includes('not following')) {
+        setIsFollowing(false)
+        return
+      }
       console.error('Follow toggle failed', error)
 >>>>>>> 056910e (solve lint errors)
     } finally {

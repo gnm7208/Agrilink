@@ -58,15 +58,77 @@ export function App() {
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/verify-email" element={<VerifyEmailPage />} />
           <Route path="/post/:id" element={<PostDetails />} />
+<<<<<<< HEAD
           <Route path="/create" element={<ProtectedRoute><CreatePost /></ProtectedRoute>} />
           <Route path="/chat/:userId" element={<ProtectedRoute><ChatInterface /></ProtectedRoute>} />
+=======
+          <Route
+            path="/create"
+            element={
+              <ProtectedRoute>
+                <CreatePost />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/chat/user/:userId"
+            element={
+              <ProtectedRoute>
+                <ChatInterface />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/chat/community/:communityId"
+            element={
+              <ProtectedRoute>
+                <ChatInterface />
+              </ProtectedRoute>
+            }
+          />
+>>>>>>> 323936a (API integration)
         </Route>
 
         <Route element={<MainLayout />}>
           <Route path="/" element={<HomeFeed />} />
+<<<<<<< HEAD
           <Route path="/communities" element={<ProtectedRoute><CommunitiesPage /></ProtectedRoute>} />
           <Route path="/messages" element={<ProtectedRoute><MessagesList /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+=======
+          <Route
+            path="/communities"
+            element={
+              <ProtectedRoute>
+                <CommunitiesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/messages"
+            element={
+              <ProtectedRoute>
+                <MessagesList />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <ProfilePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile/:userId"
+            element={
+              <ProtectedRoute>
+                <ProfilePage />
+              </ProtectedRoute>
+            }
+          />
+>>>>>>> 323936a (API integration)
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />
