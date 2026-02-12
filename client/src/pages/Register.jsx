@@ -9,11 +9,11 @@ import {
   AlertCircle,
   CheckCircle2,
 } from 'lucide-react'
-/* eslint-disable-next-line no-unused-vars -- motion used in JSX */
+
 import { motion } from 'framer-motion'
 import { apiRequest, API_ENDPOINTS } from '../config/api'
 
-// 👉 Change path if needed
+
 import bgImage from '../assets/reg.jpeg'
 
 export function RegisterPage() {
@@ -60,16 +60,16 @@ export function RegisterPage() {
   return (
     <div className="relative min-h-screen w-full flex items-center justify-center overflow-hidden">
 
-      {/* Background */}
+    
       <div
         className="fixed inset-0 bg-cover bg-center bg-no-repeat"
         style={{ backgroundImage: `url(${bgImage})` }}
       />
 
-      {/* Gradient Overlay */}
+     
       <div className="fixed inset-0 bg-gradient-to-br from-black/70 via-black/40 to-black/70" />
 
-      {/* Back Button */}
+      
       <Link
         to="/login"
         className="absolute top-6 left-6 flex items-center gap-2 text-white/80 hover:text-white z-10"
@@ -78,7 +78,7 @@ export function RegisterPage() {
         Back
       </Link>
 
-      {/* Glass Register Card */}
+    
       <motion.div
         initial={{ opacity: 0, y: 25, scale: 0.97 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -89,7 +89,7 @@ export function RegisterPage() {
                    shadow-2xl
                    text-white"
       >
-        {/* Header */}
+       
         <div className="mb-6 text-center">
           <h1 className="text-2xl font-semibold">Create Account</h1>
           <p className="text-sm text-white/80">
@@ -97,7 +97,7 @@ export function RegisterPage() {
           </p>
         </div>
 
-        {/* Role Selector */}
+        
         <div className="grid grid-cols-2 gap-3 mb-5">
           <button
             type="button"
@@ -128,7 +128,7 @@ export function RegisterPage() {
           </button>
         </div>
 
-        {/* Error */}
+        
         {error && (
           <div className="flex gap-2 p-3 mb-4 rounded-lg bg-red-500/20 border border-red-400/30">
             <AlertCircle className="w-4 h-4 mt-0.5" />

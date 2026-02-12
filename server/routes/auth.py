@@ -8,7 +8,7 @@ from utils import validate_password, validate_email, validate_username
 from utils.email_verification import create_email_verification, verify_email_token
 from services.email_service import send_verification_email
 
-bp = Blueprint("auth", __name__, url_prefix="/auth")
+bp = Blueprint("auth", __name__)
 
 # Rate limits for auth endpoints (Flask-Limiter)
 DEFAULT_RATE_LIMIT = "15 per minute"
@@ -40,7 +40,7 @@ def register():
     email = data.get("email", "").strip().lower()
     password = data.get("password", "")
 
-    # Validate required fields
+    
     if not username or not email or not password:
         return jsonify({
             "error": "Missing required fields",
