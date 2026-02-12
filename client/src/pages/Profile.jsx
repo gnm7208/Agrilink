@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Settings, MapPin, Calendar, Loader2 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Avatar } from '../components/ui/Avatar';
@@ -24,9 +24,9 @@ export function ProfilePage() {
     if (user?.id) {
       fetchUserPosts();
     }
-  }, [user?.id]);
+  }, [user?.id, fetchUserPosts]);
 
-  const fetchUserPosts = async () => {
+  const fetchUserPosts = useCallback(async () => {
     try {
       setPostsLoading(true);
       const response = await apiRequest(
@@ -54,7 +54,7 @@ export function ProfilePage() {
     } finally {
       setPostsLoading(false);
     }
-  };
+  }, [user]);
 
   const fetchCurrentUser = async () => {
     try {

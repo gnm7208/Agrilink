@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react'
+import React, { useEffect, useState, useRef, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
   ArrowLeft,
@@ -24,16 +24,16 @@ export function ChatInterface() {
   const [error, setError] = useState(null)
   const messagesEndRef = useRef(null)
 
-  const fetchOtherUser = async () => {
+  const fetchOtherUser = useCallback(async () => {
     try {
       const userData = await apiRequest(API_ENDPOINTS.users.byId(userId))
       setChatUser(userData)
     } catch {
       setChatUser({ username: 'Unknown', profile_image_url: null })
     }
-  }
+  }, [userId])
 
-  const fetchConversation = async () => {
+  const fetchConversation = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
@@ -58,20 +58,19 @@ export function ChatInterface() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [userId, currentUser?.id])
 
   useEffect(() => {
     if (userId) {
       fetchOtherUser()
     }
-  }, [userId])
+  }, [userId, fetchOtherUser])
 
   useEffect(() => {
     if (userId && currentUser?.id) {
       fetchConversation()
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchConversation uses currentUser from closure
-  }, [userId, currentUser?.id])
+  }, [userId, currentUser?.id, fetchConversation])
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })

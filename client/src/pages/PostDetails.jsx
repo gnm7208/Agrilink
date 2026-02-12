@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import { ArrowLeft, Send, Heart, Share2, MessageCircle } from "lucide-react";
 import CommentItem from "../components/Commentitem";
@@ -19,9 +19,9 @@ export function PostDetails() {
 
   useEffect(() => {
     fetchPost();
-  }, [id]);
+  }, [id, fetchPost]);
 
-  async function fetchPost() {
+  const fetchPost = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -71,7 +71,7 @@ export function PostDetails() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [id]);
 
   const handleCommentSubmit = async (e) => {
     e.preventDefault();
