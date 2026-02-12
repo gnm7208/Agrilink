@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { Search, Loader2 } from 'lucide-react'
-/* eslint-disable-next-line no-unused-vars -- motion used in JSX */
 import { motion } from 'framer-motion'
 import ExpertCard from '../components/ExpertCard'
 import CommunityCard from '../components/CommunityCard'
@@ -16,6 +15,7 @@ export function CommunitiesPage() {
   const [followingIds, setFollowingIds] = useState(new Set())
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [searchQuery, setSearchQuery] = useState('')
 
   useEffect(() => {
     if (activeTab === 'experts') {
@@ -29,10 +29,6 @@ export function CommunitiesPage() {
     try {
       setLoading(true)
       setError(null)
-<<<<<<< HEAD
-      const response = await apiRequest(API_ENDPOINTS.users.experts)
-      setExperts(response.experts || [])
-=======
       const [expertsRes, followingRes] = await Promise.all([
         apiRequest(API_ENDPOINTS.users.experts),
         user?.id
@@ -44,7 +40,6 @@ export function CommunitiesPage() {
         ? new Set(followingRes.map((f) => f.followed_id).filter(Boolean))
         : new Set()
       setFollowingIds(ids)
->>>>>>> 323936a (API integration)
     } catch (err) {
       setError(err.message || 'Failed to load experts')
       setExperts([])
@@ -57,24 +52,9 @@ export function CommunitiesPage() {
     try {
       setLoading(true)
       setError(null)
-<<<<<<< HEAD
-      const response = await apiRequest(API_ENDPOINTS.communities.list)
-      setCommunities(response.communities || [])
-=======
       const res = await apiRequest(API_ENDPOINTS.communities.list)
       const communitiesList = res.communities || res.posts || []
       setCommunities(communitiesList)
-      
-      // Track which communities user has joined
-      if (user) {
-        const joined = new Set()
-        for (const community of communitiesList) {
-          // Check if user is a member (you may need to fetch members separately)
-          // For now, we'll track join state locally
-        }
-        setJoinedCommunities(joined)
-      }
->>>>>>> 323936a (API integration)
     } catch (err) {
       setError(err.message || 'Failed to load communities')
       setCommunities([])
@@ -83,13 +63,11 @@ export function CommunitiesPage() {
     }
   }
 
-<<<<<<< HEAD
-=======
   const toggleCommunityJoin = async (communityId) => {
     if (!user) return
-    
+
     const isJoined = joinedCommunities.has(communityId)
-    
+
     try {
       if (isJoined) {
         await apiRequest(API_ENDPOINTS.communities.leave(communityId), {
@@ -134,7 +112,6 @@ export function CommunitiesPage() {
     [communities, query]
   )
 
->>>>>>> 323936a (API integration)
   return (
     <div
       className="min-h-screen bg-cover bg-center"
@@ -146,7 +123,7 @@ export function CommunitiesPage() {
       <div className="min-h-screen bg-black/40 backdrop-blur-sm pb-24 ml-20">
         <div className="w-full pt-10">
           <div className="mx-auto px-7 lg:px-8 max-w-2xl lg:ml-[320px]">
-          
+
             <div className="mb-6">
               <h1 className="text-xl font-bold text-white mb-4 ml-60">
                 Discover
@@ -170,7 +147,6 @@ export function CommunitiesPage() {
               </div>
             </div>
 
-           
             <div className="flex bg-white/10 backdrop-blur-xl rounded-xl p-1 mb-6">
               <button
                 onClick={() => setActiveTab('experts')}
@@ -195,7 +171,6 @@ export function CommunitiesPage() {
               </button>
             </div>
 
-          
             <motion.div
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
@@ -209,17 +184,6 @@ export function CommunitiesPage() {
               ) : error ? (
                 <p className="text-red-300 text-center py-6">{error}</p>
               ) : activeTab === 'experts' ? (
-<<<<<<< HEAD
-                experts.map((expert) => (
-                  <ExpertCard
-                    key={expert.id}
-                    id={expert.id}
-                    name={expert.username}
-                    specialty={expert.bio || expert.role || 'Member'}
-                    followers={expert.followers_count ?? 0}
-                    avatar={expert.profile_image_url}
-                    glass
-=======
                 filteredExperts.length ? (
                   filteredExperts.map((expert) => (
                     <ExpertCard
@@ -249,32 +213,12 @@ export function CommunitiesPage() {
                     avatar={community.image_url || 'https://via.placeholder.com/48'}
                     isFollowing={joinedCommunities.has(community.id)}
                     onToggleFollow={() => toggleCommunityJoin(community.id)}
->>>>>>> 323936a (API integration)
                   />
                 ))
               ) : (
-                communities.length === 0 ? (
-                  <div className="text-center py-20">
-                    <p className="text-white/70 text-lg">
-                      No communities yet
-                    </p>
-                    <p className="text-white/40 text-sm mt-2 max-w-sm mx-auto">
-                      Communities will appear here when they are created.
-                    </p>
-                  </div>
-                ) : (
-                  communities.map((community) => (
-                    <div
-                      key={community.id}
-                      className="bg-white/10 backdrop-blur-xl rounded-xl p-4 text-white"
-                    >
-                      <h3 className="font-bold">{community.name}</h3>
-                      {community.description && (
-                        <p className="text-sm text-white/80 mt-1">{community.description}</p>
-                      )}
-                    </div>
-                  ))
-                )
+                <p className="text-center text-white/60 text-sm">
+                  No communities found
+                </p>
               )}
             </motion.div>
           </div>
