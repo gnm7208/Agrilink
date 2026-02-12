@@ -2,7 +2,7 @@
 
 An Agricultural Super App that revolutionizes the agricultural sector through centralization of information and networking of agricultural experts, farmers, and communities.
 
-## 🌾 Problem Statement
+##  Problem Statement
 
 Agriculture faces numerous challenges that impact farmers' livelihoods and sustainability:
 
@@ -12,11 +12,11 @@ Agriculture faces numerous challenges that impact farmers' livelihoods and susta
 - **Low Technology Adoption**: Digital literacy gaps and infrastructure limitations hinder technology adoption
 - **Data Privacy Concerns**: Hesitation to share sensitive agricultural data
 
-## 💡 Solution
+##  Solution
 
 Agrilink is a centralized platform that connects farmers, agricultural experts, and communities to share knowledge, collaborate, and access vital agricultural information.
 
-## ✨ Features
+##  Features
 
 ### User Management
 - User registration and authentication (JWT-based)
@@ -73,7 +73,7 @@ Agrilink is a centralized platform that connects farmers, agricultural experts, 
 - **Icons**: Lucide React 0.563.0
 - **Build Tool**: Vite 7.2.4
 
-## 📁 Project Structure
+##  Project Structure
 
 ```
 Agrilink/
@@ -129,7 +129,7 @@ Agrilink/
 └── README.md
 ```
 
-## 🚀 Getting Started
+##  Getting Started
 
 ### Prerequisites
 - Python 3.8+
@@ -214,7 +214,7 @@ npm run dev
 
 The application will be available at `http://localhost:5173`
 
-## 🧪 Testing
+##  Testing
 
 ### Backend Tests
 ```bash
@@ -229,7 +229,7 @@ cd client
 npm test
 ```
 
-## 📚 API Documentation
+##  API Documentation
 
 Comprehensive API documentation is available in [server/dbschema/API_Documentation.md](server/dbschema/API_Documentation.md)
 
@@ -281,7 +281,7 @@ Database schema documentation is available in [server/dbschema/Database_schema.m
 - `comments` - Post comments
 - `messages` - Direct and community messages
 
-## 🔒 Security Features
+##  Security Features
 
 - JWT-based authentication
 - Email verification for new accounts
@@ -297,7 +297,7 @@ Database schema documentation is available in [server/dbschema/Database_schema.m
 
 The application is designed with mobile-first principles using Tailwind CSS, ensuring optimal experience across all device sizes.
 
-## 🤝 Contributing
+##  Contributing
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
@@ -305,18 +305,18 @@ The application is designed with mobile-first principles using Tailwind CSS, ens
 4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
-## 📄 License
+##  License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 👥 Authors
+##  Authors
 
 - **Festus Ndeto** - [GitHub](https://github.com/Ndet0)
 - **George** - [GitHub](https://github.com/gnm7208)
 - **Maina Ng'ang'a** - [GitHub](https://github.com/Maina-nganga)
 - **Prince Kibali** - [GitHub](https://github.com/PKMDroid)
 
-## 🙏 Acknowledgments
+##  Acknowledgments
 
 - Agricultural experts who provided domain knowledge
 - Open source community for the amazing tools and libraries
@@ -326,14 +326,14 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 For support, please open an issue in the GitHub repository or contact the development team.
 
-## 🗺️ Roadmap
+##  Roadmap
 
 See [ROADMAP.md](ROADMAP.md) for planned features and improvements.
 
-## 🔐 Security
+##  Security
 
 For security concerns, please refer to [SECURITY_FIXES.md](SECURITY_FIXES.md).
 
 ---
 
-**Built with ❤️ for the agricultural community**
+**Built with  for the agricultural community**
