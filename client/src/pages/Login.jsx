@@ -33,16 +33,15 @@ export function LoginPage() {
         body: JSON.stringify({ email, password }),
       })
 
+      if (data.user) {
+        localStorage.setItem('user', JSON.stringify(data.user))
+      }
+
       if (data.email_not_verified) {
         setEmailNotVerified(true)
         return
       }
 
-      if (data.csrf_token) {
-        try {
-          localStorage.setItem('csrfToken', data.csrf_token)
-        } catch (_) {}
-      }
       await refreshUser()
       navigate('/')
     } catch (err) {

@@ -16,16 +16,20 @@ import { CreatePost } from './pages/Createpost'
 import { ProfilePage } from './pages/Profile'
 import { CommunitiesPage } from './pages/Communites'
 import { MessagesList } from './pages/Messages'
-import { ChatInterface } from './pages/Chatinterface'
+import  {ChatInterface}  from './pages/Chatinterface'
 
 
 function MainLayout() {
   return (
     <div className="min-h-screen bg-black flex flex-col lg:flex-row">
+     
       <SideNav />
-      <main className="flex-1 min-h-screen">
-        <Outlet />
-      </main>
+
+      
+      <main className="flex-1   min-h-screen ">
+  <Outlet />
+</main>
+
       <BottomNav />
     </div>
   )
@@ -46,6 +50,7 @@ export function App() {
   return (
     <Router>
       <Routes>
+      
         <Route element={<FullScreenLayout />}>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
@@ -53,66 +58,15 @@ export function App() {
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/verify-email" element={<VerifyEmailPage />} />
           <Route path="/post/:id" element={<PostDetails />} />
-          <Route
-            path="/create"
-            element={
-              <ProtectedRoute>
-                <CreatePost />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/chat/user/:userId"
-            element={
-              <ProtectedRoute>
-                <ChatInterface />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/chat/community/:communityId"
-            element={
-              <ProtectedRoute>
-                <ChatInterface />
-              </ProtectedRoute>
-            }
-          />
+          <Route path="/create" element={<ProtectedRoute><CreatePost /></ProtectedRoute>} />
+          <Route path="/chat/:userId" element={<ProtectedRoute><ChatInterface /></ProtectedRoute>} />
         </Route>
 
         <Route element={<MainLayout />}>
           <Route path="/" element={<HomeFeed />} />
-          <Route
-            path="/communities"
-            element={
-              <ProtectedRoute>
-                <CommunitiesPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/messages"
-            element={
-              <ProtectedRoute>
-                <MessagesList />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/profile"
-            element={
-              <ProtectedRoute>
-                <ProfilePage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/profile/:userId"
-            element={
-              <ProtectedRoute>
-                <ProfilePage />
-              </ProtectedRoute>
-            }
-          />
+          <Route path="/communities" element={<ProtectedRoute><CommunitiesPage /></ProtectedRoute>} />
+          <Route path="/messages" element={<ProtectedRoute><MessagesList /></ProtectedRoute>} />
+          <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

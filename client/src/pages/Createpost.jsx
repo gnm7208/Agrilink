@@ -1,184 +1,207 @@
-import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { motion as Motion } from 'framer-motion'
-import { Hash, Loader2, Image as ImageIcon, X } from 'lucide-react'
-import { Card } from '../components/ui/Card'
-import { Button } from '../components/ui/Button'
-import { apiRequest, API_ENDPOINTS } from '../config/api'
-import { useAuth } from '../hooks/useAuth'
-import { useMultiImageUpload } from '../hooks/useImageUpload'
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Image as ImageIcon, Camera, X, Loader2 } from 'lucide-react';
+import { Button } from '../components/ui/Button';
+import { Avatar } from '../components/ui/Avatar';
+import { apiRequest, API_ENDPOINTS } from '../config/api';
+import { useImageUpload } from '../hooks/useImageUpload';
+import { useAuth } from '../hooks/useAuth';
 
 export function CreatePost() {
-  const navigate = useNavigate()
-  const { user, loading: authLoading } = useAuth()
-
-  const [text, setText] = useState('')
-  const [tag, setTag] = useState('Advice')
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [error, setError] = useState(null)
-
-  const {
-    files,
-    previews,
-    uploading: imageUploading,
-    error: imageError,
-    uploadedUrls,
-    handleFileSelect,
-    clearFiles,
-    removeFileAtIndex,
-    uploadAll,
-  } = useMultiImageUpload()
+  const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
+  const [title, setTitle] = useState('');
+  const [content, setContent] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
 
   useEffect(() => {
-    if (!authLoading && !user) navigate('/login')
-  }, [authLoading, user, navigate])
+    if (!authLoading && !user) {
+      navigate('/login');
+    }
+  }, [user, authLoading, navigate]);
 
-  const handleSubmit = async () => {
-    if (!text.trim()) {
-      setError('Please write something before posting')
-      return
+  const {
+    preview,
+    uploading,
+    error: uploadError,
+    hasFile,
+    handleFileSelect,
+    clearFile,
+    upload,
+  } = useImageUpload();
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSubmitError(null);
+
+    // Validate content
+    if (!content.trim()) {
+      setSubmitError('Please write some content for your post');
+      return;
     }
 
-    setIsSubmitting(true)
-    setError(null)
+    if (content.trim().length < 10) {
+      setSubmitError('Content must be at least 10 characters');
+      return;
+    }
+
+    setIsSubmitting(true);
 
     try {
-      let imageUrls = uploadedUrls.length > 0 ? [...uploadedUrls] : []
-
-      if (files.length > 0 && imageUrls.length === 0) {
-        imageUrls = await uploadAll()
+      // Step 1: Upload image if selected
+      let imageUrl = null;
+      if (hasFile) {
+        imageUrl = await upload();
       }
 
-      const body = {
-        content: text.trim(),
-        tag,
-      }
-      if (imageUrls.length > 0) {
-        body.image_urls = imageUrls
-      }
+      // Step 2: Create the post (with image_url if uploaded)
+      const postData = {
+        title: title.trim() || undefined,
+        content: content.trim(),
+        image_url: imageUrl || undefined,
+      };
 
       await apiRequest(API_ENDPOINTS.posts.create, {
         method: 'POST',
-        body: JSON.stringify(body),
-      })
-      navigate('/')
+        body: JSON.stringify(postData),
+      });
+
+      // Success - navigate to home
+      navigate('/');
     } catch (err) {
-      setError(err.message || 'Failed to create post')
+      console.error('Failed to create post:', err);
+      setSubmitError(err.message || 'Failed to create post. Please try again.');
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
+
+  const error = submitError || uploadError;
+  const isLoading = isSubmitting || uploading;
 
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-green-500" />
+        <Loader2 className="w-8 h-8 text-green-600 animate-spin" />
       </div>
-    )
+    );
+  }
+
+  if (!user) {
+    return null;
   }
 
   return (
-    <div className="min-h-screen bg-black/40 backdrop-blur-sm lg:ml-[250px] p-6">
-      <Motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="max-w-3xl mx-auto"
-      >
-        <Card className="bg-white/10 backdrop-blur-xl border-white/10 text-white">
-          <textarea
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            placeholder="What's growing on your farm today?"
-            className="w-full bg-transparent resize-none p-4 text-sm focus:outline-none"
-            rows={4}
+    <div className="min-h-screen bg-white pb-20">
+      <header className="sticky top-0 z-40 bg-white border-b border-gray-100 px-4 py-3 flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+          <button onClick={() => navigate(-1)} className="text-gray-600">
+            <X size={24} />
+          </button>
+          <h1 className="font-semibold text-gray-900">Create Post</h1>
+        </div>
+        <Button
+          size="sm"
+          onClick={handleSubmit}
+          isLoading={isLoading}
+          disabled={isLoading || !content.trim()}
+          className="rounded-full px-6"
+        >
+          {uploading ? 'Uploading...' : 'Post'}
+        </Button>
+      </header>
+
+      <div className="p-4">
+        {/* Error Display */}
+        {error && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+            {error}
+          </div>
+        )}
+
+        <div className="flex items-center space-x-3 mb-6">
+          <Avatar src={user.profile_image_url} fallback={user.username} />
+          <div>
+            <p className="font-semibold text-gray-900">{user.username}</p>
+            <div className="flex items-center space-x-2 text-xs text-gray-500">
+              <span className="bg-gray-100 px-2 py-0.5 rounded-full">
+                Public
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <form className="space-y-4" onSubmit={handleSubmit}>
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Give your post a title..."
+            className="w-full text-xl font-bold placeholder-gray-400 border-none focus:ring-0 p-0 focus:outline-none"
+            maxLength={255}
           />
 
-          {(previews.length > 0 || uploadedUrls.length > 0) && (
-            <div className="mx-4 mb-4 flex flex-wrap gap-2">
-              {(uploadedUrls.length > 0 ? uploadedUrls : previews).map((src, index) => (
-                <div key={index} className="relative w-24 h-24 flex-shrink-0">
-                  <img
-                    src={src}
-                    alt={`Preview ${index + 1}`}
-                    className="w-full h-full object-cover rounded-lg"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => removeFileAtIndex(index)}
-                    className="absolute top-1 right-1 p-1 bg-black/50 rounded-full text-white hover:bg-black/70"
-                  >
-                    <X size={14} />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
+          <textarea
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            placeholder="Share your farming experience or ask a question..."
+            className="w-full min-h-[200px] text-base text-gray-700 placeholder-gray-400 border-none focus:ring-0 p-0 resize-none focus:outline-none"
+            maxLength={10000}
+          />
 
-          <div className="px-4 pb-2">
-            <label className="flex items-center gap-2 text-white/70 hover:text-white cursor-pointer">
-              <input
-                type="file"
-                accept="image/jpeg,image/png,image/gif,image/webp"
-                multiple
-                onChange={handleFileSelect}
-                className="hidden"
-                disabled={imageUploading}
+          {/* Image Preview */}
+          {preview && (
+            <div className="relative rounded-2xl overflow-hidden mb-4 group">
+              <img
+                src={preview}
+                alt="Upload preview"
+                className="w-full h-auto max-h-80 object-cover"
               />
-              <ImageIcon size={18} />
-              <span className="text-xs">
-                {imageUploading
-                  ? 'Uploading...'
-                  : files.length > 0
-                    ? `Add more (${files.length} selected)`
-                    : 'Add images'}
-              </span>
-            </label>
-            {files.length > 0 && (
+              {uploading && (
+                <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                  <Loader2 className="w-8 h-8 text-white animate-spin" />
+                </div>
+              )}
               <button
                 type="button"
-                onClick={clearFiles}
-                className="ml-2 text-xs text-white/60 hover:text-white"
+                onClick={clearFile}
+                disabled={uploading}
+                className="absolute top-2 right-2 p-1.5 bg-black/50 text-white rounded-full hover:bg-black/70 transition-colors disabled:opacity-50"
               >
-                Clear all
+                <X size={16} />
               </button>
-            )}
-            {imageError && (
-              <p className="text-xs text-red-300 mt-1">{imageError}</p>
-            )}
-          </div>
-
-          <div className="flex gap-2 p-4 pt-0">
-            {['Advice', 'Question', 'Marketplace'].map((t) => (
-              <button
-                key={t}
-                onClick={() => setTag(t)}
-                className={`flex items-center gap-1 px-3 py-1 text-xs rounded-full ${
-                  tag === t
-                    ? 'bg-green-600 text-white'
-                    : 'bg-white/10 text-white/70'
-                }`}
-              >
-                <Hash size={12} />
-                {t}
-              </button>
-            ))}
-          </div>
-
-          {error && (
-            <p className="px-4 pb-2 text-xs text-red-300">{error}</p>
+            </div>
           )}
+        </form>
+      </div>
 
-          <div className="p-4 pt-0 flex justify-end">
-            <Button
-              onClick={handleSubmit}
-              disabled={isSubmitting || imageUploading}
-              className="bg-green-600 hover:bg-green-500"
-            >
-              {isSubmitting || imageUploading ? 'Posting\u2026' : 'Publish'}
-            </Button>
-          </div>
-        </Card>
-      </Motion.div>
+      {/* Bottom Actions */}
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-100">
+        <div className="flex items-center space-x-4 max-w-md mx-auto">
+          <label className="p-3 text-green-600 bg-green-50 rounded-xl cursor-pointer hover:bg-green-100 transition-colors">
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/gif,image/webp"
+              className="hidden"
+              onChange={handleFileSelect}
+              disabled={uploading}
+            />
+            <ImageIcon size={24} />
+          </label>
+          <label className="p-3 text-green-600 bg-green-50 rounded-xl cursor-pointer hover:bg-green-100 transition-colors">
+            <input
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="hidden"
+              onChange={handleFileSelect}
+              disabled={uploading}
+            />
+            <Camera size={24} />
+          </label>
+        </div>
+      </div>
     </div>
-  )
+  );
 }

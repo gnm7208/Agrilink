@@ -22,49 +22,26 @@ const PostCard = ({
       <div className="p-4">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center space-x-3">
-            {author?.id ? (
-              <Link to={`/profile/${author.id}`} className="flex items-center space-x-3 rounded-lg hover:bg-gray-50 -m-1 p-1 transition-colors">
-                <Avatar src={author.avatar} fallback={author.name} />
-                <div>
-                  <h3 className="font-semibold text-gray-900 text-sm">
-                    {author.name}
-                  </h3>
-                  <div className="flex items-center text-xs text-gray-500">
-                    <span
-                      className={`mr-2 px-1.5 py-0.5 rounded-full ${
-                        author.role === 'Expert'
-                          ? 'bg-blue-100 text-blue-700'
-                          : 'bg-green-100 text-green-700'
-                      }`}
-                    >
-                      {author.role}
-                    </span>
-                    <span>• {timeAgo}</span>
-                  </div>
-                </div>
-              </Link>
-            ) : (
-              <>
-                <Avatar src={author?.avatar} fallback={author?.name} />
-                <div>
-                  <h3 className="font-semibold text-gray-900 text-sm">
-                    {author?.name}
-                  </h3>
-                  <div className="flex items-center text-xs text-gray-500">
-                    <span
-                      className={`mr-2 px-1.5 py-0.5 rounded-full ${
-                        author?.role === 'Expert'
-                          ? 'bg-blue-100 text-blue-700'
-                          : 'bg-green-100 text-green-700'
-                      }`}
-                    >
-                      {author?.role}
-                    </span>
-                    <span>• {timeAgo}</span>
-                  </div>
-                </div>
-              </>
-            )}
+            <Avatar src={author.avatar} fallback={author.name} />
+
+            <div>
+              <h3 className="font-semibold text-gray-900 text-sm">
+                {author.name}
+              </h3>
+
+              <div className="flex items-center text-xs text-gray-500">
+                <span
+                  className={`mr-2 px-1.5 py-0.5 rounded-full ${
+                    author.role === 'Expert'
+                      ? 'bg-blue-100 text-blue-700'
+                      : 'bg-green-100 text-green-700'
+                  }`}
+                >
+                  {author.role}
+                </span>
+                <span>• {timeAgo}</span>
+              </div>
+            </div>
           </div>
 
           <button className="text-gray-400 hover:text-gray-600">

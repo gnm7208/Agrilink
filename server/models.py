@@ -33,12 +33,8 @@ class User(db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
     # NOTE: Kept for backward compatibility with existing code/rows.
-    # New code should prefer Role via role_id/role_obj and the canonical
-    # entries in the roles table (e.g. "user", "admin").
-    # Frontend-specific categories like "farmer" or "expert" are treated as
-    # UI labels and currently map to the canonical "user" role in the roles
-    # table for new registrations.
-    role = db.Column(db.String(20), nullable=False)  # legacy string field
+    # New code should prefer Role via role_id/role_obj.
+    role = db.Column(db.String(20), nullable=False)  # farmer | expert | admin
     role_id = db.Column(db.Integer, db.ForeignKey("roles.id"), nullable=True)
     bio = db.Column(db.Text)
     location = db.Column(db.String(100))
@@ -55,12 +51,8 @@ class User(db.Model):
         """
         Assign a Role by name.
 
-        Used during registration to default new users to the canonical 'user'
-        role in the roles table, without hard-coding role IDs.
-
-        NOTE: Frontend role choices such as "farmer" or "expert" are
-        UI-level categories and, for now, should be mapped to the canonical
-        "user" role name when calling this method.
+        Used during registration to default new users to the 'user' role,
+        without hard-coding role IDs.
         """
         role = Role.get_by_name(role_name)
         if role is None:

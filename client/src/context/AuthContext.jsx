@@ -4,8 +4,7 @@ import { AuthContext } from './authContext';
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [loadingUser, setLoadingUser] = useState(true);
-  const [csrfLoaded, setCsrfLoaded] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const fetchUser = useCallback(async () => {
     try {
@@ -18,31 +17,13 @@ export function AuthProvider({ children }) {
     } catch {
       setUser(null);
     } finally {
-      setLoadingUser(false);
-    }
-  }, []);
-
-  const fetchCsrfToken = useCallback(async () => {
-    try {
-      const data = await apiRequest(API_ENDPOINTS.auth.csrfToken);
-      if (data && data.csrf_token) {
-        try {
-          localStorage.setItem('csrfToken', data.csrf_token);
-        } catch {
-          // Ignore storage errors (e.g. in private mode)
-        }
-      }
-    } catch {
-      // If this fails, requests will simply be rejected by the backend.
-    } finally {
-      setCsrfLoaded(true);
+      setLoading(false);
     }
   }, []);
 
   useEffect(() => {
     fetchUser();
-    fetchCsrfToken();
-  }, [fetchUser, fetchCsrfToken]);
+  }, [fetchUser]);
 
   const logout = useCallback(async () => {
     try {
@@ -51,17 +32,12 @@ export function AuthProvider({ children }) {
       // Ignore logout errors
     }
     setUser(null);
-    try {
-      localStorage.removeItem('user');
-      localStorage.removeItem('csrfToken');
-    } catch {
-      // Ignore storage errors
-    }
+    localStorage.removeItem('user');
   }, []);
 
   const value = {
     user,
-    loading: loadingUser || !csrfLoaded,
+    loading,
     isAuthenticated: !!user,
     refreshUser: fetchUser,
     logout,

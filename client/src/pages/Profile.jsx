@@ -1,259 +1,251 @@
-import React, { useState, useEffect, useCallback } from 'react'
-import { useParams, Link } from 'react-router-dom'
-import { Settings, MapPin, Calendar, Loader2, ArrowLeft } from 'lucide-react'
-import { Button } from '../components/ui/Button'
-import { Avatar } from '../components/ui/Avatar'
-import PostCard from '../components/PostCard'
-import { EditProfileModal } from '../components/EditProfileModal'
-import { apiRequest, API_ENDPOINTS } from '../config/api'
-import { useAuth } from '../hooks/useAuth'
+import React, { useState, useEffect } from 'react';
+import { Settings, MapPin, Calendar, Loader2 } from 'lucide-react';
+import { Button } from '../components/ui/Button';
+import { Avatar } from '../components/ui/Avatar';
+import PostCard from '../components/PostCard';
+import { EditProfileModal } from '../components/EditProfileModal';
+import { apiRequest, API_ENDPOINTS } from '../config/api';
 
 export function ProfilePage() {
-  const { userId: routeUserId } = useParams()
-  const { user: currentUser } = useAuth()
-  const [user, setUser] = useState(null)
-  const [posts, setPosts] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const [showEditModal, setShowEditModal] = useState(false)
-  const [resendLoading, setResendLoading] = useState(false)
-  const [resendSent, setResendSent] = useState(false)
-
-  const isViewingOther = routeUserId != null && String(currentUser?.id) !== String(routeUserId)
-
-  const fetchProfile = useCallback(async () => {
-    try {
-      setLoading(true)
-      setError(null)
-
-      if (isViewingOther) {
-        const profileUser = await apiRequest(API_ENDPOINTS.users.byId(routeUserId))
-        setUser(profileUser)
-        const data = await apiRequest(API_ENDPOINTS.posts.mine(routeUserId))
-        setPosts(Array.isArray(data?.posts) ? data.posts : [])
-      } else {
-        const me = await apiRequest(API_ENDPOINTS.auth.me)
-        if (!me?.authenticated) throw new Error('Not authenticated')
-        setUser(me.user)
-        const userId = me?.user?.id
-        if (userId) {
-          const data = await apiRequest(API_ENDPOINTS.posts.mine(userId))
-          setPosts(Array.isArray(data?.posts) ? data.posts : [])
-        } else {
-          setPosts([])
-        }
-      }
-    } catch (err) {
-      const message = err?.message || (isViewingOther ? 'User not found' : 'Failed to load profile')
-      setError(message)
-      if (isViewingOther && err?.status === 404) {
-        setUser(null)
-      }
-    } finally {
-      setLoading(false)
-    }
-  }, [routeUserId, isViewingOther])
+  const [user, setUser] = useState(null);
+  const [posts, setPosts] = useState([]);
+  const [postsLoading, setPostsLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendSent, setResendSent] = useState(false);
 
   useEffect(() => {
-    fetchProfile()
-  }, [fetchProfile])
+    fetchCurrentUser();
+  }, []);
+
+  useEffect(() => {
+    if (user?.id) {
+      fetchUserPosts();
+    }
+  }, [user?.id]);
+
+  const fetchUserPosts = async () => {
+    try {
+      setPostsLoading(true);
+      const response = await apiRequest(
+        `${API_ENDPOINTS.posts.list}?author_id=${user.id}&per_page=20`
+      );
+      const postsData = response.posts || [];
+      setPosts(postsData.map((p) => ({
+        id: p.id,
+        author: p.author ? {
+          name: p.author.username,
+          avatar: p.author.profile_image_url,
+          role: p.author.role || 'Farmer',
+        } : { name: 'Unknown', avatar: null, role: 'User' },
+        title: p.title || '',
+        description: p.content,
+        image: p.image_url || (p.images?.[0]?.image_url),
+        likes: p.likes_count || 0,
+        comments: p.comments_count || 0,
+        timeAgo: p.created_at ? new Date(p.created_at).toLocaleDateString() : '',
+        tags: [],
+      })));
+    } catch (err) {
+      console.error('Failed to fetch posts:', err);
+      setPosts([]);
+    } finally {
+      setPostsLoading(false);
+    }
+  };
+
+  const fetchCurrentUser = async () => {
+    try {
+      setLoading(true);
+      const response = await apiRequest(API_ENDPOINTS.auth.me);
+
+      if (response.authenticated && response.user) {
+        setUser(response.user);
+      } else {
+        setError('Please log in to view your profile');
+      }
+    } catch (err) {
+      console.error('Failed to fetch user:', err);
+      setError(err.message || 'Failed to load profile');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleProfileUpdate = (updatedUser) => {
+    setUser(updatedUser);
+  };
 
   const handleResendVerification = async () => {
-    setResendLoading(true)
+    setResendLoading(true);
+    setResendSent(false);
     try {
       await apiRequest(API_ENDPOINTS.auth.resendVerification, {
         method: 'POST',
         body: JSON.stringify({}),
-      })
-      setResendSent(true)
+      });
+      setResendSent(true);
+    } catch (err) {
+      setError(err?.message || 'Could not send verification email');
     } finally {
-      setResendLoading(false)
+      setResendLoading(false);
     }
-  }
+  };
 
+  // Format join date
   const formatJoinDate = (dateString) => {
-    if (!dateString) return 'Recently joined'
-    const date = new Date(dateString)
-    return `Joined ${date.toLocaleDateString('en-US', {
-      month: 'short',
-      year: 'numeric',
-    })}`
-  }
+    if (!dateString) return 'Recently joined';
+    const date = new Date(dateString);
+    return `Joined ${date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}`;
+  };
 
+  // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <Loader2 className="w-8 h-8 text-green-600 animate-spin" />
       </div>
-    )
+    );
   }
 
+  // Error state
   if (error || !user) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-black text-white p-6">
-        <p className="mb-4 text-center">{error}</p>
-        <div className="flex gap-3">
-          {isViewingOther ? (
-            <Link to="/">
-              <Button>Go to home</Button>
-            </Link>
-          ) : (
-            <Button onClick={fetchProfile}>Try Again</Button>
-          )}
-        </div>
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
+        <p className="text-gray-600 mb-4">{error || 'Unable to load profile'}</p>
+        <Button onClick={fetchCurrentUser}>Try Again</Button>
       </div>
-    )
+    );
   }
 
   return (
-    <div
-      className="min-h-screen pb-24"
-      style={{
-        backgroundImage:
-          "url(https://images.unsplash.com/photo-1500382017468-9049fed747ef)",
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-      }}
-    >
-      <div className="min-h-screen bg-black/60 backdrop-blur-xl">
-        <header className="sticky top-0 z-40 bg-black/40 backdrop-blur border-b border-white/10 px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            {isViewingOther && (
-              <Link to="/" className="p-2 -m-2 text-white/80 hover:text-white rounded-lg" aria-label="Go back">
-                <ArrowLeft size={20} />
-              </Link>
-            )}
-            <h1 className="font-bold text-lg text-white">
-              {isViewingOther ? (user?.username ?? 'Profile') : 'My Profile'}
-            </h1>
-          </div>
-          {!isViewingOther && <Settings className="text-white/80" />}
-        </header>
+    <div className="min-h-screen bg-gray-50 pb-24">
+      <header className="bg-white sticky top-0 z-40 border-b border-gray-100 px-4 py-3 flex items-center justify-between">
+        <h1 className="font-bold text-lg">My Profile</h1>
+        <button className="text-gray-600 hover:text-gray-900">
+          <Settings size={24} />
+        </button>
+      </header>
 
-        {!isViewingOther && user?.email_verified === false && (
-          <div className="mx-4 mt-4 p-4 rounded-2xl bg-amber-500/10 backdrop-blur border border-amber-500/30">
-            <div className="flex flex-col sm:flex-row gap-3 items-center">
-              <p className="text-sm text-amber-800 flex-1">
-                Please verify your email to unlock full features.
-              </p>
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={handleResendVerification}
-                isLoading={resendLoading}
-              >
-                {resendSent ? 'Email Sent' : 'Resend Verification'}
-              </Button>
-            </div>
-          </div>
-        )}
+      {user && user.email_verified === false && (
+        <div className="mx-4 mt-4 p-4 rounded-xl bg-amber-50 border border-amber-200 flex flex-col sm:flex-row sm:items-center gap-3">
+          <p className="text-sm text-amber-800 flex-1">
+            Please verify your email to get full access.
+          </p>
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={handleResendVerification}
+            isLoading={resendLoading}
+            disabled={resendLoading}
+          >
+            {resendSent ? 'Sent — check your email' : 'Resend verification email'}
+          </Button>
+        </div>
+      )}
 
-        <div className="mx-4 mt-6 rounded-3xl bg-white/75 backdrop-blur-xl border border-white/30 shadow-lg overflow-hidden">
-          <div className="relative h-32 bg-gradient-to-r from-green-600/90 to-green-500/90">
-            <div className="absolute -bottom-12 left-6">
-              <Avatar
-                src={user?.profile_image_url}
-                fallback={user?.username}
-                size="xl"
-                className="border-4 border-white shadow-md"
-              />
-            </div>
-          </div>
-
-          <div className="pt-16 px-6 pb-6">
-            <div className="flex items-start justify-between">
-              <div>
-                <h2 className="text-xl font-bold">{user?.username ?? 'User'}</h2>
-                {user?.role && (
-                  <span className="inline-block mt-1 text-xs bg-green-500/20 text-green-300 px-2 py-0.5 rounded-full">
-                    {user.role}
-                  </span>
-                )}
-              </div>
-
-              {!isViewingOther && (
-                <Button size="sm" variant="outline" onClick={() => setShowEditModal(true)}>
-                  Edit Profile
-                </Button>
-              )}
-            </div>
-
-            {user?.bio && (
-              <p className="mt-3 text-sm text-white/80">{user.bio}</p>
-            )}
-
-            <div className="flex flex-wrap gap-4 mt-4 text-sm text-white/70">
-              {user?.location && (
-                <div className="flex items-center gap-1">
-                  <MapPin size={15} />
-                  {user.location}
-                </div>
-              )}
-              <div className="flex items-center gap-1">
-                <Calendar size={15} />
-                {formatJoinDate(user?.created_at)}
-              </div>
-            </div>
-
-            <div className="mt-6 grid grid-cols-3 text-center border-t border-white/30 pt-4">
-              <div>
-                <p className="font-bold text-gray-900">
-                  {user.posts_count || 0}
-                </p>
-                <p className="text-xs text-gray-600">Posts</p>
-              </div>
-              <div>
-                <p className="font-bold text-gray-900">
-                  {user.followers_count || 0}
-                </p>
-                <p className="text-xs text-gray-600">Followers</p>
-              </div>
-              <div>
-                <p className="font-bold text-gray-900">
-                  {user.following_count || 0}
-                </p>
-                <p className="text-xs text-gray-600">Following</p>
-              </div>
-            </div>
+      <div className="bg-white pb-6 mb-4">
+        {/* Cover / Banner */}
+        <div className="relative h-32 bg-green-600">
+          <div className="absolute -bottom-12 left-4 p-1 bg-white rounded-full">
+            <Avatar
+              src={user.profile_image_url}
+              fallback={user.username}
+              size="xl"
+            />
           </div>
         </div>
 
-        <div className="px-4 mt-6 space-y-4">
-          <h3 className="font-bold text-white text-lg">Recent Posts</h3>
-          {!Array.isArray(posts) || posts.length === 0 ? (
-            <p className="text-white/60 text-sm">No posts yet</p>
-          ) : (
-            posts.map((post) => {
-              const normalized = {
-                id: post.id,
-                author: {
-                  id: post.author?.id,
-                  name: post.author?.username ?? 'User',
-                  avatar: post.author?.profile_image_url,
-                  role: post.author?.role,
-                },
-                title: post.title ?? '',
-                description: post.content,
-                image: post.image_url ?? post.images?.[0]?.image_url,
-                likes: post.likes_count ?? 0,
-                comments: post.comments_count ?? 0,
-                timeAgo: post.created_at
-                  ? new Date(post.created_at).toLocaleDateString()
-                  : '',
-              }
-              return <PostCard key={post.id} {...normalized} />
-            })
+        <div className="pt-14 px-4">
+          <div className="flex justify-between items-start mb-4">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">
+                {user.username}
+              </h2>
+              {user.role && (
+                <span className="inline-block bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded-full font-medium mt-1">
+                  {user.role}
+                </span>
+              )}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowEditModal(true)}
+            >
+              Edit Profile
+            </Button>
+          </div>
+
+          {user.bio && (
+            <p className="text-gray-600 mb-4 leading-relaxed">
+              {user.bio}
+            </p>
           )}
-        </div>
 
-        {showEditModal && (
-          <EditProfileModal
-            user={user}
-            onClose={() => setShowEditModal(false)}
-            onSave={(updated) => setUser(updated)}
-          />
+          <div className="flex flex-wrap gap-4 text-sm text-gray-500 mb-6">
+            {user.location && (
+              <div className="flex items-center">
+                <MapPin size={16} className="mr-1" />
+                <span>{user.location}</span>
+              </div>
+            )}
+            <div className="flex items-center">
+              <Calendar size={16} className="mr-1" />
+              <span>{formatJoinDate(user.created_at)}</span>
+            </div>
+          </div>
+
+          {/* Stats - Using placeholder values until API provides them */}
+          <div className="flex items-center space-x-8 border-t border-gray-100 pt-4">
+            <div className="text-center">
+              <div className="font-bold text-gray-900 text-lg">
+                {user.posts_count || 0}
+              </div>
+              <div className="text-xs text-gray-500">Posts</div>
+            </div>
+            <div className="text-center">
+              <div className="font-bold text-gray-900 text-lg">
+                {user.followers_count || 0}
+              </div>
+              <div className="text-xs text-gray-500">Followers</div>
+            </div>
+            <div className="text-center">
+              <div className="font-bold text-gray-900 text-lg">
+                {user.following_count || 0}
+              </div>
+              <div className="text-xs text-gray-500">Following</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Recent Posts Section */}
+      <div className="px-4 space-y-4">
+        <h3 className="font-bold text-gray-900 text-lg">Recent Posts</h3>
+        {postsLoading ? (
+          <div className="flex justify-center py-8">
+            <Loader2 className="w-6 h-6 text-green-600 animate-spin" />
+          </div>
+        ) : posts.length === 0 ? (
+          <p className="text-gray-500 py-6">No posts yet.</p>
+        ) : (
+          posts.map((post) => (
+            <PostCard key={post.id} {...post} />
+          ))
         )}
       </div>
+
+      {/* Edit Profile Modal */}
+      {showEditModal && (
+        <EditProfileModal
+          user={user}
+          onClose={() => setShowEditModal(false)}
+          onSave={handleProfileUpdate}
+        />
+      )}
     </div>
-  )
+  );
 }

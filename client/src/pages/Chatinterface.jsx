@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
   ArrowLeft,
@@ -7,7 +7,6 @@ import {
   MoreVertical,
   Send,
   Paperclip,
-  Users,
 } from 'lucide-react'
 import { Avatar } from '../components/ui/Avatar'
 import ChatBubble from '../components/ChatBubble'
@@ -15,58 +14,64 @@ import { apiRequest, API_ENDPOINTS } from '../config/api'
 import { useAuth } from '../hooks/useAuth'
 
 export function ChatInterface() {
-  const { userId, communityId } = useParams()
+  const { userId } = useParams()
   const navigate = useNavigate()
   const { user: currentUser } = useAuth()
   const [input, setInput] = useState('')
   const [chatUser, setChatUser] = useState(null)
-  const [chatCommunity, setChatCommunity] = useState(null)
   const [chatHistory, setChatHistory] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
   const messagesEndRef = useRef(null)
-  const isCommunityChat = !!communityId
+
+  const fetchOtherUser = async () => {
+    try {
+      const userData = await apiRequest(API_ENDPOINTS.users.byId(userId))
+      setChatUser(userData)
+    } catch {
+      setChatUser({ username: 'Unknown', profile_image_url: null })
+    }
+  }
+
+  const fetchConversation = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      const response = await apiRequest(API_ENDPOINTS.messages.withUser(userId))
+      const msgs = response.messages || []
+      setChatHistory(
+        msgs.map((m) => ({
+          id: m.id,
+          message: m.content,
+          time: m.created_at
+            ? new Date(m.created_at).toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit',
+              })
+            : '',
+          isSent: m.sender_id === currentUser?.id,
+        }))
+      )
+    } catch (err) {
+      setError(err.message || 'Failed to load messages')
+      setChatHistory([])
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    if (isCommunityChat && communityId) {
-      apiRequest(API_ENDPOINTS.communities.byId(communityId))
-        .then(setChatCommunity)
-        .catch(() =>
-          setChatCommunity({ name: 'Unknown Community', image_url: null })
-        )
-    } else if (userId) {
-      apiRequest(API_ENDPOINTS.users.byId(userId))
-        .then(setChatUser)
-        .catch(() =>
-          setChatUser({ username: 'Unknown', profile_image_url: null })
-        )
+    if (userId) {
+      fetchOtherUser()
     }
-  }, [userId, communityId, isCommunityChat])
+  }, [userId])
 
   useEffect(() => {
-    if (!currentUser?.id) return
-
-    if (isCommunityChat && communityId) {
-      apiRequest(API_ENDPOINTS.messages.inCommunity(communityId)).then((res) => {
-        setChatHistory(
-          (res.messages || []).map((m) => ({
-            id: m.id,
-            message: m.content,
-            isSent: m.sender_id === currentUser.id,
-            sender: m.sender_id,
-          }))
-        )
-      })
-    } else if (userId) {
-      apiRequest(API_ENDPOINTS.messages.withUser(userId)).then((res) => {
-        setChatHistory(
-          (res.messages || []).map((m) => ({
-            id: m.id,
-            message: m.content,
-            isSent: m.sender_id === currentUser.id,
-          }))
-        )
-      })
+    if (userId && currentUser?.id) {
+      fetchConversation()
     }
-  }, [userId, communityId, currentUser?.id, isCommunityChat])
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchConversation uses currentUser from closure
+  }, [userId, currentUser?.id])
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -78,101 +83,119 @@ export function ChatInterface() {
 
   const handleSend = async (e) => {
     e.preventDefault()
-    if (!input.trim()) return
+    if (!input.trim() || !userId) return
 
     const content = input.trim()
     setInput('')
 
-    const messageBody = isCommunityChat
-      ? { content, community_id: Number(communityId) }
-      : { content, receiver_id: Number(userId) }
-
     try {
       await apiRequest(API_ENDPOINTS.messages.send, {
         method: 'POST',
-        body: JSON.stringify(messageBody),
+        body: JSON.stringify({ content, receiver_id: parseInt(userId, 10) }),
       })
-
       setChatHistory((prev) => [
         ...prev,
-        { id: Date.now(), message: content, isSent: true },
+        {
+          id: Date.now(),
+          message: content,
+          time: new Date().toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit',
+          }),
+          isSent: true,
+        },
       ])
     } catch (err) {
-      console.error('Failed to send message:', err)
+      setError(err.message || 'Failed to send message')
     }
   }
 
+  if (!chatUser && !loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-gray-500">Loading...</p>
+      </div>
+    )
+  }
+
   return (
-    <div className="min-h-screen bg-black/40 backdrop-blur-md ml-64 flex flex-col">
-      <header className="border-b border-white/10 bg-white/10 backdrop-blur-xl">
-        <div className="flex items-center justify-between px-5 py-4 max-w-5xl mx-auto">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => navigate(-1)}
-              className="text-white/70 hover:text-white"
-            >
-              <ArrowLeft size={22} />
-            </button>
+    <div className="flex flex-col h-screen bg-gray-50">
+      <header className="bg-white border-b border-gray-100 px-4 py-3 flex items-center justify-between shadow-sm z-10">
+        <div className="flex items-center space-x-3">
+          <button
+            onClick={() => navigate(-1)}
+            className="text-gray-600 hover:text-gray-900"
+          >
+            <ArrowLeft size={24} />
+          </button>
 
-            {isCommunityChat ? (
-              <>
-                <div className="w-8 h-8 rounded-full bg-green-600/20 flex items-center justify-center">
-                  <Users size={16} className="text-green-400" />
-                </div>
-                <span className="text-white font-semibold text-sm">
-                  {chatCommunity?.name || 'Community'}
-                </span>
-              </>
-            ) : (
-              <>
-                <Avatar
-                  src={chatUser?.profile_image_url}
-                  fallback={chatUser?.username}
-                  size="sm"
-                />
-                <span className="text-white font-semibold text-sm">
-                  {chatUser?.username}
-                </span>
-              </>
-            )}
-          </div>
+          <Avatar
+            src={chatUser?.profile_image_url}
+            fallback={chatUser?.username}
+            size="sm"
+          />
 
-          <div className="flex gap-4 text-white/70">
-            <Phone size={18} />
-            <Video size={18} />
-            <MoreVertical size={18} />
+          <div>
+            <h3 className="font-bold text-gray-900 text-sm">
+              {chatUser?.username || 'Unknown'}
+            </h3>
+            <span className="text-xs text-green-600 flex items-center">
+              <span className="w-1.5 h-1.5 bg-green-600 rounded-full mr-1" />
+              Online
+            </span>
           </div>
+        </div>
+
+        <div className="flex items-center space-x-4 text-gray-600">
+          <Phone size={20} />
+          <Video size={20} />
+          <MoreVertical size={20} />
         </div>
       </header>
 
-      <div className="flex-1 overflow-y-auto p-4 max-w-5xl mx-auto space-y-4">
-        {chatHistory.map((chat) => (
-          <ChatBubble key={chat.id} {...chat} />
-        ))}
-        <div ref={messagesEndRef} />
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {loading ? (
+          <div className="flex justify-center py-8">
+            <div className="w-6 h-6 border-2 border-green-600 border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : error ? (
+          <p className="text-center text-red-500">{error}</p>
+        ) : (
+          <>
+            {chatHistory.map((chat) => (
+              <ChatBubble key={chat.id} {...chat} />
+            ))}
+            <div ref={messagesEndRef} />
+          </>
+        )}
       </div>
 
-      <form
-        onSubmit={handleSend}
-        className="border-t border-white/10 bg-white/10 px-4 py-4 flex gap-3 max-w-5xl mx-auto w-full"
-      >
-        <button type="button" className="text-white/50 hover:text-white">
-          <Paperclip size={20} />
-        </button>
-        <input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="Type a message..."
-          className="flex-1 rounded-full bg-white/10 px-4 py-2 text-sm text-white placeholder-white/50 border border-white/10 focus:outline-none"
-        />
-        <button
-          type="submit"
-          disabled={!input.trim()}
-          className="p-3 rounded-full bg-green-600 text-white hover:bg-green-500 disabled:opacity-50"
+      <div className="bg-white border-t border-gray-100 p-4 pb-safe">
+        <form
+          onSubmit={handleSend}
+          className="flex items-center space-x-3 max-w-4xl mx-auto"
         >
-          <Send size={18} />
-        </button>
-      </form>
+          <button type="button" className="text-gray-400 hover:text-gray-600">
+            <Paperclip size={24} />
+          </button>
+
+          <input
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="Type a message..."
+            className="flex-1 bg-gray-100 rounded-full px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-500/20"
+          />
+
+          <button
+            type="submit"
+            disabled={!input.trim()}
+            className="p-3 bg-green-600 text-white rounded-full hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-green-200"
+          >
+            <Send size={20} />
+          </button>
+        </form>
+      </div>
     </div>
   )
 }

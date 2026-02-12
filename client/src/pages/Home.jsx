@@ -52,29 +52,24 @@ export function HomeFeed() {
         timeAgo: new Date(article.publishedAt || 0).toLocaleDateString(),
         sortDate: new Date(article.publishedAt || 0).getTime(),
         likes: 0,
-        commentCount: 0,
+        comments: [],
         liked: false,
         saved: false,
       }));
 
-      const formattedPosts = userPosts.map((p) => {
-        const imageUrl = p.image_url ?? p.images?.[0]?.image_url;
-        const image = typeof imageUrl === "string" && imageUrl.trim() ? imageUrl : null;
-        return {
-          id: String(p.id),
-          title: p.title || "",
-          description: p.content,
-          image,
-          author: p.author?.username || "User",
-          authorId: p.author?.id,
-          timeAgo: p.created_at ? new Date(p.created_at).toLocaleDateString() : "",
-          sortDate: p.created_at ? new Date(p.created_at).getTime() : 0,
-          likes: p.likes_count || 0,
-          commentCount: p.comments_count || 0,
-          liked: p.liked || false,
-          saved: false,
-        };
-      });
+      const formattedPosts = userPosts.map((p) => ({
+        id: String(p.id),
+        title: p.title || "",
+        description: p.content,
+        image: p.image_url || (p.images?.[0]?.image_url),
+        author: p.author?.username || "User",
+        timeAgo: p.created_at ? new Date(p.created_at).toLocaleDateString() : "",
+        sortDate: p.created_at ? new Date(p.created_at).getTime() : 0,
+        likes: p.likes_count || 0,
+        comments: p.comments_count || 0,
+        liked: false,
+        saved: false,
+      }));
 
       const merged = [...formattedPosts, ...formattedNews].sort(
         (a, b) => (b.sortDate || 0) - (a.sortDate || 0)
@@ -97,49 +92,18 @@ export function HomeFeed() {
       p.description.toLowerCase().includes(query.toLowerCase())
   );
 
-  const toggleLike = async (id) => {
-    // Only handle likes for user posts (numeric IDs), not news articles
-    if (!/^\d+$/.test(String(id))) return;
-    
-    const post = posts.find((p) => p.id === id);
-    if (!post) return;
-    
-    const wasLiked = post.liked;
-    
-    // Optimistic update
+  const toggleLike = (id) => {
     setPosts((prev) =>
-      prev.map((p) =>
-        p.id === id
+      prev.map((post) =>
+        post.id === id
           ? {
-              ...p,
-              liked: !p.liked,
-              likes: p.liked ? p.likes - 1 : p.likes + 1,
+              ...post,
+              liked: !post.liked,
+              likes: post.liked ? post.likes - 1 : post.likes + 1,
             }
-          : p
+          : post
       )
     );
-    
-    try {
-      if (wasLiked) {
-        await apiRequest(API_ENDPOINTS.posts.like(id), { method: "DELETE" });
-      } else {
-        await apiRequest(API_ENDPOINTS.posts.like(id), { method: "POST" });
-      }
-    } catch (error) {
-      // Revert on error
-      setPosts((prev) =>
-        prev.map((p) =>
-          p.id === id
-            ? {
-                ...p,
-                liked: wasLiked,
-                likes: wasLiked ? p.likes + 1 : p.likes - 1,
-              }
-            : p
-        )
-      );
-      console.error("Failed to toggle like:", error);
-    }
   };
 
   const addComment = (id) => {
@@ -148,7 +112,7 @@ export function HomeFeed() {
     setPosts((prev) =>
       prev.map((post) =>
         post.id === id
-          ? { ...post, commentCount: (post.commentCount ?? 0) + 1 }
+          ? { ...post, comments: [...post.comments, commentText] }
           : post
       )
     );
@@ -201,7 +165,7 @@ export function HomeFeed() {
           </div>
         </header>
 
-        
+        {/* POSTS */}
         <main className="max-w-6xl mx-auto px-6 py-6 space-y-6 overflow-x-hidden">
           {filteredPosts.map((post) => (
             <motion.div
@@ -211,10 +175,10 @@ export function HomeFeed() {
               className="bg-white/10 backdrop-blur-2xl rounded-2xl overflow-hidden shadow-lg text-white"
             >
               <Link to={`/post/${post.id}`}>
-                {post.image && String(post.image).trim() && (
+                {post.image && (
                   <img
                     src={post.image}
-                    alt={post.title || "Post"}
+                    alt={post.title}
                     className="w-full h-56 object-cover"
                   />
                 )}
@@ -226,17 +190,11 @@ export function HomeFeed() {
                 <p className="text-sm text-white/80">{post.description}</p>
 
                 <div className="flex justify-between text-sm text-white/70">
-                  {post.authorId != null ? (
-                    <Link to={`/profile/${post.authorId}`} className="hover:text-green-200 transition-colors">
-                      {post.author}
-                    </Link>
-                  ) : (
-                    <span>{post.author}</span>
-                  )}
+                  <span>{post.author}</span>
                   <span>{post.timeAgo}</span>
                 </div>
 
-               
+                {/* ACTIONS */}
                 <div className="flex gap-6 pt-2">
                   <button
                     onClick={() => toggleLike(post.id)}
@@ -258,7 +216,7 @@ export function HomeFeed() {
                     className="flex items-center gap-1 text-white/70"
                   >
                     <MessageCircle size={18} />
-                    {post.commentCount ?? 0}
+                    {post.comments.length}
                   </button>
 
                   <button
@@ -278,7 +236,7 @@ export function HomeFeed() {
                   </button>
                 </div>
 
-               
+                {/* COMMENT */}
                 {activePost === post.id && (
                   <div className="flex gap-2 pt-3">
                     <input
