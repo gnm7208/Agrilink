@@ -17,10 +17,6 @@ export function PostDetails() {
   const [error, setError] = useState(null);
   const [isUserPost, setIsUserPost] = useState(false);
 
-  useEffect(() => {
-    fetchPost();
-  }, [id, fetchPost]);
-
   const fetchPost = useCallback(async () => {
     try {
       setLoading(true);
@@ -40,6 +36,7 @@ export function PostDetails() {
           likes_count: postData.likes_count,
           comments_count: postData.comments_count,
         });
+
         const commentsRes = await apiRequest(API_ENDPOINTS.posts.comments(id));
         setComments(
           (commentsRes.comments || []).map((c) => ({
@@ -73,6 +70,10 @@ export function PostDetails() {
     }
   }, [id]);
 
+  useEffect(() => {
+    fetchPost();
+  }, [fetchPost]);
+
   const handleCommentSubmit = async (e) => {
     e.preventDefault();
     if (!newComment.trim() || !isUserPost || !currentUser) return;
@@ -82,6 +83,7 @@ export function PostDetails() {
         method: "POST",
         body: JSON.stringify({ content: newComment.trim() }),
       });
+
       setComments((prev) => [
         {
           id: res.id,
@@ -92,22 +94,19 @@ export function PostDetails() {
         },
         ...prev,
       ]);
+
       setNewComment("");
     } catch (err) {
       console.error("Failed to add comment:", err);
     }
   };
 
-  if (loading)
-    return <p className="text-center mt-10 text-gray-500">Loading post…</p>;
-  if (error)
-    return <p className="text-center mt-10 text-red-600">{error}</p>;
-  if (!post)
-    return <p className="text-center mt-10 text-gray-500">Post not found.</p>;
+  if (loading) return <p className="text-center mt-10 text-gray-500">Loading post…</p>;
+  if (error) return <p className="text-center mt-10 text-red-600">{error}</p>;
+  if (!post) return <p className="text-center mt-10 text-gray-500">Post not found.</p>;
 
   return (
     <div className="bg-white min-h-screen pb-20">
-    
       <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-gray-100 px-4 py-3 flex items-center space-x-4">
         <Link to="/" className="text-gray-600 hover:text-gray-900">
           <ArrowLeft size={24} />
@@ -116,14 +115,12 @@ export function PostDetails() {
       </header>
 
       <div className="p-4">
-        
         <h1 className="text-xl font-bold text-gray-900 mb-3">{post.title}</h1>
         <p className="text-gray-500 text-sm mb-2">
-          {post.publishedAt
-            ? new Date(post.publishedAt).toLocaleDateString()
-            : ""}{" "}
+          {post.publishedAt ? new Date(post.publishedAt).toLocaleDateString() : ""}{" "}
           {post.author ? `• ${post.author}` : ""}
         </p>
+
         <p className="text-gray-700 leading-relaxed mb-4">
           {post.description || "No description available."}
         </p>
@@ -134,7 +131,6 @@ export function PostDetails() {
           </div>
         )}
 
-        
         <div className="flex items-center justify-between py-4 border-y border-gray-100 mb-6">
           <div className="flex space-x-6">
             <button className="flex items-center space-x-2 text-gray-500 hover:text-red-500">
@@ -153,12 +149,13 @@ export function PostDetails() {
           </button>
         </div>
 
-       
         <div className="space-y-6">
           <h3 className="font-bold text-gray-900">Comments</h3>
 
           <div className="space-y-4">
-            {comments.length === 0 && <p className="text-gray-500">No comments yet.</p>}
+            {comments.length === 0 && (
+              <p className="text-gray-500">No comments yet.</p>
+            )}
             {comments.map((comment) => (
               <CommentItem key={comment.id} {...comment} />
             ))}
