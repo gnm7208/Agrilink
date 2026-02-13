@@ -32,6 +32,9 @@ typing_extensions==4.15.0
 # Security - HTML sanitization
 bleach==6.1.0
 
+# JWT authentication
+PyJWT>=2.8.0
+
 # Testing (development)
 pytest==8.0.0
 pytest-cov==4.1.0

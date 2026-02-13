@@ -11,7 +11,7 @@ import {
 } from 'lucide-react'
 /* eslint-disable-next-line no-unused-vars -- motion used in JSX */
 import { motion } from 'framer-motion'
-import { apiRequest, API_ENDPOINTS } from '../config/api'
+import { apiRequest, API_ENDPOINTS, setToken } from '../config/api'
 
 // 👉 Change path if needed
 import bgImage from '../assets/reg.jpeg'
@@ -33,7 +33,7 @@ export function RegisterPage() {
     setPasswordErrors([])
 
     try {
-      await apiRequest(API_ENDPOINTS.auth.register, {
+      const data = await apiRequest(API_ENDPOINTS.auth.register, {
         method: 'POST',
         body: JSON.stringify({
           username,
@@ -42,6 +42,10 @@ export function RegisterPage() {
           role,
         }),
       })
+
+      if (data.token) {
+        setToken(data.token)
+      }
 
       navigate('/login', {
         state: { message: 'Account created. Please check your email to verify your account, then log in.' },

@@ -72,13 +72,28 @@ export const API_ENDPOINTS = {
   },
 };
 
-// Default fetch options with credentials for session cookies
-export const defaultFetchOptions = {
-  credentials: 'include', // Include cookies for session auth
-  headers: {
-    'Content-Type': 'application/json',
-  },
-};
+// JWT token helpers
+export function getToken() {
+  return localStorage.getItem('auth_token');
+}
+
+export function setToken(token) {
+  localStorage.setItem('auth_token', token);
+}
+
+export function removeToken() {
+  localStorage.removeItem('auth_token');
+}
+
+// Build headers with JWT token if available
+function getAuthHeaders() {
+  const headers = { 'Content-Type': 'application/json' };
+  const token = getToken();
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  return headers;
+}
 
 /**
  * API helper function with error handling
@@ -88,10 +103,10 @@ export const defaultFetchOptions = {
  */
 export async function apiRequest(url, options = {}) {
   const response = await fetch(url, {
-    ...defaultFetchOptions,
+    credentials: 'include',
     ...options,
     headers: {
-      ...defaultFetchOptions.headers,
+      ...getAuthHeaders(),
       ...options.headers,
     },
   });
@@ -128,11 +143,17 @@ export async function uploadFile(url, file, fieldName = 'image') {
   const formData = new FormData();
   formData.append(fieldName, file);
 
+  const headers = {};
+  const token = getToken();
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
   const response = await fetch(url, {
     method: 'POST',
-    credentials: 'include', // Include cookies for session auth
+    credentials: 'include',
+    headers,
     body: formData,
-    // Note: Don't set Content-Type header - browser sets it with boundary
   });
 
   const data = await response.json();

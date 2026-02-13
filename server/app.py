@@ -59,7 +59,20 @@ def create_app(config_name=None):
 
     @app.before_request
     def load_current_user():
-        """Load authenticated user from session into g.current_user."""
+        """Load authenticated user from JWT token or session into g.current_user."""
+        from jwt_utils import decode_token
+
+        # 1. Try JWT token from Authorization header first
+        auth_header = request.headers.get("Authorization", "")
+        if auth_header.startswith("Bearer "):
+            token = auth_header[7:]
+            payload = decode_token(token)
+            if payload and "user_id" in payload:
+                g.current_user = User.query.get(payload["user_id"])
+                return
+            # Invalid/expired token — fall through to session check
+
+        # 2. Fall back to session-based auth (local dev)
         user_id = session.get("user_id")
         session_created = session.get("session_created_at")
 
@@ -68,7 +81,6 @@ def create_app(config_name=None):
                 created_time = datetime.fromisoformat(session_created)
                 session_age = datetime.utcnow() - created_time
                 max_age = timedelta(seconds=app.config.get("PERMANENT_SESSION_LIFETIME", 86400))
-                
 
                 if session_age > max_age:
                     session.clear()
@@ -78,7 +90,6 @@ def create_app(config_name=None):
             except (ValueError, TypeError) as e:
                 session.clear()
                 g.current_user = None
-                app.logger.warning(f"Invalid session timestamp: {e}")
                 app.logger.warning(f"Invalid session timestamp: {e}")
                 return
 

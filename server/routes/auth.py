@@ -7,6 +7,7 @@ from rbac import login_required
 from utils import validate_password, validate_email, validate_username
 from utils.email_verification import create_email_verification, verify_email_token
 from services.email_service import send_verification_email
+from jwt_utils import create_token
 
 bp = Blueprint("auth", __name__, url_prefix="/auth")
 
@@ -102,15 +103,16 @@ def register():
         verification_link = f"{frontend_url.rstrip('/')}/verify-email?token={raw_token}"
         send_verification_email(user.email, verification_link)
 
-        # Create session so user can resend from profile/login
+        # Create session (for local dev / cookie-based fallback)
         session["user_id"] = user.id
         session["session_created_at"] = datetime.utcnow().isoformat()
-        session.permanent = True  # Use PERMANENT_SESSION_LIFETIME from config
+        session.permanent = True
 
         return jsonify({
             "message": "Registration successful. Please verify your email.",
             "email_verification_required": True,
-            "user": user.to_dict(include_email=True)
+            "user": user.to_dict(include_email=True),
+            "token": create_token(user.id),
         }), 201
 
     except IntegrityError as e:
@@ -167,14 +169,15 @@ def login():
             "message": "Invalid email or password"
         }), 401
 
-    # Create session with timestamp
+    # Create session (for local dev / cookie-based fallback)
     session["user_id"] = user.id
     session["session_created_at"] = datetime.utcnow().isoformat()
-    session.permanent = True  # Use PERMANENT_SESSION_LIFETIME from config
+    session.permanent = True
 
     payload = {
         "message": "Login successful",
-        "user": user.to_dict(include_email=True)
+        "user": user.to_dict(include_email=True),
+        "token": create_token(user.id),
     }
     if not user.email_verified:
         payload["email_not_verified"] = True

@@ -5,7 +5,7 @@ import { Input } from '../components/ui/input'
 import { Sprout, AlertCircle } from 'lucide-react'
 /* eslint-disable-next-line no-unused-vars -- motion used in JSX */
 import { motion } from 'framer-motion'
-import { apiRequest, API_ENDPOINTS } from '../config/api'
+import { apiRequest, API_ENDPOINTS, setToken } from '../config/api'
 import { useAuth } from '../hooks/useAuth'
 
 import bgImage from '../assets/Agriculture Sprayers Market Size, Share, and Growth Analysis 2024-2032.jpeg'
@@ -33,6 +33,9 @@ export function LoginPage() {
         body: JSON.stringify({ email, password }),
       })
 
+      if (data.token) {
+        setToken(data.token)
+      }
       if (data.user) {
         localStorage.setItem('user', JSON.stringify(data.user))
       }
