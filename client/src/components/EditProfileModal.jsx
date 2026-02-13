@@ -5,10 +5,7 @@ import { Avatar } from './ui/Avatar';
 import { apiRequest, API_ENDPOINTS } from '../config/api';
 import { useImageUpload } from '../hooks/useImageUpload';
 
-/**
- * Edit Profile Modal Component
- * Allows users to update their bio, location, and profile image
- */
+
 export function EditProfileModal({ user, onClose, onSave }) {
   const [bio, setBio] = useState(user?.bio || '');
   const [location, setLocation] = useState(user?.location || '');

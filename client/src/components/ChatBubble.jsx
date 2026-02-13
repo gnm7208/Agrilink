@@ -1,5 +1,5 @@
 import React from 'react'
-/* eslint-disable-next-line no-unused-vars -- motion is used as motion.div in JSX */
+
 import { motion } from 'framer-motion'
 
 const ChatBubble = ({ message, time, isSent }) => {
