@@ -1,90 +1,160 @@
-import React from 'react';
-import { Settings, MapPin, Calendar } from 'lucide-react';
-import { Button } from '../components/ui/Button';
-import { Avatar } from '../components/ui/Avatar';
-import { PostCard } from '../components/PostCard';
-import { currentUser, posts } from '../data/mockData';
-
+import React, { useState, useEffect } from 'react'
+import { Settings, MapPin, Calendar, Loader2 } from 'lucide-react'
+import { Button } from '../components/ui/Button'
+import { Avatar } from '../components/ui/Avatar'
+import PostCard from '../components/PostCard'
+import { EditProfileModal } from '../components/EditProfileModal'
+import { apiRequest, API_ENDPOINTS } from '../config/api'
 export function ProfilePage() {
-  return (
-    <div className="min-h-screen bg-gray-50 pb-24">
-      <header className="bg-white sticky top-0 z-40 border-b border-gray-100 px-4 py-3 flex items-center justify-between">
-        <h1 className="font-bold text-lg">My Profile</h1>
-        <button className="text-gray-600 hover:text-gray-900">
-          <Settings size={24} />
-        </button>
-      </header>
-
-      <div className="bg-white pb-6 mb-4">
-        <div className="relative h-32 bg-green-600">
-          <div className="absolute -bottom-12 left-4 p-1 bg-white rounded-full">
-            <Avatar
-              src={currentUser.avatar}
-              fallback={currentUser.name}
-              size="xl"
-            />
-          </div>
-        </div>
-
-        <div className="pt-14 px-4">
-          <div className="flex justify-between items-start mb-4">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900">
-                {currentUser.name}
-              </h2>
-              <span className="inline-block bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded-full font-medium mt-1">
-                {currentUser.role}
-              </span>
-            </div>
-            <Button variant="outline" size="sm">
-              Edit Profile
-            </Button>
-          </div>
-
-          <p className="text-gray-600 mb-4 leading-relaxed">
-            {currentUser.bio}
-          </p>
-
-          <div className="flex flex-wrap gap-4 text-sm text-gray-500 mb-6">
-            <div className="flex items-center">
-              <MapPin size={16} className="mr-1" />
-              <span>California, USA</span>
-            </div>
-            <div className="flex items-center">
-              <Calendar size={16} className="mr-1" />
-              <span>Joined Jan 2023</span>
-            </div>
-          </div>
-
-          <div className="flex items-center space-x-8 border-t border-gray-100 pt-4">
-            <div className="text-center">
-              <div className="font-bold text-gray-900 text-lg">
-                {currentUser.posts}
-              </div>
-              <div className="text-xs text-gray-500">Posts</div>
-            </div>
-            <div className="text-center">
-              <div className="font-bold text-gray-900 text-lg">
-                {currentUser.followers}
-              </div>
-              <div className="text-xs text-gray-500">Followers</div>
-            </div>
-            <div className="text-center">
-              <div className="font-bold text-gray-900 text-lg">
-                {currentUser.following}
-              </div>
-              <div className="text-xs text-gray-500">Following</div>
-            </div>
-          </div>
-        </div>
+  const [user, setUser] = useState(null)
+  const [posts, setPosts] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [resendLoading, setResendLoading] = useState(false)
+  const [resendSent, setResendSent] = useState(false)
+  useEffect(() => {
+    fetchProfile()
+  }, [])
+  const fetchProfile = async () => {
+    try {
+      setLoading(true)
+      const me = await apiRequest(API_ENDPOINTS.auth.me)
+      if (!me?.authenticated) throw new Error('Not authenticated')
+      setUser(me.user)
+      const userPosts = await apiRequest(`${API_ENDPOINTS.posts.list}?author_id=${me.user.id}`)
+      setPosts(userPosts.posts || [])
+    } catch (err) {
+      setError(err.message || 'Failed to load profile')
+    } finally {
+      setLoading(false)
+    }
+  }
+  const handleResendVerification = async () => {
+    setResendLoading(true)
+    try {
+      await apiRequest(API_ENDPOINTS.auth.resendVerification, {
+        method: 'POST',
+        body: JSON.stringify({}),
+      })
+      setResendSent(true)
+    } finally {
+      setResendLoading(false)
+    }
+  }
+  const formatJoinDate = (dateString) => {
+    if (!dateString) return 'Recently joined'
+    const date = new Date(dateString)
+    return `Joined ${date.toLocaleDateString('en-US', {
+      month: 'short',
+      year: 'numeric',
+    })}`
+  }
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-black">
+        <Loader2 className="w-8 h-8 text-green-500 animate-spin" />
       </div>
-
-      <div className="px-4 space-y-4">
-        <h3 className="font-bold text-gray-900 text-lg">Recent Posts</h3>
-        {posts.map((post) => (
-          <PostCard key={post.id} {...post} />
-        ))}
+    )
+  }
+  if (error || !user) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-black text-white">
+        <p className="mb-4">{error}</p>
+        <Button onClick={fetchProfile}>Try Again</Button>
+      </div>
+    )
+  }
+return (
+  <div
+    className="min-h-screen pb-24 lg:ml-64"
+    style={{
+      backgroundImage:
+        'url(https://images.unsplash.com/photo-1500382017468-9049fed747ef)',
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+    }}
+  >
+    <div className="min-h-screen bg-black/60 backdrop-blur-xl">
+      <header className="sticky top-0 z-40 bg-black/40 backdrop-blur border-b border-white/10 px-4 py-3 flex items-center justify-between">
+        <h1 className="font-bold text-lg text-white">My Profile</h1>
+        <Settings className="text-white/80" />
+      </header>
+        {user.email_verified === false && (
+          <div className="mx-4 mt-4 p-4 rounded-2xl bg-amber-500/10 backdrop-blur border border-amber-500/30">
+            <div className="flex flex-col sm:flex-row gap-3 items-center">
+              <p className="text-sm text-amber-200 flex-1">
+                Please verify your email to unlock full features.
+              </p>
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={handleResendVerification}
+                isLoading={resendLoading}
+              >
+                {resendSent ? 'Email Sent' : 'Resend Verification'}
+              </Button>
+            </div>
+          </div>
+        )}
+        <div className="mx-4 mt-6 rounded-3xl bg-white/10 backdrop-blur-xl border border-white/10 shadow-lg overflow-hidden">
+          <div className="relative h-32 bg-gradient-to-r from-green-600/80 to-green-500/80">
+            <div className="absolute -bottom-12 left-6">
+              <Avatar
+                src={user.profile_image_url}
+                fallback={user.username}
+                size="xl"
+                className="border-4 border-black shadow-md"
+              />
+            </div>
+          </div>
+          <div className="pt-16 px-6 pb-6 text-white">
+            <div className="flex items-start justify-between">
+              <div>
+                <h2 className="text-xl font-bold">{user.username}</h2>
+                {user.role && (
+                  <span className="inline-block mt-1 text-xs bg-green-500/20 text-green-300 px-2 py-0.5 rounded-full">
+                    {user.role}
+                  </span>
+                )}
+              </div>
+              <Button size="sm" variant="outline" onClick={() => setShowEditModal(true)}>
+                Edit Profile
+              </Button>
+            </div>
+            {user.bio && (
+              <p className="mt-3 text-sm text-white/80">{user.bio}</p>
+            )}
+            <div className="flex flex-wrap gap-4 mt-4 text-sm text-white/70">
+              {user.location && (
+                <div className="flex items-center gap-1">
+                  <MapPin size={15} />
+                  {user.location}
+                </div>
+              )}
+              <div className="flex items-center gap-1">
+                <Calendar size={15} />
+                {formatJoinDate(user.created_at)}
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="px-4 mt-6 space-y-4">
+          <h3 className="font-bold text-white text-lg">Recent Posts</h3>
+          {posts.length === 0 ? (
+            <p className="text-white/60 text-sm">No posts yet</p>
+          ) : (
+            posts.map((post) => <PostCard key={post.id} {...post} />)
+          )}
+        </div>
+        {showEditModal && (
+          <EditProfileModal
+            user={user}
+            onClose={() => setShowEditModal(false)}
+            onSave={(updated) => setUser(updated)}
+          />
+        )}
       </div>
     </div>
-  );
+  )
 }
