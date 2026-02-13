@@ -4,8 +4,15 @@
  * Centralized API configuration using environment variables.
  */
 
-// Get API URL from environment variable with fallback
-export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+// Get API URL from environment variable - MUST be set in production
+const apiUrlFromEnv = import.meta.env.VITE_API_URL;
+
+// Validate API_URL is configured (required for production)
+if (!apiUrlFromEnv && import.meta.env.PROD) {
+  throw new Error('VITE_API_URL environment variable is required in production');
+}
+
+export const API_URL = apiUrlFromEnv || 'http://localhost:5000/api';
 
 // API endpoints
 export const API_ENDPOINTS = {

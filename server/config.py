@@ -31,9 +31,6 @@ class Config:
     PERMANENT_SESSION_LIFETIME = 86400  # 24 hours
 
    
-    PERMANENT_SESSION_LIFETIME = 86400  # 24 hours
-
-   
     FRONTEND_ORIGINS = os.getenv(
         "FRONTEND_ORIGINS",
         "http://localhost:5173,http://localhost:3000"
@@ -99,7 +96,10 @@ class Config:
 
         
         if os.getenv("FLASK_ENV") == "production" and not cls.NEWSAPI_KEY:
-            raise ValueError("NEWSAPI_KEY is required in production")
+            import logging
+            logging.getLogger(__name__).warning(
+                "NEWSAPI_KEY not set — news features will be unavailable"
+            )
 
 
 class DevelopmentConfig(Config):
@@ -111,18 +111,15 @@ class DevelopmentConfig(Config):
 class ProductionConfig(Config):
     DEBUG = False
     TESTING = False
-    SESSION_COOKIE_SECURE = True  
-    SESSION_COOKIE_SECURE = True  
-    SESSION_COOKIE_SAMESITE = "Strict"
+    SESSION_COOKIE_SECURE = True
+    SESSION_COOKIE_SAMESITE = "None"  # Required for cross-site cookies (Vercel → Render)
 
 
 class TestingConfig(Config):
     TESTING = True
     SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
     SECRET_KEY = "test-secret-key-for-testing-only"
-    WTF_CSRF_ENABLED = False  
-
-    WTF_CSRF_ENABLED = False  
+    WTF_CSRF_ENABLED = False
 
 
 

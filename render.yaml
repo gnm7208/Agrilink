@@ -33,3 +33,5 @@ services:
         sync: false
       - key: CLOUDINARY_API_SECRET
         sync: false
+      - key: SESSION_COOKIE_SAMESITE
+        value: None
