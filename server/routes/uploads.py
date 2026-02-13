@@ -57,7 +57,7 @@ def upload_image_endpoint():
     validation = validate_image_file(file)
     if not validation["valid"]:
         return jsonify({
-            "error": "Invalid file",
+            "error": validation["error"],
             "message": validation["error"]
         }), 400
 

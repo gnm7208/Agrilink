@@ -2,10 +2,16 @@ from flask import Blueprint, jsonify, request, g
 import os
 import requests
 import hashlib
+import bleach
 from sqlalchemy.orm import joinedload
 from extensions import limiter, db
 from models import Comment, Post, PostImage, Like, User
 from rbac import login_required
+
+
+def sanitize_content(text):
+    """Strip all HTML tags from user-supplied text."""
+    return bleach.clean(text, tags=[], strip=True)
 
 bp = Blueprint("posts", __name__)
 
@@ -74,7 +80,7 @@ def list_posts():
 def create_post():
     """Create a new post."""
     data = request.get_json() or {}
-    content = data.get("content", "").strip()
+    content = sanitize_content(data.get("content", "")).strip()
     title = data.get("title", "").strip() or None
     community_id = data.get("community_id")
     image_url = data.get("image_url")
@@ -245,7 +251,7 @@ def create_post_comment(post_id):
     """Add a comment to a post."""
     post = Post.query.get_or_404(post_id)
     data = request.get_json() or {}
-    content = data.get("content", "").strip()
+    content = sanitize_content(data.get("content", "")).strip()
 
     if not content:
         return jsonify({"error": "Content is required"}), 400

@@ -51,26 +51,17 @@ def validate_image_file(file):
     if not file or file.filename == "":
         return {"valid": False, "error": "No file provided"}
 
-    # Check MIME type
-    allowed_types = current_app.config.get(
-        "ALLOWED_IMAGE_TYPES",
-        {"image/jpeg", "image/png", "image/gif", "image/webp"}
-    )
-
-    if file.content_type not in allowed_types:
-        return {
-            "valid": False,
-            "error": f"Invalid file type. Allowed: {', '.join(allowed_types)}"
-        }
-
-    # Check file size (read content length or file size)
-    max_size_mb = current_app.config.get("MAX_IMAGE_SIZE_MB", 5)
-    max_size_bytes = max_size_mb * 1024 * 1024
-
     # Get file size by seeking to end
     file.seek(0, 2)  # Seek to end
     file_size = file.tell()
-    file.seek(0)  # Reset to beginning for upload
+    file.seek(0)  # Reset to beginning
+
+    if file_size == 0:
+        return {"valid": False, "error": "File is empty"}
+
+    # Check file size on disk
+    max_size_mb = current_app.config.get("MAX_IMAGE_SIZE_MB", 5)
+    max_size_bytes = max_size_mb * 1024 * 1024
 
     if file_size > max_size_bytes:
         return {
@@ -78,8 +69,47 @@ def validate_image_file(file):
             "error": f"File too large. Maximum size is {max_size_mb}MB"
         }
 
-    if file_size == 0:
-        return {"valid": False, "error": "File is empty"}
+    # Verify actual image content using PIL (or magic bytes fallback)
+    file_data = file.read()
+    file.seek(0)  # Reset for later upload
+
+    try:
+        from PIL import Image as PILImage
+        from io import BytesIO as _BytesIO
+
+        img = PILImage.open(_BytesIO(file_data))
+        img.verify()  # Verify it's a real image
+
+        # Re-open to read dimensions (verify() invalidates the object)
+        img = PILImage.open(_BytesIO(file_data))
+        width, height = img.size
+        channels = len(img.getbands())
+
+        # Check raw pixel data size (width * height * channels)
+        raw_size = width * height * channels
+        if raw_size > max_size_bytes:
+            return {
+                "valid": False,
+                "error": f"File too large. Maximum size is {max_size_mb}MB"
+            }
+    except ImportError:
+        # PIL not available, fall back to magic bytes check
+        image_signatures = [
+            b'\xff\xd8\xff',      # JPEG
+            b'\x89PNG\r\n\x1a\n', # PNG
+            b'GIF87a', b'GIF89a', # GIF
+            b'RIFF',              # WebP (RIFF....WEBP)
+        ]
+        if not any(file_data[:16].startswith(sig) for sig in image_signatures):
+            return {
+                "valid": False,
+                "error": "Invalid file type. File is not a valid image"
+            }
+    except Exception:
+        return {
+            "valid": False,
+            "error": "Invalid file type. File is not a valid image"
+        }
 
     return {"valid": True, "error": None}
 
