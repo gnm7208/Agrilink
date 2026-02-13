@@ -31,7 +31,7 @@ const SideNav = () => {
   return (
     <aside className="
   hidden lg:flex fixed inset-y-0 left-0 w-64 flex-col
-  bg-white/40
+  bg-slate-900/95
   backdrop-blur-xl
   border-r border-white/10
   shadow-2xl

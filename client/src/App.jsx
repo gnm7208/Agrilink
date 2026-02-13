@@ -21,12 +21,12 @@ import  {ChatInterface}  from './pages/Chatinterface'
 
 function MainLayout() {
   return (
-    <div className="min-h-screen bg-black flex flex-col lg:flex-row">
+    <div className="flex flex-col h-screen lg:flex-row">
      
       <SideNav />
 
       
-      <main className="flex-1   min-h-screen ">
+      <main className="flex-1 lg:ml-64 overflow-y-auto pb-16 lg:pb-0">
   <Outlet />
 </main>
 

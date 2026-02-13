@@ -134,13 +134,13 @@ export function HomeFeed() {
 
   return (
     <div
-      className="min-h-screen bg-cover bg-center lg:ml-64"
+      className="w-full min-h-screen bg-cover bg-center bg-fixed"
       style={{
         backgroundImage:
           "url(https://images.unsplash.com/photo-1500382017468-9049fed747ef)",
       }}
     >
-      <div className="min-h-screen w-full bg-black/30 backdrop-blur-sm">
+      <div className="w-full bg-black/30 backdrop-blur-sm">
         {/* HEADER */}
         <header className="sticky top-0 z-50 bg-black/30 backdrop-blur-md">
           <div className="flex justify-between items-center px-6 py-3">

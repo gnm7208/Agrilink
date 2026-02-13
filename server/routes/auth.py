@@ -122,7 +122,9 @@ def register():
     except Exception as e:
         db.session.rollback()
         # Log the error but don't expose details to user
+        import traceback
         print(f"Registration error: {e}")
+        traceback.print_exc()
         return jsonify({
             "error": "Registration failed",
             "message": "An unexpected error occurred. Please try again."

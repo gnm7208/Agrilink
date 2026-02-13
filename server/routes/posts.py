@@ -293,7 +293,8 @@ def add_post_image(post_id):
 def fetch_news():
     api_key = os.environ.get("NEWSAPI_KEY")
     if not api_key:
-        return jsonify({"error": "Missing NEWSAPI_KEY"}), 500
+        # Return empty articles if API key not configured
+        return jsonify({"articles": [], "total_results": 0, "has_more": False})
 
     page = request.args.get("page", 1, type=int)
     page_size = min(request.args.get("page_size", 20, type=int), 100)

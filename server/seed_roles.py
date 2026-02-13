@@ -1,12 +1,8 @@
 """
 Seed default roles for AgriLink.
-
-Usage (from Agrilink/server):
-  flask --app app:create_app shell
-  >>> from seed_roles import seed_default_roles
-  >>> seed_default_roles()
 """
 
+from app import create_app
 from extensions import db
 from models import Role
 
@@ -17,4 +13,11 @@ def seed_default_roles() -> None:
         if exists is None:
             db.session.add(Role(name=role_name))
     db.session.commit()
+    print(f"Roles seeded: user, admin")
+
+
+if __name__ == "__main__":
+    app = create_app()
+    with app.app_context():
+        seed_default_roles()
 
