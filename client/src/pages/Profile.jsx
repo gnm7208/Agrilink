@@ -5,6 +5,7 @@ import { Avatar } from '../components/ui/Avatar'
 import PostCard from '../components/PostCard'
 import { EditProfileModal } from '../components/EditProfileModal'
 import { apiRequest, API_ENDPOINTS } from '../config/api'
+
 export function ProfilePage() {
   const [user, setUser] = useState(null)
   const [posts, setPosts] = useState([])
@@ -13,23 +14,29 @@ export function ProfilePage() {
   const [showEditModal, setShowEditModal] = useState(false)
   const [resendLoading, setResendLoading] = useState(false)
   const [resendSent, setResendSent] = useState(false)
+
   useEffect(() => {
     fetchProfile()
   }, [])
+
   const fetchProfile = async () => {
     try {
       setLoading(true)
+
       const me = await apiRequest(API_ENDPOINTS.auth.me)
       if (!me?.authenticated) throw new Error('Not authenticated')
+
       setUser(me.user)
-      const userPosts = await apiRequest(`${API_ENDPOINTS.posts.list}?author_id=${me.user.id}`)
-      setPosts(userPosts.posts || [])
+
+      const userPosts = await apiRequest(API_ENDPOINTS.posts.mine)
+      setPosts(userPosts || [])
     } catch (err) {
       setError(err.message || 'Failed to load profile')
     } finally {
       setLoading(false)
     }
   }
+
   const handleResendVerification = async () => {
     setResendLoading(true)
     try {
@@ -42,6 +49,7 @@ export function ProfilePage() {
       setResendLoading(false)
     }
   }
+
   const formatJoinDate = (dateString) => {
     if (!dateString) return 'Recently joined'
     const date = new Date(dateString)
@@ -50,6 +58,7 @@ export function ProfilePage() {
       year: 'numeric',
     })}`
   }
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-black">
@@ -57,6 +66,7 @@ export function ProfilePage() {
       </div>
     )
   }
+
   if (error || !user) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-black text-white">
@@ -65,21 +75,25 @@ export function ProfilePage() {
       </div>
     )
   }
-return (
-  <div
-    className="min-h-screen pb-24 lg:ml-64"
-    style={{
-      backgroundImage:
-        'url(https://images.unsplash.com/photo-1500382017468-9049fed747ef)',
-      backgroundSize: 'cover',
-      backgroundPosition: 'center',
-    }}
-  >
-    <div className="min-h-screen bg-black/60 backdrop-blur-xl">
-      <header className="sticky top-0 z-40 bg-black/40 backdrop-blur border-b border-white/10 px-4 py-3 flex items-center justify-between">
-        <h1 className="font-bold text-lg text-white">My Profile</h1>
-        <Settings className="text-white/80" />
-      </header>
+
+  return (
+    <div
+      className="min-h-screen pb-24"
+      style={{
+        backgroundImage:
+          'url(https://images.unsplash.com/photo-1500382017468-9049fed747ef)',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+      }}
+    >
+      <div className="min-h-screen bg-black/60 backdrop-blur-xl">
+        {/* Header */}
+        <header className="sticky top-0 z-40 bg-black/40 backdrop-blur border-b border-white/10 px-4 py-3 flex items-center justify-between">
+          <h1 className="font-bold text-lg text-white">My Profile</h1>
+          <Settings className="text-white/80" />
+        </header>
+
+        {/* Verify email */}
         {user.email_verified === false && (
           <div className="mx-4 mt-4 p-4 rounded-2xl bg-amber-500/10 backdrop-blur border border-amber-500/30">
             <div className="flex flex-col sm:flex-row gap-3 items-center">
@@ -97,6 +111,8 @@ return (
             </div>
           </div>
         )}
+
+        {/* Profile Card */}
         <div className="mx-4 mt-6 rounded-3xl bg-white/10 backdrop-blur-xl border border-white/10 shadow-lg overflow-hidden">
           <div className="relative h-32 bg-gradient-to-r from-green-600/80 to-green-500/80">
             <div className="absolute -bottom-12 left-6">
@@ -108,6 +124,7 @@ return (
               />
             </div>
           </div>
+
           <div className="pt-16 px-6 pb-6 text-white">
             <div className="flex items-start justify-between">
               <div>
@@ -118,13 +135,16 @@ return (
                   </span>
                 )}
               </div>
+
               <Button size="sm" variant="outline" onClick={() => setShowEditModal(true)}>
                 Edit Profile
               </Button>
             </div>
+
             {user.bio && (
               <p className="mt-3 text-sm text-white/80">{user.bio}</p>
             )}
+
             <div className="flex flex-wrap gap-4 mt-4 text-sm text-white/70">
               {user.location && (
                 <div className="flex items-center gap-1">
@@ -139,6 +159,8 @@ return (
             </div>
           </div>
         </div>
+
+        {/* Posts */}
         <div className="px-4 mt-6 space-y-4">
           <h3 className="font-bold text-white text-lg">Recent Posts</h3>
           {posts.length === 0 ? (
@@ -147,6 +169,7 @@ return (
             posts.map((post) => <PostCard key={post.id} {...post} />)
           )}
         </div>
+
         {showEditModal && (
           <EditProfileModal
             user={user}

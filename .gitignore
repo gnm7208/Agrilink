@@ -1,14 +1,22 @@
+# Environment variables - NEVER commit these files!
 .env
-# Environment variables
-.env
-*.env
 server/.env
+client/.env
+
+# Allow .env.example templates (these should be tracked)
+!.env.example
+!**/.env.example
 
 # Python
 __pycache__/
 *.pyc
+*.pyo
 venv/
 *.db
+*.sqlite
+*.log
 
 # Node
 node_modules/
+dist/
+build/

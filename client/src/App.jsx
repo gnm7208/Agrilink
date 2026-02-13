@@ -4,7 +4,6 @@ import { BrowserRouter as Router, Routes, Route, Outlet, Navigate } from 'react-
 import BottomNav from './components/BottomNav'
 import SideNav from './components/SideNav'
 import { ProtectedRoute } from './components/ProtectedRoute'
-import { useAuth } from './context/authContext'
 
 import { LoginPage } from './pages/Login'
 import { RegisterPage } from './pages/Register'
@@ -47,69 +46,29 @@ function FullScreenLayout() {
   )
 }
 
-// Redirect authenticated users away from auth pages
-function PublicOnlyRoute({ children }) {
-  const { user, loading } = useAuth()
-  
-  if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>
-  }
-  
-  return user ? <Navigate to="/" replace /> : children
-}
-
 export function App() {
   return (
     <Router>
       <Routes>
       
-        {/* Public routes - redirect to home if already logged in */}
         <Route element={<FullScreenLayout />}>
-          <Route path="/login" element={
-            <PublicOnlyRoute>
-              <LoginPage />
-            </PublicOnlyRoute>
-          } />
-          <Route path="/register" element={
-            <PublicOnlyRoute>
-              <RegisterPage />
-            </PublicOnlyRoute>
-          } />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/verify-email" element={<VerifyEmailPage />} />
-          
-          {/* Protected routes that use full screen layout */}
-          <Route path="/post/:id" element={
-            <ProtectedRoute>
-              <PostDetails />
-            </ProtectedRoute>
-          } />
-          <Route path="/create" element={
-            <ProtectedRoute>
-              <CreatePost />
-            </ProtectedRoute>
-          } />
-          <Route path="/chat/:id" element={
-            <ProtectedRoute>
-              <ChatInterface />
-            </ProtectedRoute>
-          } />
+          <Route path="/post/:id" element={<PostDetails />} />
+          <Route path="/create" element={<CreatePost />} />
+          <Route path="/chat/:id" element={<ChatInterface />} />
         </Route>
 
-        {/* Protected routes with MainLayout (SideNav + BottomNav) */}
-        <Route element={
-          <ProtectedRoute>
-            <MainLayout />
-          </ProtectedRoute>
-        }>
+        <Route element={<MainLayout />}>
           <Route path="/" element={<HomeFeed />} />
           <Route path="/communities" element={<CommunitiesPage />} />
           <Route path="/messages" element={<MessagesList />} />
           <Route path="/profile" element={<ProfilePage />} />
         </Route>
 
-        {/* Catch all - redirect to home (which will redirect to login if not authenticated) */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
