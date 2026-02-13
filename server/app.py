@@ -1,7 +1,7 @@
 import logging
 import os
 from datetime import datetime, timedelta
-from flask import Flask, jsonify, session, g
+from flask import Flask, jsonify, request, session, g
 from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
