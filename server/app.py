@@ -8,8 +8,6 @@ from flask_limiter.util import get_remote_address
 from dotenv import load_dotenv
 
 load_dotenv()  # Load .env variables
-
-load_dotenv("/home/maish/Agrilink/server/.env")
 from config import get_config
 from extensions import db, migrate, cors, limiter
 
