@@ -15,10 +15,11 @@ class Config:
    
 
    
-    SQLALCHEMY_DATABASE_URI = os.getenv(
-        "DATABASE_URL",
-        "postgresql://localhost/agrilink"
-    )
+    # Render gives postgres://, SQLAlchemy needs postgresql://
+    _db_url = os.getenv("DATABASE_URL", "postgresql://localhost/agrilink")
+    if _db_url.startswith("postgres://"):
+        _db_url = _db_url.replace("postgres://", "postgresql://", 1)
+    SQLALCHEMY_DATABASE_URI = _db_url
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     
@@ -27,9 +28,6 @@ class Config:
     SESSION_COOKIE_SECURE = os.getenv("SESSION_COOKIE_SECURE", "true").lower() == "true"
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = "Lax"
-    PERMANENT_SESSION_LIFETIME = 86400  # 24 hours
-
-   
     PERMANENT_SESSION_LIFETIME = 86400  # 24 hours
 
    
@@ -98,7 +96,10 @@ class Config:
 
         
         if os.getenv("FLASK_ENV") == "production" and not cls.NEWSAPI_KEY:
-            raise ValueError("NEWSAPI_KEY is required in production")
+            import logging
+            logging.getLogger(__name__).warning(
+                "NEWSAPI_KEY not set — news features will be unavailable"
+            )
 
 
 class DevelopmentConfig(Config):
@@ -110,18 +111,15 @@ class DevelopmentConfig(Config):
 class ProductionConfig(Config):
     DEBUG = False
     TESTING = False
-    SESSION_COOKIE_SECURE = True  
-    SESSION_COOKIE_SECURE = True  
-    SESSION_COOKIE_SAMESITE = "Strict"
+    SESSION_COOKIE_SECURE = True
+    SESSION_COOKIE_SAMESITE = "None"  # Required for cross-site cookies (Vercel → Render)
 
 
 class TestingConfig(Config):
     TESTING = True
     SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
     SECRET_KEY = "test-secret-key-for-testing-only"
-    WTF_CSRF_ENABLED = False  
-
-    WTF_CSRF_ENABLED = False  
+    WTF_CSRF_ENABLED = False
 
 
 

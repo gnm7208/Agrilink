@@ -1,345 +1,358 @@
-# Agrilink
+# AgriLink
 
-An Agricultural Super App that revolutionizes the agricultural sector through centralization of information and networking of agricultural experts, farmers, and communities.
+AgriLink is a mobile-first agricultural super app that connects farmers with agricultural experts through posts, communities, and messaging. Built with modern web technologies, it provides a seamless platform for knowledge sharing, expert consultation, and community building in the agricultural sector.
 
-## 🌾 Problem Statement
+## Live Application
 
-Agriculture faces numerous challenges that impact farmers' livelihoods and sustainability:
+- **Frontend:** https://agrilink-sigma.vercel.app
+- **Backend API:** https://agrilink-11rw.onrender.com
 
-- **Limited Access to Information**: Farmers lack up-to-date agricultural knowledge on crop selection, pest management, and farming practices
-- **Fragmented Supply Chain**: Market inefficiencies, suboptimal pricing, and limited market access
-- **Limited Financial Access**: Difficulties in obtaining credit, managing cash flow, and mitigating risks
-- **Low Technology Adoption**: Digital literacy gaps and infrastructure limitations hinder technology adoption
-- **Data Privacy Concerns**: Hesitation to share sensitive agricultural data
+## Table of Contents
 
-## 💡 Solution
+- [Features](#features)
+- [Tech Stack](#tech-stack)
+- [Architecture](#architecture)
+- [Installation](#installation)
+- [API Documentation](#api-documentation)
+- [User Roles](#user-roles)
+- [Contributing](#contributing)
+- [License](#license)
 
-Agrilink is a centralized platform that connects farmers, agricultural experts, and communities to share knowledge, collaborate, and access vital agricultural information.
+## Features
 
-## ✨ Features
+### Core Features
 
-### User Management
-- User registration and authentication (JWT-based)
-- Email verification for new accounts
-- Role-based access control (Farmer, Expert, Admin)
-- Profile management with bio, location, and avatar
-- Password reset functionality
+- **Post Feed:** Create, browse, and engage with agricultural posts and articles
+- **User Authentication:** Secure JWT-based authentication with email verification
+- **Role-Based Access:** User and Admin roles with specific permissions
+- **Agricultural News:** Integrated NewsAPI feed for agriculture-related articles
+- **Image Upload:** Cloudinary integration for post images and profile photos
+- **Communities:** Create and join topic-based agricultural communities
+- **Messaging:** Direct user-to-user and community messaging
+- **Responsive Design:** Mobile-first UI with adaptive navigation (SideNav + BottomNav)
 
-### Social Networking
-- Follow agricultural experts and other users
-- View followers and following lists
-- User discovery and expert listings
+### User Features
 
-### Communities
-- Join agricultural communities/groups
-- Community-specific posts and discussions
-- Community messaging channels
-- Member management
+- **Home Feed:** Merged feed of user posts and agriculture news, sorted by date
+- **Post Interactions:** Like, comment, save, and share posts
+- **User Profiles:** Customizable profiles with bio, location, and profile image
+- **Follow System:** Follow agricultural experts and other users
+- **Community Membership:** Join communities and participate in discussions
+- **Direct Messaging:** Private conversations with other users
+- **Email Verification:** Secure account verification via email
 
-### Content Management
-- Create and publish agricultural blogs/posts
-- Rich text content with image support (via Cloudinary)
-- View posts from followed experts and communities
-- Post filtering by author or community
+### Admin Features
 
-### Engagement
-- Like posts
-- Comment on posts
-- Real-time engagement metrics (likes count, comments count)
+- **User Management:** View and manage all platform users
+- **Role Assignment:** Assign and update user roles
+- **Community Moderation:** Delete communities when necessary
+- **Platform Oversight:** Full access to all platform resources
 
-### Messaging
-- Direct messaging between users
-- Community channel messaging
-- Inbox management
-
-## 🛠️ Tech Stack
-
-### Backend
-- **Framework**: Flask 3.1.2 (Python)
-- **Database**: PostgreSQL
-- **ORM**: SQLAlchemy 2.0.46
-- **Migrations**: Alembic 1.18.1
-- **Authentication**: JWT (JSON Web Tokens)
-- **Image Storage**: Cloudinary
-- **Security**: Bleach (HTML sanitization), Werkzeug password hashing
-- **Rate Limiting**: Flask-Limiter
-- **Testing**: Pytest 8.0.0
+## Tech Stack
 
 ### Frontend
-- **Framework**: React 19.2.0
-- **Routing**: React Router DOM 7.13.0
-- **Styling**: Tailwind CSS 4.1.18
-- **Animations**: Framer Motion 12.29.2
-- **Icons**: Lucide React 0.563.0
-- **Build Tool**: Vite 7.2.4
 
-## 📁 Project Structure
+- **Framework:** React 19 with Vite 7
+- **Routing:** React Router v7
+- **Styling:** TailwindCSS 4
+- **Animations:** Framer Motion
+- **Icons:** Lucide React
+- **State Management:** React Context API
+- **HTTP Client:** Fetch API with centralized config
+- **Build Tool:** Vite
+
+### Backend
+
+- **Framework:** Flask (Python)
+- **Database:** PostgreSQL with SQLAlchemy ORM
+- **Authentication:** JWT (PyJWT) + Session fallback
+- **File Upload:** Cloudinary integration
+- **Migrations:** Flask-Migrate (Alembic)
+- **CORS:** Flask-CORS for cross-origin requests
+- **Rate Limiting:** Flask-Limiter
+- **Security:** Bleach for HTML sanitization, Bcrypt for password hashing
+- **Production Server:** Gunicorn
+
+### Infrastructure
+
+- **Frontend Hosting:** Vercel
+- **Backend Hosting:** Render
+- **Database:** Render PostgreSQL
+- **File Storage:** Cloudinary
+- **CI/CD:** GitHub Actions
+- **Version Control:** Git/GitHub
+
+## Architecture
 
 ```
-Agrilink/
-├── .github/
-│   └── workflows/
-│       └── ci.yml         # CI/CD pipeline configuration
-│
-├── client/                 # React frontend
-│   ├── src/
-│   │   ├── assets/        # Images and static files
-│   │   ├── components/    # Reusable UI components
-│   │   │   ├── ui/        # Base UI components
-│   │   │   ├── ProtectedRoute.jsx  # Route protection
-│   │   │   └── ...        # Other components
-│   │   ├── config/        # API configuration
-│   │   ├── context/       # React context providers
-│   │   │   └── AuthContext.jsx  # Authentication context
-│   │   ├── hooks/         # Custom React hooks
-│   │   │   └── useAuth.js # Authentication hook
-│   │   ├── pages/         # Page components
-│   │   │   ├── VerifyEmail.jsx  # Email verification
-│   │   │   └── ...        # Other pages
-│   │   └── main.jsx       # Entry point
-│   └── package.json
-│
-├── server/                # Flask backend
-│   ├── routes/           # API route handlers
-│   │   ├── auth.py       # Authentication endpoints
-│   │   ├── users.py      # User management
-│   │   ├── posts.py      # Post CRUD operations
-│   │   ├── communities.py # Community management
-│   │   ├── messages.py   # Messaging system
-│   │   └── uploads.py    # Image upload handling
-│   ├── services/         # Business logic services
-│   │   └── email_service.py  # Email sending service
-│   ├── utils/            # Utility functions
-│   │   ├── validators.py # Input validation
-│   │   └── email_verification.py  # Email verification tokens
-│   ├── migrations/       # Database migrations
-│   │   └── versions/     # Migration scripts
-│   ├── tests/           # Backend tests
-│   │   ├── test_auth.py
-│   │   ├── test_email_verification.py
-│   │   └── ...          # Other test files
-│   ├── dbschema/        # Database documentation
-│   ├── models.py        # SQLAlchemy models
-│   ├── app.py           # Flask application
-│   ├── config.py        # Configuration
-│   ├── extensions.py    # Flask extensions
-│   ├── rbac.py          # Role-based access control
-│   └── requirements.txt
-│
-└── README.md
++-------------------+    +-------------------+    +-------------------+
+|   React Client    |----|   Flask API       |----|   PostgreSQL      |
+|   (Vercel)        |    |   (Render)        |    |   (Render)        |
++-------------------+    +-------------------+    +-------------------+
+         |                        |                        |
+         |                        |                        |
+         +------------------------+------------------------+
+                                  |
+                     +-------------------+
+                     |   Cloudinary      |
+                     | (Image Storage)   |
+                     +-------------------+
+                                  |
+                     +-------------------+
+                     |   NewsAPI         |
+                     | (Ag News Feed)    |
+                     +-------------------+
 ```
 
-## 🚀 Getting Started
+## Installation
 
 ### Prerequisites
-- Python 3.8+
-- Node.js 16+
-- PostgreSQL 12+
-- Cloudinary account (for image uploads)
+
+- Python 3.11+
+- Node.js 18+
+- PostgreSQL
+- Git
 
 ### Backend Setup
 
-1. Navigate to the server directory:
+1. **Clone the repository**
+
 ```bash
-cd server
+git clone https://github.com/Ndet0/Agrilink.git
+cd Agrilink
 ```
 
-2. Create a virtual environment:
+2. **Create virtual environment**
+
 ```bash
-python -m venv venv
+cd server
+python3 -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 ```
 
-3. Install dependencies:
+3. **Install dependencies**
+
 ```bash
 pip install -r requirements.txt
 ```
 
-4. Create a `.env` file based on `.env.example`:
+4. **Environment Configuration**
+
+Create a `.env` file in the `server/` directory:
+
 ```bash
-cp .env.example .env
-```
-
-5. Configure environment variables:
-```env
-# Security
-SECRET_KEY=your-secret-key-min-32-chars
-
-# Database
-DATABASE_URL=postgresql://username:password@localhost:5432/agrilink
-
-# Cloudinary
+DATABASE_URL=postgresql://username:password@localhost/agrilink
+SECRET_KEY=your-secret-key-here-min-32-chars
+FLASK_HOST=0.0.0.0
+FLASK_PORT=5000
+FLASK_DEBUG=true
+FRONTEND_ORIGINS=http://localhost:5173,http://localhost:3000
+FRONTEND_URL=http://localhost:5173
 CLOUDINARY_CLOUD_NAME=your-cloud-name
 CLOUDINARY_API_KEY=your-api-key
 CLOUDINARY_API_SECRET=your-api-secret
-
-# Email Verification
-EMAIL_FROM=noreply@agrilink.example.com
-FRONTEND_URL=http://localhost:5173
-
-# CORS
-FRONTEND_ORIGINS=http://localhost:5173,http://localhost:3000
+NEWSAPI_KEY=your-newsapi-key
 ```
 
-6. Initialize the database:
+5. **Database Setup**
+
 ```bash
+createdb agrilink
 flask db upgrade
-python seed_roles.py  # Seed default roles
+python seed_roles.py
 ```
 
-7. Run the development server:
+6. **Run Backend Server**
+
 ```bash
-flask run
+python app.py
+# Server runs on http://localhost:5000
 ```
-
-The API will be available at `http://localhost:5000`
 
 ### Frontend Setup
 
-1. Navigate to the client directory:
+1. **Install dependencies**
+
 ```bash
 cd client
-```
-
-2. Install dependencies:
-```bash
 npm install
 ```
 
-3. Create a `.env` file based on `.env.example`:
-```bash
-cp .env.example .env
-```
+2. **Environment Configuration (Optional)**
 
-4. Configure the API endpoint:
-```env
+Create a `.env` file in the `client/` directory:
+
+```bash
 VITE_API_URL=http://localhost:5000/api
 ```
 
-5. Run the development server:
+3. **Run Development Server**
+
 ```bash
 npm run dev
+# Client runs on http://localhost:5173
 ```
 
-The application will be available at `http://localhost:5173`
+## API Documentation
 
-## 🧪 Testing
+### Authentication Endpoints
 
-### Backend Tests
+```
+POST /api/auth/register           # User registration
+POST /api/auth/login              # User login
+POST /api/auth/logout             # User logout
+GET  /api/auth/me                 # Get current user
+POST /api/auth/verify-email       # Verify email address
+POST /api/auth/resend-verification # Resend verification email
+POST /api/auth/request-password-reset # Request password reset
+GET  /api/auth/verify-reset-token/:token # Verify reset token
+POST /api/auth/reset-password     # Reset password
+```
+
+### User Endpoints
+
+```
+GET    /api/users                 # List users (admin only)
+GET    /api/users/experts         # List expert users
+GET    /api/users/:id             # Get user profile
+PATCH  /api/users/:id             # Update user profile
+DELETE /api/users/:id             # Delete user (admin only)
+POST   /api/users/:id/follow      # Follow a user
+DELETE /api/users/:id/follow      # Unfollow a user
+GET    /api/users/:id/followers   # Get user's followers
+GET    /api/users/:id/following   # Get user's following
+```
+
+### Post Endpoints
+
+```
+GET    /api/posts                 # List all posts
+POST   /api/posts                 # Create a post
+GET    /api/posts/:id             # Get a single post
+PATCH  /api/posts/:id             # Update a post
+DELETE /api/posts/:id             # Delete a post
+POST   /api/posts/:id/like        # Like a post
+DELETE /api/posts/:id/like        # Unlike a post
+GET    /api/posts/:id/comments    # Get post comments
+POST   /api/posts/:id/comments    # Add a comment
+POST   /api/posts/:id/images      # Add image to post
+GET    /api/posts/news             # Get agriculture news
+GET    /api/posts/news/:id         # Get single news article
+```
+
+### Community Endpoints
+
+```
+GET    /api/communities           # List communities
+POST   /api/communities           # Create a community
+GET    /api/communities/:id       # Get community details
+DELETE /api/communities/:id       # Delete community (admin)
+POST   /api/communities/:id/join  # Join a community
+POST   /api/communities/:id/leave # Leave a community
+GET    /api/communities/:id/members # Get community members
+GET    /api/communities/:id/posts   # Get community posts
+```
+
+### Message Endpoints
+
+```
+POST   /api/messages              # Send a message
+GET    /api/messages/conversations # List conversations
+GET    /api/messages/user/:id     # Messages with a user
+GET    /api/messages/community/:id # Messages in a community
+DELETE /api/messages/:id          # Delete a message
+```
+
+### Upload Endpoints
+
+```
+POST   /api/uploads/images        # Upload an image
+```
+
+## User Roles
+
+### User (Default)
+
+- Browse and search posts and news
+- Create, edit, and delete own posts
+- Like and comment on posts
+- Follow other users
+- Join and participate in communities
+- Send and receive messages
+- Upload images
+
+### Admin
+
+- All User permissions
+- Manage all users (view, update roles, delete)
+- Delete any community
+- Full platform access
+
+## Deployment
+
+### Production Environment
+
+- **Frontend:** Deployed on Vercel with automatic deployments from `main`
+- **Backend:** Deployed on Render with Gunicorn WSGI server
+- **Database:** Render PostgreSQL with automated backups
+- **CDN:** Cloudinary for optimized image delivery
+
+### Environment Variables (Production)
+
+**Backend (Render):**
+
 ```bash
-cd server
-pytest
-pytest --cov  # With coverage report
+FLASK_ENV=production
+DATABASE_URL=postgresql://user:pass@host:port/db
+SECRET_KEY=your-production-secret-key
+FRONTEND_ORIGINS=https://agrilink-sigma.vercel.app
+NEWSAPI_KEY=your-newsapi-key
+CLOUDINARY_CLOUD_NAME=your-cloud-name
+CLOUDINARY_API_KEY=your-api-key
+CLOUDINARY_API_SECRET=your-api-secret
 ```
 
-### Frontend Tests
+**Frontend (Vercel):**
+
 ```bash
-cd client
-npm test
+VITE_API_URL=https://agrilink-11rw.onrender.com/api
 ```
 
-## 📚 API Documentation
+## Contributing
 
-Comprehensive API documentation is available in [server/dbschema/API_Documentation.md](server/dbschema/API_Documentation.md)
+### Team Members
 
-### Key Endpoints
+**Backend Development:**
 
-#### Authentication
-- `POST /api/auth/register` - Register new user
-- `POST /api/auth/login` - Login user
-- `POST /api/auth/logout` - Logout user
-- `GET /api/auth/me` - Get current user
-- `POST /api/auth/verify-email` - Verify email address
-- `POST /api/auth/resend-verification` - Resend verification email
+- Festus Ndeto - Backend Developer
+- George Mukirai- Backend Developer
 
-#### Users
-- `GET /api/users/{id}` - Get user profile
-- `PUT /api/profile` - Update own profile
-- `POST /api/users/{id}/follow` - Follow user
-- `DELETE /api/users/{id}/follow` - Unfollow user
+**Frontend Development:**
 
-#### Posts
-- `GET /api/posts` - List posts (paginated)
-- `POST /api/posts` - Create post
-- `POST /api/posts/{id}/like` - Like post
-- `POST /api/posts/{id}/comments` - Add comment
+- Maina Ng'ang'a - Frontend Developer
+- Prince Kibali- Frontend Developer
 
-#### Communities
-- `GET /api/communities` - List communities
-- `POST /api/communities/{id}/join` - Join community
-- `POST /api/communities/{id}/leave` - Leave community
-
-#### Messages
-- `GET /api/conversations` - List conversations
-- `POST /api/conversations` - Start conversation
-- `POST /api/conversations/{id}/messages` - Send message
-
-## 🗄️ Database Schema
-
-Database schema documentation is available in [server/dbschema/Database_schema.md](server/dbschema/Database_schema.md)
-
-### Core Tables
-- `users` - User accounts and profiles
-- `roles` - RBAC role definitions
-- `posts` - Agricultural blogs/posts
-- `post_images` - Post image attachments
-- `communities` - Agricultural communities
-- `community_memberships` - User-community relationships
-- `follows` - User following relationships
-- `likes` - Post likes
-- `comments` - Post comments
-- `messages` - Direct and community messages
-
-## 🔒 Security Features
-
-- JWT-based authentication
-- Email verification for new accounts
-- Password hashing with Werkzeug
-- HTML sanitization with Bleach
-- Rate limiting on API endpoints
-- CORS configuration
-- SQL injection prevention via SQLAlchemy ORM
-- Secure password reset tokens with expiration
-- Protected routes with authentication context
-
-## 📱 Mobile Responsiveness
-
-The application is designed with mobile-first principles using Tailwind CSS, ensuring optimal experience across all device sizes.
-
-## 🤝 Contributing
+### Development Workflow
 
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit changes (`git commit -m 'Add amazing feature'`)
+4. Push to branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request to `main`
 
-## 📄 License
+### Code Standards
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+- **Backend:** Follow PEP 8 conventions, use decorators from `rbac.py` for auth
+- **Frontend:** Functional components with hooks, TailwindCSS utility classes
+- **Testing:** Backend tests with pytest, frontend linting with ESLint
+- **Git:** Feature branches, reviewed PRs, conventional commit messages
 
-## 👥 Authors
+## License
 
-- **Festus Ndeto** - *Initial work* - [GitHub](https://github.com/Ndet0)
+MIT License - see LICENSE file for details.
 
-## 🙏 Acknowledgments
-
-- Agricultural experts who provided domain knowledge
-- Open source community for the amazing tools and libraries
-- All contributors who have helped shape this project
-
-## 📞 Support
-
-For support, please open an issue in the GitHub repository or contact the development team.
-
-## 🗺️ Roadmap
-
-See [ROADMAP.md](ROADMAP.md) for planned features and improvements.
-
-## 🔐 Security
-
-For security concerns, please refer to [SECURITY_FIXES.md](SECURITY_FIXES.md).
+Copyright (c) 2026 AgriLink Team
 
 ---
 
-**Built with ❤️ for the agricultural community**
+Built with care by the AgriLink Team

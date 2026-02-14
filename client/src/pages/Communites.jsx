@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Search, Loader2 } from 'lucide-react'
 /* eslint-disable-next-line no-unused-vars -- motion used in JSX */
 import { motion } from 'framer-motion'
@@ -7,7 +7,6 @@ import { apiRequest, API_ENDPOINTS } from '../config/api'
 
 export function CommunitiesPage() {
   const [activeTab, setActiveTab] = useState('experts')
-  const [searchQuery, setSearchQuery] = useState('')
   const [experts, setExperts] = useState([])
   const [communities, setCommunities] = useState([])
   const [loading, setLoading] = useState(true)
@@ -25,8 +24,8 @@ export function CommunitiesPage() {
     try {
       setLoading(true)
       setError(null)
-      const res = await apiRequest(API_ENDPOINTS.users.experts)
-      setExperts(res.experts || [])
+      const response = await apiRequest(API_ENDPOINTS.users.experts)
+      setExperts(response.experts || [])
     } catch (err) {
       setError(err.message || 'Failed to load experts')
       setExperts([])
@@ -39,8 +38,8 @@ export function CommunitiesPage() {
     try {
       setLoading(true)
       setError(null)
-      const res = await apiRequest(API_ENDPOINTS.communities.list)
-      setCommunities(res.communities || [])
+      const response = await apiRequest(API_ENDPOINTS.communities.list)
+      setCommunities(response.communities || [])
     } catch (err) {
       setError(err.message || 'Failed to load communities')
       setCommunities([])
@@ -48,29 +47,6 @@ export function CommunitiesPage() {
       setLoading(false)
     }
   }
-
-  const query = searchQuery.toLowerCase()
-
-  const filteredExperts = useMemo(
-    () =>
-      experts.filter(
-        (e) =>
-          e.username?.toLowerCase().includes(query) ||
-          e.bio?.toLowerCase().includes(query) ||
-          e.role?.toLowerCase().includes(query)
-      ),
-    [experts, query]
-  )
-
-  const filteredCommunities = useMemo(
-    () =>
-      communities.filter(
-        (c) =>
-          c.name?.toLowerCase().includes(query) ||
-          c.description?.toLowerCase().includes(query)
-      ),
-    [communities, query]
-  )
 
   return (
     <div
@@ -80,12 +56,16 @@ export function CommunitiesPage() {
           'url(https://images.unsplash.com/photo-1500382017468-9049fed747ef)',
       }}
     >
-      <div className="min-h-screen bg-black/40 backdrop-blur-sm pb-24 ml-20">
-        <div className="w-full pt-10">
-          <div className="mx-auto px-7 lg:px-8 max-w-2xl lg:ml-[320px]">
-            {/* Header */}
+      {/* Overlay */}
+      <div className="min-h-screen bg-black/40 backdrop-blur-sm pb-24">
+        {/* CONTENT WRAPPER */}
+        <div className="w-full pt-6">
+          {/* This is the magic container */}
+          <div className="mx-auto px-4 lg:px-8 max-w-2xl lg:ml-[320px]">
+            
+            {/* HEADER */}
             <div className="mb-6">
-              <h1 className="text-xl font-bold text-white mb-4 ml-60">
+              <h1 className="text-xl font-bold text-white mb-4">
                 Discover
               </h1>
 
@@ -95,17 +75,13 @@ export function CommunitiesPage() {
                   className="absolute left-4 top-1/2 -translate-y-1/2 text-white/50"
                 />
                 <input
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder={`Search ${
-                    activeTab === 'experts' ? 'experts' : 'communities'
-                  }...`}
+                  placeholder="Search experts, topics, or communities..."
                   className="w-full rounded-xl bg-white/10 backdrop-blur-xl pl-11 pr-4 py-3 text-sm text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-green-500/40"
                 />
               </div>
             </div>
 
-            {/* Tabs */}
+            {/* TABS */}
             <div className="flex bg-white/10 backdrop-blur-xl rounded-xl p-1 mb-6">
               <button
                 onClick={() => setActiveTab('experts')}
@@ -130,7 +106,7 @@ export function CommunitiesPage() {
               </button>
             </div>
 
-            {/* Content */}
+            {/* CONTENT */}
             <motion.div
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
@@ -144,43 +120,43 @@ export function CommunitiesPage() {
               ) : error ? (
                 <p className="text-red-300 text-center py-6">{error}</p>
               ) : activeTab === 'experts' ? (
-                filteredExperts.length ? (
-                  filteredExperts.map((expert) => (
-                    <ExpertCard
-                      key={expert.id}
-                      id={expert.id}
-                      name={expert.username}
-                      specialty={expert.bio || expert.role || 'Member'}
-                      followers={expert.followers_count ?? 0}
-                      avatar={expert.profile_image_url}
-                      glass
-                    />
-                  ))
-                ) : (
-                  <p className="text-center text-white/60 text-sm">
-                    No experts found
-                  </p>
-                )
-              ) : filteredCommunities.length ? (
-                filteredCommunities.map((community) => (
-                  <div
-                    key={community.id}
-                    className="bg-white/10 backdrop-blur-xl rounded-xl p-4 text-white"
-                  >
-                    <h3 className="font-bold">{community.name}</h3>
-                    {community.description && (
-                      <p className="text-sm text-white/80 mt-1">
-                        {community.description}
-                      </p>
-                    )}
-                  </div>
+                experts.map((expert) => (
+                  <ExpertCard
+                    key={expert.id}
+                    id={expert.id}
+                    name={expert.username}
+                    specialty={expert.bio || expert.role || 'Member'}
+                    followers={expert.followers_count ?? 0}
+                    avatar={expert.profile_image_url}
+                    glass
+                  />
                 ))
               ) : (
-                <p className="text-center text-white/60 text-sm">
-                  No communities found
-                </p>
+                communities.length === 0 ? (
+                  <div className="text-center py-20">
+                    <p className="text-white/70 text-lg">
+                      No communities yet
+                    </p>
+                    <p className="text-white/40 text-sm mt-2 max-w-sm mx-auto">
+                      Communities will appear here when they are created.
+                    </p>
+                  </div>
+                ) : (
+                  communities.map((community) => (
+                    <div
+                      key={community.id}
+                      className="bg-white/10 backdrop-blur-xl rounded-xl p-4 text-white"
+                    >
+                      <h3 className="font-bold">{community.name}</h3>
+                      {community.description && (
+                        <p className="text-sm text-white/80 mt-1">{community.description}</p>
+                      )}
+                    </div>
+                  ))
+                )
               )}
             </motion.div>
+
           </div>
         </div>
       </div>
