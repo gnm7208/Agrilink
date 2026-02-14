@@ -6,10 +6,7 @@ Tokens are stored as SHA256 hashes; the raw token is only sent in the verificati
 import hashlib
 import secrets
 from datetime import datetime, timedelta
-<<<<<<< HEAD
 from typing import Optional
-=======
->>>>>>> main
 
 from flask import current_app
 from extensions import db
@@ -50,11 +47,7 @@ def create_email_verification(user: User) -> str:
     return raw_token
 
 
-<<<<<<< HEAD
 def verify_email_token(token: str) -> Optional[User]:
-=======
-def verify_email_token(token: str) -> User | None:
->>>>>>> main
     """
     Validate token and return the user if valid and not expired.
 
