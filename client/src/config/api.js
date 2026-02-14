@@ -12,7 +12,9 @@ if (!apiUrlFromEnv && import.meta.env.PROD) {
   throw new Error('VITE_API_URL environment variable is required in production');
 }
 
-export const API_URL = apiUrlFromEnv || 'http://localhost:5000/api';
+// In development prefer a relative `/api` so Vite dev server proxy (if enabled)
+// can forward requests to the backend and avoid CORS / SameSite cookie issues.
+export const API_URL = apiUrlFromEnv || '/api';
 
 // API endpoints
 export const API_ENDPOINTS = {

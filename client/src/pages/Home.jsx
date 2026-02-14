@@ -43,7 +43,14 @@ export function HomeFeed() {
       const newsArticles = newsData.status === "fulfilled" ? (newsData.value.articles || []) : [];
       const userPosts = postsData.status === "fulfilled" ? (postsData.value.posts || []) : [];
 
-      const formattedNews = newsArticles.map((article) => ({
+      // Filter news articles by agricultural keywords as an extra safety
+      const AGRI_KEYWORDS = ["agriculture","farming","crop","crops","livestock","agribusiness","agri","farm"];
+      const formattedNews = newsArticles
+        .filter(a => {
+          const text = ((a.title || '') + ' ' + (a.description || '')).toLowerCase();
+          return AGRI_KEYWORDS.some(k => text.includes(k));
+        })
+        .map((article) => ({
         id: article.id,
         title: article.title,
         description: article.description,

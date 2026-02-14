@@ -1,13 +1,17 @@
 import React, { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Search, Edit, Loader2 } from 'lucide-react'
 import { Avatar } from '../components/ui/Avatar'
 import { apiRequest, API_ENDPOINTS } from '../config/api'
 
 export function MessagesList() {
+  const navigate = useNavigate()
   const [conversations, setConversations] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [showComposer, setShowComposer] = useState(false)
+  const [users, setUsers] = useState([])
+  const [userSearch, setUserSearch] = useState('')
 
   useEffect(() => {
     fetchConversations()
@@ -27,6 +31,24 @@ export function MessagesList() {
     }
   }
 
+  const openComposer = async () => {
+    setShowComposer(true)
+    setUsers([])
+    try {
+      const res = await apiRequest(API_ENDPOINTS.users.list)
+      // API returns list in res.users or res
+      const list = res.users || res || []
+      setUsers(list.filter(u => u && u.id))
+    } catch (e) {
+      setUsers([])
+    }
+  }
+
+  const handleStartChat = (userId) => {
+    setShowComposer(false)
+    navigate(`/chat/${userId}`)
+  }
+
   const formatTime = (dateStr) => {
     if (!dateStr) return ''
     const date = new Date(dateStr)
@@ -40,9 +62,13 @@ export function MessagesList() {
   return (
     <div className="min-h-screen bg-white pb-24">
       <header className="sticky top-0 z-40 bg-white border-b border-gray-100 px-4 py-3">
-        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-4">
           <h1 className="text-xl font-bold text-gray-900">Messages</h1>
-          <button className="p-2 bg-green-50 text-green-600 rounded-full hover:bg-green-100 transition-colors">
+          <button
+            onClick={openComposer}
+            className="p-2 bg-green-600 text-white rounded-full hover:bg-green-700 transition-colors"
+            title="New message"
+          >
             <Edit size={20} />
           </button>
         </div>
@@ -117,6 +143,39 @@ export function MessagesList() {
           ))}
         </div>
       )}
+
+        {/* Composer modal */}
+        {showComposer && (
+          <div className="fixed inset-0 z-50 flex items-start justify-center p-4">
+            <div className="w-full max-w-md bg-white rounded-xl shadow-lg p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-lg font-semibold">New Message</h3>
+                <button onClick={() => setShowComposer(false)} className="text-gray-500">Close</button>
+              </div>
+              <input
+                value={userSearch}
+                onChange={(e) => setUserSearch(e.target.value)}
+                placeholder="Search users..."
+                className="w-full mb-3 px-3 py-2 border rounded"
+              />
+              <div className="max-h-64 overflow-y-auto">
+                {users.filter(u => (u.username || '').toLowerCase().includes(userSearch.toLowerCase())).map(u => (
+                  <div key={u.id} className="flex items-center justify-between p-2 hover:bg-gray-50 rounded">
+                    <div className="flex items-center gap-3">
+                      <Avatar src={u.profile_image_url} fallback={u.username} size="sm" />
+                      <div>
+                        <div className="font-medium">{u.username}</div>
+                        <div className="text-xs text-gray-500">{u.role}</div>
+                      </div>
+                    </div>
+                    <button onClick={() => handleStartChat(u.id)} className="bg-green-600 text-white px-3 py-1 rounded">Message</button>
+                  </div>
+                ))}
+                {users.length === 0 && <p className="text-sm text-gray-500">No users found.</p>}
+              </div>
+            </div>
+          </div>
+        )}
     </div>
   )
 }

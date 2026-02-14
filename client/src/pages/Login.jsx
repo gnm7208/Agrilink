@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/input'
 import { Sprout, AlertCircle } from 'lucide-react'
@@ -13,6 +13,8 @@ import bgImage from '../assets/Agriculture Sprayers Market Size, Share, and Grow
 export function LoginPage() {
   const navigate = useNavigate()
   const { refreshUser } = useAuth()
+  const location = useLocation()
+  const navState = location.state || {}
   const [isLoading, setIsLoading] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -36,9 +38,6 @@ export function LoginPage() {
       if (data.token) {
         setToken(data.token)
       }
-      if (data.user) {
-        localStorage.setItem('user', JSON.stringify(data.user))
-      }
 
       if (data.email_not_verified) {
         setEmailNotVerified(true)
@@ -46,7 +45,11 @@ export function LoginPage() {
       }
 
       await refreshUser()
-      navigate('/')
+      
+      // Small delay to ensure context updates
+      setTimeout(() => {
+        navigate('/')
+      }, 100)
     } catch (err) {
       setError(err.message || 'Invalid email or password')
     } finally {
@@ -108,6 +111,25 @@ export function LoginPage() {
           <div className="flex gap-2 p-3 mb-4 rounded-lg bg-red-500/20 border border-red-400/30">
             <AlertCircle className="w-4 h-4 mt-0.5" />
             <p className="text-xs">{error}</p>
+          </div>
+        )}
+
+        {/* Registration success / dev verification link */}
+        {navState.message && (
+          <div className="flex flex-col gap-2 p-3 mb-4 rounded-lg bg-green-500/10 border border-green-400/20">
+            <p className="text-xs font-medium">{navState.message}</p>
+            {navState.verification_link && (
+              <div className="flex items-center gap-2">
+                <a href={navState.verification_link} className="text-xs text-green-300 break-all">Open verification link</a>
+                <button
+                  type="button"
+                  onClick={() => navigator.clipboard?.writeText(navState.verification_link)}
+                  className="ml-2 text-xs text-white bg-green-600 px-2 py-1 rounded"
+                >
+                  Copy link
+                </button>
+              </div>
+            )}
           </div>
         )}
 

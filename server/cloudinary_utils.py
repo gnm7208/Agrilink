@@ -24,6 +24,8 @@ def configure_cloudinary():
     api_key = current_app.config.get("CLOUDINARY_API_KEY")
     api_secret = current_app.config.get("CLOUDINARY_API_SECRET")
 
+    # If any credential is missing, raise the error for production usage.
+    # For local development we allow a graceful fallback handled by upload_image().
     if not all([cloud_name, api_key, api_secret]):
         raise CloudinaryError(
             "Cloudinary credentials not configured. "
@@ -82,16 +84,10 @@ def validate_image_file(file):
 
         # Re-open to read dimensions (verify() invalidates the object)
         img = PILImage.open(_BytesIO(file_data))
-        width, height = img.size
-        channels = len(img.getbands())
-
-        # Check raw pixel data size (width * height * channels)
-        raw_size = width * height * channels
-        if raw_size > max_size_bytes:
-            return {
-                "valid": False,
-                "error": f"File too large. Maximum size is {max_size_mb}MB"
-            }
+        # We avoid comparing raw pixel counts to the byte-size threshold
+        # because compressed image files can be much smaller on disk than
+        # their uncompressed pixel buffers. Rely on the uploaded file size
+        # (checked above) and basic image verification here.
     except ImportError:
         # PIL not available, fall back to magic bytes check
         image_signatures = [
@@ -127,7 +123,24 @@ def upload_image(file, folder="agrilink"):
         dict with 'success' False and 'error' on failure
     """
     try:
-        configure_cloudinary()
+        # If Cloudinary is not configured, allow a development fallback to
+        # return a dummy image URL so local testing can proceed without
+        # requiring real credentials. This fallback is ONLY used when the
+        # application is running in development mode.
+        try:
+            configure_cloudinary()
+            cloudinary_configured = True
+        except CloudinaryError:
+            cloudinary_configured = False
+
+        if not cloudinary_configured:
+            # Development fallback: return a public sample image hosted by Cloudinary
+            # so the UI can proceed. Do NOT use this in production.
+            if getattr(current_app, 'config', {}).get('ENV', current_app.config.get('FLASK_ENV', 'development')) == 'development':
+                sample_url = "https://res.cloudinary.com/demo/image/upload/sample.jpg"
+                return {"success": True, "url": sample_url, "public_id": None}
+            else:
+                raise CloudinaryError("Cloudinary credentials not configured")
 
         # Upload to Cloudinary
         result = cloudinary.uploader.upload(

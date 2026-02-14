@@ -12,12 +12,14 @@ import {
 /* eslint-disable-next-line no-unused-vars -- motion used in JSX */
 import { motion } from 'framer-motion'
 import { apiRequest, API_ENDPOINTS, setToken } from '../config/api'
+import { useAuth } from '../hooks/useAuth'
 
 // 👉 Change path if needed
 import bgImage from '../assets/reg.jpeg'
 
 export function RegisterPage() {
   const navigate = useNavigate()
+  const { refreshUser } = useAuth()
   const [role, setRole] = useState('Farmer')
   const [isLoading, setIsLoading] = useState(false)
   const [username, setUsername] = useState('')
@@ -45,11 +47,27 @@ export function RegisterPage() {
 
       if (data.token) {
         setToken(data.token)
+        // Refresh auth context so SPA recognizes logged-in user immediately
+        try {
+          await refreshUser()
+        } catch (e) {
+          // ignore — we'll still navigate to login where user can retry
+        }
       }
 
-      navigate('/login', {
-        state: { message: 'Account created. Please check your email to verify your account, then log in.' },
-      })
+      // If backend returned a developer verification link (no mail configured),
+      // pass it to the login page so the developer can complete verification.
+      const navState = { message: 'Account created. Please check your email to verify your account, then log in.' }
+      if (data.verification_link) {
+        navState.verification_link = data.verification_link
+      }
+
+      // If we refreshed user successfully, navigate to home; otherwise go to login
+      if (data.token) {
+        navigate('/')
+      } else {
+        navigate('/login', { state: navState })
+      }
     } catch (error) {
       setError(error.message || 'Registration failed. Please try again.')
 

@@ -1,1 +1,33 @@
-.env.example
+# Local environment - do NOT commit your real secrets
+# The repo tracks `.env.example` at the project root; ignore actual env files here.
+.env
+
+# Python cache and virtualenv
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+venv/
+.venv/
+
+# Test and coverage
+.pytest_cache/
+.coverage
+coverage.xml
+
+# Database files
+*.db
+*.sqlite
+
+# Flask instance folder
+instance/
+
+# Uploaded media (local dev)
+uploads/
+
+# Editor temporary files
+.DS_Store
+
+# Keep .env.example tracked
+!.env.example
+

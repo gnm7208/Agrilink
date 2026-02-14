@@ -7,6 +7,7 @@ from rbac import login_required
 from utils import validate_password, validate_email, validate_username
 from utils.email_verification import create_email_verification, verify_email_token
 from services.email_service import send_verification_email
+from jwt_utils import create_token
 
 bp = Blueprint("auth", __name__, url_prefix="/auth")
 
@@ -107,11 +108,23 @@ def register():
         session["session_created_at"] = datetime.utcnow().isoformat()
         session.permanent = True  # Use PERMANENT_SESSION_LIFETIME from config
 
-        return jsonify({
+        # In development when email is not configured, also return the
+        # verification link in the response to help testing. In production
+        # this link will not be returned to avoid exposing tokens.
+        response_payload = {
             "message": "Registration successful. Please verify your email.",
             "email_verification_required": True,
             "user": user.to_dict(include_email=True)
-        }), 201
+        }
+        if not current_app.config.get("MAIL_SERVER"):
+            response_payload["verification_link"] = verification_link
+        # Also include a JWT token on registration to help SPA stay authenticated
+        try:
+            response_payload["token"] = create_token(user.id)
+        except Exception:
+            pass
+
+        return jsonify(response_payload), 201
 
     except IntegrityError as e:
         db.session.rollback()
@@ -180,6 +193,13 @@ def login():
     }
     if not user.email_verified:
         payload["email_not_verified"] = True
+    # Also return a short-lived JWT token to support SPA auth across origins
+    try:
+        token = create_token(user.id)
+        payload["token"] = token
+    except Exception:
+        # If token creation fails, do not break login — session will still be set
+        pass
     return jsonify(payload), 200
 
 

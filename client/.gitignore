@@ -22,3 +22,11 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Local environment files (Vite/React)
+.env.local
+.env.*.local
+
+# Cloudinary or credential files (local/dev only)
+cloudinary_credentials.*
+cloudinary.*.json
