@@ -5,8 +5,10 @@ import { Avatar } from '../components/ui/Avatar';
 import PostCard from '../components/PostCard';
 import { EditProfileModal } from '../components/EditProfileModal';
 import { apiRequest, API_ENDPOINTS } from '../config/api';
+import { useAuth } from '../hooks/useAuth';
 
 export function ProfilePage() {
+  const { updateUser } = useAuth()
   const [user, setUser] = useState(null);
   const [posts, setPosts] = useState([]);
   const [postsLoading, setPostsLoading] = useState(true);
@@ -78,6 +80,7 @@ export function ProfilePage() {
 
   const handleProfileUpdate = (updatedUser) => {
     setUser(updatedUser);
+    updateUser(updatedUser);
   };
 
   const handleResendVerification = async () => {

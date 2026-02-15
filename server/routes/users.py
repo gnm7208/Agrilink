@@ -12,6 +12,32 @@ def health():
     return jsonify({"status": "users service running"})
 
 
+@bp.route("/search", methods=["GET"])
+@login_required
+def search_users():
+    """Search users by username or email (non-admin endpoint for messaging).
+    
+    Query params:
+        q: Search query string
+        limit: Max results (default: 20, max: 50)
+    """
+    query = request.args.get("q", "").strip()
+    limit = min(request.args.get("limit", 20, type=int), 50)
+    
+    if not query or len(query) < 2:
+        return jsonify({"users": []})
+    
+    # Search by username or email (case-insensitive)
+    users = User.query.filter(
+        (User.username.ilike(f"%{query}%")) | 
+        (User.email.ilike(f"%{query}%"))
+    ).limit(limit).all()
+    
+    return jsonify({
+        "users": [u.to_dict() for u in users]
+    })
+
+
 @bp.route("/admin/health", methods=["GET"])
 @admin_required
 def admin_health():

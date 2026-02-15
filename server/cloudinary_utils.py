@@ -84,10 +84,8 @@ def validate_image_file(file):
 
         # Re-open to read dimensions (verify() invalidates the object)
         img = PILImage.open(_BytesIO(file_data))
-        # We avoid comparing raw pixel counts to the byte-size threshold
-        # because compressed image files can be much smaller on disk than
-        # their uncompressed pixel buffers. Rely on the uploaded file size
-        # (checked above) and basic image verification here.
+        # Removed the uncompressed size check as it was too restrictive.
+        # The compressed file size check above is sufficient for validation.
     except ImportError:
         # PIL not available, fall back to magic bytes check
         image_signatures = [

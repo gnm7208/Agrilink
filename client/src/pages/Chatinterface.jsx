@@ -161,7 +161,12 @@ export function ChatInterface() {
           </p>
         )}
         {chatHistory.map((msg) => (
-          <ChatBubble key={msg.id} message={msg} />
+          <ChatBubble 
+            key={msg.id} 
+            message={msg.message}
+            time={msg.time}
+            isSent={msg.isSent}
+          />
         ))}
         <div ref={messagesEndRef} />
       </div>

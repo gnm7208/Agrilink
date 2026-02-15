@@ -43,13 +43,8 @@ export function HomeFeed() {
       const newsArticles = newsData.status === "fulfilled" ? (newsData.value.articles || []) : [];
       const userPosts = postsData.status === "fulfilled" ? (postsData.value.posts || []) : [];
 
-      // Filter news articles by agricultural keywords as an extra safety
-      const AGRI_KEYWORDS = ["agriculture","farming","crop","crops","livestock","agribusiness","agri","farm"];
+      // Show all news articles from API (server already filtered by agriculture keywords)
       const formattedNews = newsArticles
-        .filter(a => {
-          const text = ((a.title || '') + ' ' + (a.description || '')).toLowerCase();
-          return AGRI_KEYWORDS.some(k => text.includes(k));
-        })
         .map((article) => ({
         id: article.id,
         title: article.title,

@@ -34,12 +34,27 @@ export function MessagesList() {
   const openComposer = async () => {
     setShowComposer(true)
     setUsers([])
+    // Use the search endpoint instead of the admin-only list endpoint
     try {
-      const res = await apiRequest(API_ENDPOINTS.users.list)
+      const res = await apiRequest(`${API_ENDPOINTS.users.list}/search?q=`)
       // API returns list in res.users or res
       const list = res.users || res || []
       setUsers(list.filter(u => u && u.id))
-    } catch (e) {
+    } catch {
+      setUsers([])
+    }
+  }
+
+  const handleSearch = async (query) => {
+    if (!query || query.length < 2) {
+      setUsers([])
+      return
+    }
+    try {
+      const res = await apiRequest(`${API_ENDPOINTS.users.list}/search?q=${encodeURIComponent(query)}`)
+      const list = res.users || res || []
+      setUsers(list.filter(u => u && u.id))
+    } catch {
       setUsers([])
     }
   }
@@ -154,7 +169,10 @@ export function MessagesList() {
               </div>
               <input
                 value={userSearch}
-                onChange={(e) => setUserSearch(e.target.value)}
+                onChange={(e) => {
+                  setUserSearch(e.target.value)
+                  handleSearch(e.target.value)
+                }}
                 placeholder="Search users..."
                 className="w-full mb-3 px-3 py-2 border rounded"
               />

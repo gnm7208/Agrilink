@@ -1,5 +1,6 @@
 import logging
 import os
+import sys
 from datetime import datetime, timedelta
 from flask import Flask, jsonify, request, session, g
 from flask_cors import CORS
@@ -8,6 +9,12 @@ from flask_limiter.util import get_remote_address
 from dotenv import load_dotenv
 
 load_dotenv()  # Load .env variables
+
+# Add server directory to path for imports to work
+_server_dir = os.path.dirname(os.path.abspath(__file__))
+if _server_dir not in sys.path:
+    sys.path.insert(0, _server_dir)
+
 from config import get_config
 from extensions import db, migrate, cors, limiter
 

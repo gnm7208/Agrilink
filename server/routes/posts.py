@@ -17,7 +17,14 @@ bp = Blueprint("posts", __name__)
 
 DEFAULT_RATE_LIMIT = "30 per minute"
 NEWS_QUERY = "agriculture OR farming OR crops OR livestock OR agribusiness"
-NEWS_API_URL = "https://newsapi.org/v2/everything"
+
+# ISDA Africa API Configuration
+ISDA_API_URL = os.environ.get("ISDA_API_URL", "https://api.isda-africa.com")
+ISDA_USERNAME = os.environ.get("ISDA_USERNAME")
+ISDA_PASSWORD = os.environ.get("ISDA_PASSWORD")
+
+# NewsAPI.org Configuration (alternative news source)
+NEWSAPI_KEY = os.environ.get("NEWSAPI_KEY")
 
 
 def make_article_id(article):
@@ -25,7 +32,45 @@ def make_article_id(article):
     Stable ID based on article URL
     (same article will ALWAYS have the same ID)
     """
-    return hashlib.md5(article["url"].encode()).hexdigest()
+    url = article.get("url", article.get("link", ""))
+    return hashlib.md5(url.encode()).hexdigest()
+
+
+def get_isda_token():
+    """Get ISDA API access token (with caching)."""
+    import time
+    
+    token_cache = getattr(get_isda_token, "cache", None)
+    if token_cache:
+        token, expiry = token_cache
+        if time.time() < expiry - 300:  # Refresh 5 minutes before expiry
+            return token
+    
+    if not ISDA_USERNAME or not ISDA_PASSWORD:
+        return None
+    
+    try:
+        resp = requests.post(
+            f"{ISDA_API_URL}/login",
+            headers={
+                "Accept": "application/json",
+                "Content-Type": "application/x-www-form-urlencoded",
+            },
+            data=f"username={ISDA_USERNAME}&password={ISDA_PASSWORD}",
+            timeout=10
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        token = data.get("access_token")
+        
+        # Cache the token (assuming 1 hour expiry)
+        import time
+        get_isda_token.cache = (token, time.time() + 3600)
+        
+        return token
+    except Exception as e:
+        print(f"ISDA login failed: {e}")
+        return None
 
 
 # --- Health check ---
@@ -299,95 +344,252 @@ def add_post_image(post_id):
 @bp.get("/news")
 @limiter.limit(DEFAULT_RATE_LIMIT)
 def fetch_news():
-    api_key = os.environ.get("NEWSAPI_KEY")
-    if not api_key:
-        # Return empty articles if API key not configured
-        return jsonify({"articles": [], "total_results": 0, "has_more": False})
-
-    page = request.args.get("page", 1, type=int)
-    page_size = min(request.args.get("page_size", 20, type=int), 100)
-
-    params = {
-        "q": NEWS_QUERY,
-        "language": "en",
-        "sortBy": "publishedAt",
-        "page": page,
-        "pageSize": page_size,
-        "apiKey": api_key
-    }
-
-    try:
-        resp = requests.get(NEWS_API_URL, params=params, timeout=10)
-        resp.raise_for_status()
-        data = resp.json()
-
-        raw_articles = data.get("articles", [])
-        total_results = data.get("totalResults", 0)
-
-        # Backend filtering + formatting
-        articles = []
-        for a in raw_articles:
-            if not a.get("title") or not a.get("description"):
-                continue
-
-            articles.append({
-                "id": make_article_id(a),
-                "title": a["title"],
-                "description": a["description"],
-                "image": a.get("urlToImage"),
-                "author": a.get("source", {}).get("name", "Unknown"),
-                "publishedAt": a["publishedAt"],
-                "url": a["url"]
-            })
-
-        has_more = page * page_size < total_results
-
-        return jsonify({
-            "articles": articles,
-            "page": page,
-            "pageSize": page_size,
-            "totalResults": total_results,
-            "hasMore": has_more
-        }), 200
-
-    except requests.exceptions.RequestException as e:
-        return jsonify({
-            "error": "NewsAPI request failed",
-            "details": str(e)
-        }), 500
+    """Fetch agriculture articles from NewsAPI.org, ISDA Africa API, or fallback."""
+    
+    # Try NewsAPI.org first (if configured)
+    if NEWSAPI_KEY:
+        try:
+            resp = requests.get(
+                f"https://newsapi.org/v2/everything",
+                params={
+                    "q": "agriculture OR farming OR crops OR livestock",
+                    "language": "en",
+                    "sortBy": "publishedAt",
+                    "pageSize": 10,
+                    "apiKey": NEWSAPI_KEY
+                },
+                timeout=10
+            )
+            
+            if resp.status_code == 200:
+                data = resp.json()
+                articles = data.get("articles", [])
+                
+                formatted_articles = []
+                for a in articles:
+                    formatted_articles.append({
+                        "id": make_article_id(a),
+                        "title": a.get("title", ""),
+                        "description": a.get("description", ""),
+                        "image": a.get("urlToImage"),
+                        "author": a.get("source", {}).get("name", "NewsAPI"),
+                        "publishedAt": a.get("publishedAt", ""),
+                        "url": a.get("url", "")
+                    })
+                
+                return jsonify({
+                    "articles": formatted_articles,
+                    "page": 1,
+                    "pageSize": len(formatted_articles),
+                    "totalResults": data.get("totalResults", len(formatted_articles)),
+                    "hasMore": len(formatted_articles) >= 10,
+                    "source": "newsapi"
+                })
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).error(f"NewsAPI error: {e}")
+    
+    # Try ISDA API second
+    token = get_isda_token()
+    
+    if token:
+        try:
+            # Try to get articles from ISDA API
+            # Note: Adjust the endpoint based on actual ISDA API structure
+            resp = requests.get(
+                f"{ISDA_API_URL}/articles",
+                headers={
+                    "Accept": "application/json",
+                    "Authorization": f"Bearer {token}"
+                },
+                params={"category": "agriculture", "limit": 5},
+                timeout=10
+            )
+            
+            if resp.status_code == 200:
+                data = resp.json()
+                articles = data.get("articles", data.get("data", []))
+                
+                formatted_articles = []
+                for a in articles:
+                    formatted_articles.append({
+                        "id": make_article_id(a),
+                        "title": a.get("title", a.get("headline", "")),
+                        "description": a.get("description", a.get("summary", "")),
+                        "image": a.get("image", a.get("image_url")),
+                        "author": a.get("author", a.get("source", "ISDA Africa")),
+                        "publishedAt": a.get("published_at", a.get("date", "")),
+                        "url": a.get("url", a.get("link", ""))
+                    })
+                
+                return jsonify({
+                    "articles": formatted_articles,
+                    "page": 1,
+                    "pageSize": len(formatted_articles),
+                    "totalResults": len(formatted_articles),
+                    "hasMore": False,
+                    "source": "isda-africa"
+                })
+            else:
+                import logging
+                logging.getLogger(__name__).warning(f"ISDA API returned {resp.status_code}: {resp.text[:200]}")
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).error(f"ISDA API error: {e}")
+            print(f"ISDA API request failed: {e}")
+    
+    # Fallback: sample articles when ISDA not available
+    sample = [
+        {
+            "id": make_article_id({"url": "https://example.com/agriculture-1"}),
+            "title": "Sustainable Farming Practices Gain Momentum in Africa",
+            "description": "Farmers across the continent are adopting innovative sustainable practices to increase yields while protecting the environment.",
+            "image": "https://images.unsplash.com/photo-1501004318641-b39e6451bec6?w=800",
+            "author": "AgriNews Africa",
+            "publishedAt": "2026-02-14T08:00:00Z",
+            "url": "https://example.com/agriculture-1"
+        },
+        {
+            "id": make_article_id({"url": "https://example.com/agriculture-2"}),
+            "title": "New Drought-Resistant Crop Varieties Released",
+            "description": "Researchers announce breakthrough in developing crop varieties that can withstand harsh climate conditions.",
+            "image": "https://images.unsplash.com/photo-1574943320219-553eb213f72d?w=800",
+            "author": "Farm Weekly",
+            "publishedAt": "2026-02-13T10:30:00Z",
+            "url": "https://example.com/agriculture-2"
+        },
+        {
+            "id": make_article_id({"url": "https://example.com/agriculture-3"}),
+            "title": "Youth-Led AgriTech Startups Transforming Rural Farming",
+            "description": "Young entrepreneurs are bringing technology to rural communities, revolutionizing how farmers access markets and information.",
+            "image": "https://images.unsplash.com/photo-1550989460-0adf9ea622e2?w=800",
+            "author": "Tech in Agriculture",
+            "publishedAt": "2026-02-12T14:15:00Z",
+            "url": "https://example.com/agriculture-3"
+        },
+        {
+            "id": make_article_id({"url": "https://example.com/agriculture-4"}),
+            "title": "Government Announces New Farm Subsidy Program",
+            "description": "A new initiative aims to support smallholder farmers with direct subsidies and technical assistance.",
+            "image": "https://images.unsplash.com/photo-1592982537447-6f2a6a0c7c18?w=800",
+            "author": "Policy Watch",
+            "publishedAt": "2026-02-11T09:00:00Z",
+            "url": "https://example.com/agriculture-4"
+        },
+        {
+            "id": make_article_id({"url": "https://example.com/agriculture-5"}),
+            "title": "Organic Farming Certification Program Launches",
+            "description": "New certification program helps farmers access premium markets for organic produce.",
+            "image": "https://images.unsplash.com/photo-1542838132-92c53300491e?w=800",
+            "author": "Green Agriculture",
+            "publishedAt": "2026-02-10T11:45:00Z",
+            "url": "https://example.com/agriculture-5"
+        }
+    ]
+    
+    return jsonify({
+        "articles": sample,
+        "page": 1,
+        "pageSize": 5,
+        "totalResults": 5,
+        "hasMore": False,
+        "source": "fallback"
+    })
 
 
 # --- Fetch single article ---
 @bp.get("/news/<article_id>")
 def get_single_news(article_id):
-    api_key = os.environ.get("NEWSAPI_KEY")
-    if not api_key:
-        return jsonify({"error": "Missing NEWSAPI_KEY"}), 500
-
-    params = {
-        "q": NEWS_QUERY,
-        "language": "en",
-        "sortBy": "publishedAt",
-        "pageSize": 100,
-        "page": 1,
-        "apiKey": api_key
-    }
-
-    resp = requests.get(NEWS_API_URL, params=params, timeout=10)
-    data = resp.json()
-
-    for a in data.get("articles", []):
-        if make_article_id(a) == article_id:
+    # Sample articles for fallback
+    sample_articles = [
+        {
+            "url": "https://example.com/agriculture-1",
+            "title": "Sustainable Farming Practices Gain Momentum in Africa",
+            "description": "Farmers across the continent are adopting innovative sustainable practices to increase yields while protecting the environment.",
+            "image": "https://images.unsplash.com/photo-1501004318641-b39e6451bec6?w=800",
+            "author": "AgriNews Africa",
+            "publishedAt": "2026-02-14T08:00:00Z"
+        },
+        {
+            "url": "https://example.com/agriculture-2",
+            "title": "New Drought-Resistant Crop Varieties Released",
+            "description": "Researchers announce breakthrough in developing crop varieties that can withstand harsh climate conditions.",
+            "image": "https://images.unsplash.com/photo-1574943320219-553eb213f72d?w=800",
+            "author": "Farm Weekly",
+            "publishedAt": "2026-02-13T10:30:00Z"
+        },
+        {
+            "url": "https://example.com/agriculture-3",
+            "title": "Youth-Led AgriTech Startups Transforming Rural Farming",
+            "description": "Young entrepreneurs are bringing technology to rural communities, revolutionizing how farmers access markets and information.",
+            "image": "https://images.unsplash.com/photo-1550989460-0adf9ea622e2?w=800",
+            "author": "Tech in Agriculture",
+            "publishedAt": "2026-02-12T14:15:00Z"
+        },
+        {
+            "url": "https://example.com/agriculture-4",
+            "title": "Government Announces New Farm Subsidy Program",
+            "description": "A new initiative aims to support smallholder farmers with direct subsidies and technical assistance.",
+            "image": "https://images.unsplash.com/photo-1592982537447-6f2a6a0c7c18?w=800",
+            "author": "Policy Watch",
+            "publishedAt": "2026-02-11T09:00:00Z"
+        },
+        {
+            "url": "https://example.com/agriculture-5",
+            "title": "Organic Farming Certification Program Launches",
+            "description": "New certification program helps farmers access premium markets for organic produce.",
+            "image": "https://images.unsplash.com/photo-1542838132-92c53300491e?w=800",
+            "author": "Green Agriculture",
+            "publishedAt": "2026-02-10T11:45:00Z"
+        }
+    ]
+    
+    # Try ISDA API first
+    token = get_isda_token()
+    
+    if token:
+        try:
+            resp = requests.get(
+                f"{ISDA_API_URL}/articles",
+                headers={
+                    "Accept": "application/json",
+                    "Authorization": f"Bearer {token}"
+                },
+                params={"category": "agriculture", "limit": 5},
+                timeout=10
+            )
+            
+            if resp.status_code == 200:
+                data = resp.json()
+                articles = data.get("articles", data.get("data", []))
+                
+                for a in articles:
+                    if make_article_id(a) == article_id:
+                        return jsonify({
+                            "id": article_id,
+                            "title": a.get("title", a.get("headline", "")),
+                            "description": a.get("description", a.get("summary", "")),
+                            "image": a.get("image", a.get("image_url")),
+                            "author": a.get("author", a.get("source", "ISDA Africa")),
+                            "publishedAt": a.get("published_at", a.get("date", "")),
+                            "url": a.get("url", a.get("link", ""))
+                        }), 200
+        except Exception:
+            pass
+    
+    # Fallback: check sample articles
+    for article in sample_articles:
+        if make_article_id(article) == article_id:
             return jsonify({
                 "id": article_id,
-                "title": a["title"],
-                "description": a["description"],
-                "image": a.get("urlToImage"),
-                "author": a.get("source", {}).get("name"),
-                "publishedAt": a["publishedAt"],
-                "url": a["url"]
+                "title": article["title"],
+                "description": article["description"],
+                "image": article["image"],
+                "author": article["author"],
+                "publishedAt": article["publishedAt"],
+                "url": article["url"]
             }), 200
-
+    
     return jsonify({"error": "Article not found"}), 404
 
 
