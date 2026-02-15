@@ -25,7 +25,7 @@ AgriLink is a mobile-first agricultural super app that connects farmers with agr
 - **Post Feed:** Create, browse, and engage with agricultural posts and articles
 - **User Authentication:** Secure JWT-based authentication with email verification
 - **Role-Based Access:** User and Admin roles with specific permissions
-- **Agricultural News:** Integrated NewsAPI feed for agriculture-related articles
+- **Agricultural News:** Integrated NewsAPI and ISDA Africa API for agriculture-related articles
 - **Image Upload:** Cloudinary integration for post images and profile photos
 - **Communities:** Create and join topic-based agricultural communities
 - **Messaging:** Direct user-to-user and community messaging
@@ -108,7 +108,7 @@ AgriLink is a mobile-first agricultural super app that connects farmers with agr
 
 ### Prerequisites
 
-- Python 3.11+
+- Python 3.8+
 - Node.js 18+
 - PostgreSQL
 - Git
@@ -146,12 +146,15 @@ SECRET_KEY=your-secret-key-here-min-32-chars
 FLASK_HOST=0.0.0.0
 FLASK_PORT=5000
 FLASK_DEBUG=true
-FRONTEND_ORIGINS=http://localhost:5173,http://localhost:3000
+FRONTEND_ORIGINS=http://localhost:5173,http://localhost:5174,http://localhost:3000
 FRONTEND_URL=http://localhost:5173
 CLOUDINARY_CLOUD_NAME=your-cloud-name
 CLOUDINARY_API_KEY=your-api-key
 CLOUDINARY_API_SECRET=your-api-secret
 NEWSAPI_KEY=your-newsapi-key
+ISDA_API_URL=https://api.isda-africa.com
+ISDA_USERNAME=your-isda-username
+ISDA_PASSWORD=your-isda-password
 ```
 
 5. **Database Setup**
@@ -213,14 +216,15 @@ POST /api/auth/reset-password     # Reset password
 
 ```
 GET    /api/users                 # List users (admin only)
+GET    /api/users/search          # Search users by username/email
 GET    /api/users/experts         # List expert users
 GET    /api/users/:id             # Get user profile
-PATCH  /api/users/:id             # Update user profile
+PATCH  /api/users/:id            # Update user profile
 DELETE /api/users/:id             # Delete user (admin only)
-POST   /api/users/:id/follow      # Follow a user
-DELETE /api/users/:id/follow      # Unfollow a user
-GET    /api/users/:id/followers   # Get user's followers
-GET    /api/users/:id/following   # Get user's following
+POST   /api/users/:id/follow     # Follow a user
+DELETE /api/users/:id/follow     # Unfollow a user
+GET    /api/users/:id/followers  # Get user's followers
+GET    /api/users/:id/following  # Get user's following
 ```
 
 ### Post Endpoints
@@ -310,6 +314,9 @@ NEWSAPI_KEY=your-newsapi-key
 CLOUDINARY_CLOUD_NAME=your-cloud-name
 CLOUDINARY_API_KEY=your-api-key
 CLOUDINARY_API_SECRET=your-api-secret
+ISDA_API_URL=https://api.isda-africa.com
+ISDA_USERNAME=your-isda-username
+ISDA_PASSWORD=your-isda-password
 ```
 
 **Frontend (Vercel):**
