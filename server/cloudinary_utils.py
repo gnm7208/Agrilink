@@ -3,6 +3,7 @@ Cloudinary upload utilities for AgriLink.
 
 Handles image uploads with validation and error handling.
 """
+
 import cloudinary
 import cloudinary.uploader
 from flask import current_app
@@ -10,6 +11,7 @@ from flask import current_app
 
 class CloudinaryError(Exception):
     """Custom exception for Cloudinary operations."""
+
     pass
 
 
@@ -36,7 +38,7 @@ def configure_cloudinary():
         cloud_name=cloud_name,
         api_key=api_key,
         api_secret=api_secret,
-        secure=True  # Always use HTTPS
+        secure=True,  # Always use HTTPS
     )
 
 
@@ -66,18 +68,16 @@ def validate_image_file(file):
     max_size_bytes = max_size_mb * 1024 * 1024
 
     if file_size > max_size_bytes:
-        return {
-            "valid": False,
-            "error": f"File too large. Maximum size is {max_size_mb}MB"
-        }
+        return {"valid": False, "error": f"File too large. Maximum size is {max_size_mb}MB"}
 
     # Verify actual image content using PIL (or magic bytes fallback)
     file_data = file.read()
     file.seek(0)  # Reset for later upload
 
     try:
-        from PIL import Image as PILImage
         from io import BytesIO as _BytesIO
+
+        from PIL import Image as PILImage
 
         img = PILImage.open(_BytesIO(file_data))
         img.verify()  # Verify it's a real image
@@ -89,21 +89,16 @@ def validate_image_file(file):
     except ImportError:
         # PIL not available, fall back to magic bytes check
         image_signatures = [
-            b'\xff\xd8\xff',      # JPEG
-            b'\x89PNG\r\n\x1a\n', # PNG
-            b'GIF87a', b'GIF89a', # GIF
-            b'RIFF',              # WebP (RIFF....WEBP)
+            b"\xff\xd8\xff",  # JPEG
+            b"\x89PNG\r\n\x1a\n",  # PNG
+            b"GIF87a",
+            b"GIF89a",  # GIF
+            b"RIFF",  # WebP (RIFF....WEBP)
         ]
         if not any(file_data[:16].startswith(sig) for sig in image_signatures):
-            return {
-                "valid": False,
-                "error": "Invalid file type. File is not a valid image"
-            }
+            return {"valid": False, "error": "Invalid file type. File is not a valid image"}
     except Exception:
-        return {
-            "valid": False,
-            "error": "Invalid file type. File is not a valid image"
-        }
+        return {"valid": False, "error": "Invalid file type. File is not a valid image"}
 
     return {"valid": True, "error": None}
 
@@ -134,7 +129,12 @@ def upload_image(file, folder="agrilink"):
         if not cloudinary_configured:
             # Development fallback: return a public sample image hosted by Cloudinary
             # so the UI can proceed. Do NOT use this in production.
-            if getattr(current_app, 'config', {}).get('ENV', current_app.config.get('FLASK_ENV', 'development')) == 'development':
+            if (
+                getattr(current_app, "config", {}).get(
+                    "ENV", current_app.config.get("FLASK_ENV", "development")
+                )
+                == "development"
+            ):
                 sample_url = "https://res.cloudinary.com/demo/image/upload/sample.jpg"
                 return {"success": True, "url": sample_url, "public_id": None}
             else:
@@ -149,11 +149,7 @@ def upload_image(file, folder="agrilink"):
             allowed_formats=["jpg", "jpeg", "png", "gif", "webp"],
         )
 
-        return {
-            "success": True,
-            "url": result["secure_url"],
-            "public_id": result["public_id"]
-        }
+        return {"success": True, "url": result["secure_url"], "public_id": result["public_id"]}
 
     except CloudinaryError as e:
         current_app.logger.error(f"Cloudinary config error: {e}")

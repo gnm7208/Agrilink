@@ -1,10 +1,10 @@
-from datetime import datetime, timedelta
-from utils.timeutils import utcnow
 import secrets
+from datetime import timedelta
+
+from werkzeug.security import check_password_hash, generate_password_hash
 
 from extensions import db
-
-from werkzeug.security import generate_password_hash, check_password_hash
+from utils.timeutils import utcnow
 
 
 class Role(db.Model):
@@ -25,6 +25,7 @@ class Role(db.Model):
             "id": self.id,
             "name": self.name,
         }
+
 
 class User(db.Model):
     __tablename__ = "users"
@@ -65,7 +66,9 @@ class User(db.Model):
 
     posts = db.relationship("Post", backref="author", lazy=True)
     sent_messages = db.relationship("Message", foreign_keys="Message.sender_id", backref="sender")
-    received_messages = db.relationship("Message", foreign_keys="Message.receiver_id", backref="receiver")
+    received_messages = db.relationship(
+        "Message", foreign_keys="Message.receiver_id", backref="receiver"
+    )
 
     def is_admin(self) -> bool:
         """Return True if the user's assigned role is 'admin'."""
@@ -73,7 +76,7 @@ class User(db.Model):
             return self.role_obj.name == "admin"
         # Fallback for legacy rows/code paths prior to role_id backfill.
         return self.role == "admin"
-    
+
     def set_password(self, password: str) -> None:
         """Hash password using Werkzeug for secure storage."""
         self.password_hash = generate_password_hash(password)
@@ -96,14 +99,16 @@ class User(db.Model):
         if include_email:
             data["email"] = self.email
         if include_stats:
-            from models import Post, Follow
+            from models import Follow, Post
+
             data["posts_count"] = Post.query.filter_by(author_id=self.id).count()
             data["followers_count"] = Follow.query.filter_by(followed_id=self.id).count()
             data["following_count"] = Follow.query.filter_by(follower_id=self.id).count()
         return data
+
     def __repr__(self):
         return f"<User {self.username}>"
-    
+
 
 class Community(db.Model):
     __tablename__ = "communities"
@@ -115,20 +120,25 @@ class Community(db.Model):
     created_by = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
     created_at = db.Column(db.DateTime, default=utcnow)
 
-    members = db.relationship("CommunityMembership", backref="community", cascade="all, delete-orphan")
+    members = db.relationship(
+        "CommunityMembership", backref="community", cascade="all, delete-orphan"
+    )
     posts = db.relationship("Post", backref="community", lazy=True)
     messages = db.relationship("Message", backref="community", lazy=True)
-    def to_dict(self): 
-        return { 
-            "id": self.id, 
-            "name": self.name, 
-            "description": self.description, 
-            "image_url": self.image_url, 
-            "created_by": self.created_by, 
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "description": self.description,
+            "image_url": self.image_url,
+            "created_by": self.created_by,
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }
+
     def __repr__(self):
         return f"<Community {self.name}>"
+
 
 class CommunityMembership(db.Model):
     __tablename__ = "community_memberships"
@@ -139,14 +149,16 @@ class CommunityMembership(db.Model):
     created_at = db.Column(db.DateTime, default=utcnow)
 
     user = db.relationship("User", backref="community_memberships")
-     
-    def to_dict(self): 
+
+    def to_dict(self):
         return {
-            "id": self.id, 
-            "user_id": self.user_id, 
-            "community_id": self.community_id, 
+            "id": self.id,
+            "user_id": self.user_id,
+            "community_id": self.community_id,
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }
+
+
 class Post(db.Model):
     __tablename__ = "posts"
 
@@ -162,24 +174,25 @@ class Post(db.Model):
     likes = db.relationship("Like", backref="post", cascade="all, delete-orphan")
     comments = db.relationship("Comment", backref="post", cascade="all, delete-orphan")
 
-    def to_dict(self, include_relations=True): 
-        data = { 
-            "id": self.id, 
-            "author_id": self.author_id, 
+    def to_dict(self, include_relations=True):
+        data = {
+            "id": self.id,
+            "author_id": self.author_id,
             "community_id": self.community_id,
-            "title": self.title, 
+            "title": self.title,
             "content": self.content,
             "created_at": self.created_at.isoformat() if self.created_at else None,
-            "updated_at": self.updated_at.isoformat() if self.updated_at else None, 
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
         if include_relations:
-            data["images"] = [img.to_dict() for img in self.images] 
+            data["images"] = [img.to_dict() for img in self.images]
             data["likes_count"] = len(self.likes)
             data["comments_count"] = len(self.comments)
         return data
-    
+
     def __repr__(self):
         return f"<Post {self.id}>"
+
 
 class PostImage(db.Model):
     __tablename__ = "post_images"
@@ -189,12 +202,14 @@ class PostImage(db.Model):
     image_url = db.Column(db.String(255), nullable=False)
     created_at = db.Column(db.DateTime, default=utcnow)
 
-    def to_dict(self): 
-        return { "id": self.id, 
-                "post_id": self.post_id,
-                "image_url": self.image_url, 
-                "created_at": self.created_at.isoformat() if self.created_at else None,
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "post_id": self.post_id,
+            "image_url": self.image_url,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
         }
+
 
 class Like(db.Model):
     __tablename__ = "likes"
@@ -206,17 +221,16 @@ class Like(db.Model):
 
     user = db.relationship("User", backref="likes")
 
-    __table_args__ = (
-        db.UniqueConstraint("user_id", "post_id", name="unique_user_post_like"),
-    )
-    
-    def to_dict(self): 
-        return { 
-            "id": self.id, 
-            "user_id": self.user_id, 
-            "post_id": self.post_id, 
-            "created_at": self.created_at.isoformat() if self.created_at else None, 
+    __table_args__ = (db.UniqueConstraint("user_id", "post_id", name="unique_user_post_like"),)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "post_id": self.post_id,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
         }
+
 
 class Comment(db.Model):
     __tablename__ = "comments"
@@ -228,14 +242,14 @@ class Comment(db.Model):
     created_at = db.Column(db.DateTime, default=utcnow)
 
     user = db.relationship("User", backref="comments")
-    
-    def to_dict(self): 
-        return { 
+
+    def to_dict(self):
+        return {
             "id": self.id,
             "user_id": self.user_id,
-            "post_id": self.post_id, 
-            "content": self.content, 
-            "created_at": self.created_at.isoformat() if self.created_at else None, 
+            "post_id": self.post_id,
+            "content": self.content,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
         }
 
 
@@ -250,17 +264,16 @@ class Follow(db.Model):
     follower = db.relationship("User", foreign_keys=[follower_id])
     followed = db.relationship("User", foreign_keys=[followed_id])
 
-    __table_args__ = (
-        db.UniqueConstraint("follower_id", "followed_id", name="unique_follow"),
-    )
-    
-    def to_dict(self): 
-        return { 
-            "id": self.id, 
-            "follower_id": self.follower_id, 
-            "followed_id": self.followed_id, 
-            "created_at": self.created_at.isoformat() if self.created_at else None, 
+    __table_args__ = (db.UniqueConstraint("follower_id", "followed_id", name="unique_follow"),)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "follower_id": self.follower_id,
+            "followed_id": self.followed_id,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
         }
+
 
 class Message(db.Model):
     __tablename__ = "messages"
@@ -285,6 +298,7 @@ class Message(db.Model):
 
 class PasswordResetToken(db.Model):
     """Store password reset tokens with expiration."""
+
     __tablename__ = "password_reset_tokens"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -308,11 +322,7 @@ class PasswordResetToken(db.Model):
         token = secrets.token_urlsafe(32)
         expires_at = utcnow() + timedelta(hours=cls.TOKEN_EXPIRY_HOURS)
 
-        reset_token = cls(
-            user_id=user_id,
-            token=token,
-            expires_at=expires_at
-        )
+        reset_token = cls(user_id=user_id, token=token, expires_at=expires_at)
         db.session.add(reset_token)
         db.session.commit()
         return reset_token
@@ -321,9 +331,7 @@ class PasswordResetToken(db.Model):
     def get_valid_token(cls, token: str) -> "PasswordResetToken | None":
         """Get a valid (non-expired, unused) token."""
         return cls.query.filter(
-            cls.token == token,
-            cls.used == False,
-            cls.expires_at > utcnow()
+            cls.token == token, cls.used.is_(False), cls.expires_at > utcnow()
         ).first()
 
     def mark_used(self) -> None:

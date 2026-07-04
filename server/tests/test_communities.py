@@ -3,7 +3,6 @@ Tests for community management endpoints.
 
 Covers: /api/communities endpoints (list, create, join, leave, members, posts)
 """
-import pytest
 
 
 class TestHealthCheck:
@@ -47,10 +46,10 @@ class TestListCommunities:
 
         # Create multiple communities
         for i in range(5):
-            client.post("/api/communities", json={
-                "name": f"Test Community {i}",
-                "description": f"Description {i}"
-            })
+            client.post(
+                "/api/communities",
+                json={"name": f"Test Community {i}", "description": f"Description {i}"},
+            )
 
         # Test pagination
         response = client.get("/api/communities?page=1&per_page=3")
@@ -73,11 +72,14 @@ class TestCreateCommunity:
         """Test successful community creation."""
         client, user_id = auth_client
 
-        response = client.post("/api/communities", json={
-            "name": "New Community",
-            "description": "A great community",
-            "image_url": "https://example.com/image.jpg"
-        })
+        response = client.post(
+            "/api/communities",
+            json={
+                "name": "New Community",
+                "description": "A great community",
+                "image_url": "https://example.com/image.jpg",
+            },
+        )
 
         assert response.status_code == 201
         data = response.get_json()
@@ -89,9 +91,7 @@ class TestCreateCommunity:
         """Test creating community with only required fields."""
         client, _ = auth_client
 
-        response = client.post("/api/communities", json={
-            "name": "Minimal Community"
-        })
+        response = client.post("/api/communities", json={"name": "Minimal Community"})
 
         assert response.status_code == 201
         assert response.get_json()["name"] == "Minimal Community"
@@ -100,9 +100,7 @@ class TestCreateCommunity:
         """Test creating community without name."""
         client, _ = auth_client
 
-        response = client.post("/api/communities", json={
-            "description": "No name community"
-        })
+        response = client.post("/api/communities", json={"description": "No name community"})
 
         assert response.status_code == 400
         assert "name is required" in response.get_json()["error"]
@@ -111,10 +109,9 @@ class TestCreateCommunity:
         """Test creating community with empty name."""
         client, _ = auth_client
 
-        response = client.post("/api/communities", json={
-            "name": "   ",
-            "description": "Empty name"
-        })
+        response = client.post(
+            "/api/communities", json={"name": "   ", "description": "Empty name"}
+        )
 
         assert response.status_code == 400
 
@@ -123,9 +120,7 @@ class TestCreateCommunity:
         client, user_id = auth_client
 
         # Create community
-        response = client.post("/api/communities", json={
-            "name": "Auto Join Test"
-        })
+        response = client.post("/api/communities", json={"name": "Auto Join Test"})
         community_id = response.get_json()["id"]
 
         # Check members
@@ -145,8 +140,8 @@ class TestJoinCommunity:
 
         # Create a community as another user first
         with app.app_context():
-            from models import User, Community, CommunityMembership
             from extensions import db
+            from models import Community, User
 
             other_user = User(username="creator", email="creator@example.com")
             other_user.set_password("SecurePass123!@#")
@@ -155,9 +150,7 @@ class TestJoinCommunity:
             db.session.commit()
 
             community = Community(
-                name="Join Test Community",
-                description="Test",
-                created_by=other_user.id
+                name="Join Test Community", description="Test", created_by=other_user.id
             )
             db.session.add(community)
             db.session.commit()
@@ -240,8 +233,8 @@ class TestCommunityMembers:
 
         # Add more members
         with app.app_context():
-            from models import User, CommunityMembership
             from extensions import db
+            from models import CommunityMembership, User
 
             for i in range(5):
                 user = User(username=f"member{i}", email=f"member{i}@example.com")
@@ -251,8 +244,7 @@ class TestCommunityMembers:
                 db.session.commit()
 
                 membership = CommunityMembership(
-                    user_id=user.id,
-                    community_id=sample_community["id"]
+                    user_id=user.id, community_id=sample_community["id"]
                 )
                 db.session.add(membership)
                 db.session.commit()
@@ -291,14 +283,14 @@ class TestCommunityPosts:
 
         # Add a post to the community
         with app.app_context():
-            from models import Post
             from extensions import db
+            from models import Post
 
             post = Post(
                 author_id=user_id,
                 community_id=sample_community["id"],
                 title="Test Post",
-                content="Test content"
+                content="Test content",
             )
             db.session.add(post)
             db.session.commit()
@@ -320,13 +312,11 @@ class TestDeleteCommunity:
 
         # Create a community
         with app.app_context():
-            from models import Community
             from extensions import db
+            from models import Community
 
             community = Community(
-                name="To Delete",
-                description="Will be deleted",
-                created_by=admin_id
+                name="To Delete", description="Will be deleted", created_by=admin_id
             )
             db.session.add(community)
             db.session.commit()

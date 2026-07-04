@@ -13,11 +13,10 @@ def seed_default_roles() -> None:
         if exists is None:
             db.session.add(Role(name=role_name))
     db.session.commit()
-    print(f"Roles seeded: user, admin")
+    print("Roles seeded: user, admin")
 
 
 if __name__ == "__main__":
     app = create_app()
     with app.app_context():
         seed_default_roles()
-

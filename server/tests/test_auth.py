@@ -3,7 +3,7 @@ Tests for authentication endpoints.
 
 Covers: /api/auth/register, /api/auth/login, /api/auth/logout, /api/auth/me
 """
-import pytest
+
 from unittest.mock import patch
 
 
@@ -37,81 +37,84 @@ class TestRegister:
     def test_register_missing_fields(self, client, app):
         """Test registration with missing required fields."""
         # Missing password
-        response = client.post("/api/auth/register", json={
-            "username": "testuser",
-            "email": "test@example.com"
-        })
+        response = client.post(
+            "/api/auth/register", json={"username": "testuser", "email": "test@example.com"}
+        )
         assert response.status_code == 400
         assert "Missing required fields" in response.get_json()["error"]
 
         # Missing email
-        response = client.post("/api/auth/register", json={
-            "username": "testuser",
-            "password": "SecurePass123!@#"
-        })
+        response = client.post(
+            "/api/auth/register", json={"username": "testuser", "password": "SecurePass123!@#"}
+        )
         assert response.status_code == 400
 
         # Missing username
-        response = client.post("/api/auth/register", json={
-            "email": "test@example.com",
-            "password": "SecurePass123!@#"
-        })
+        response = client.post(
+            "/api/auth/register", json={"email": "test@example.com", "password": "SecurePass123!@#"}
+        )
         assert response.status_code == 400
 
     def test_register_invalid_email(self, client, app):
         """Test registration with invalid email format."""
-        response = client.post("/api/auth/register", json={
-            "username": "testuser",
-            "email": "invalid-email",
-            "password": "SecurePass123!@#"
-        })
+        response = client.post(
+            "/api/auth/register",
+            json={"username": "testuser", "email": "invalid-email", "password": "SecurePass123!@#"},
+        )
         assert response.status_code == 400
         assert "Invalid email" in response.get_json()["error"]
 
     def test_register_weak_password(self, client, app):
         """Test registration with weak password."""
         # Too short
-        response = client.post("/api/auth/register", json={
-            "username": "testuser",
-            "email": "test@example.com",
-            "password": "Short1!"
-        })
+        response = client.post(
+            "/api/auth/register",
+            json={"username": "testuser", "email": "test@example.com", "password": "Short1!"},
+        )
         assert response.status_code == 400
         assert "Weak password" in response.get_json()["error"]
 
         # No uppercase
-        response = client.post("/api/auth/register", json={
-            "username": "testuser",
-            "email": "test@example.com",
-            "password": "securepass123!@#"
-        })
+        response = client.post(
+            "/api/auth/register",
+            json={
+                "username": "testuser",
+                "email": "test@example.com",
+                "password": "securepass123!@#",
+            },
+        )
         assert response.status_code == 400
 
         # No special character
-        response = client.post("/api/auth/register", json={
-            "username": "testuser",
-            "email": "test@example.com",
-            "password": "SecurePass12345"
-        })
+        response = client.post(
+            "/api/auth/register",
+            json={
+                "username": "testuser",
+                "email": "test@example.com",
+                "password": "SecurePass12345",
+            },
+        )
         assert response.status_code == 400
 
     def test_register_invalid_username(self, client, app):
         """Test registration with invalid username."""
         # Too short
-        response = client.post("/api/auth/register", json={
-            "username": "ab",
-            "email": "test@example.com",
-            "password": "SecurePass123!@#"
-        })
+        response = client.post(
+            "/api/auth/register",
+            json={"username": "ab", "email": "test@example.com", "password": "SecurePass123!@#"},
+        )
         assert response.status_code == 400
         assert "Invalid username" in response.get_json()["error"]
 
         # Invalid characters
-        response = client.post("/api/auth/register", json={
-            "username": "test user!",
-            "email": "test@example.com",
-            "password": "SecurePass123!@#"
-        })
+        response = client.post(
+            "/api/auth/register",
+            json={
+                "username": "test user!",
+                "email": "test@example.com",
+                "password": "SecurePass123!@#",
+            },
+        )
         assert response.status_code == 400
 
     def test_register_duplicate_email(self, client, app, sample_user_data):
@@ -120,11 +123,14 @@ class TestRegister:
         client.post("/api/auth/register", json=sample_user_data)
 
         # Attempt duplicate
-        response = client.post("/api/auth/register", json={
-            "username": "differentuser",
-            "email": sample_user_data["email"],
-            "password": "DifferentPass123!@#"
-        })
+        response = client.post(
+            "/api/auth/register",
+            json={
+                "username": "differentuser",
+                "email": sample_user_data["email"],
+                "password": "DifferentPass123!@#",
+            },
+        )
         assert response.status_code == 409
         assert "email already exists" in response.get_json()["message"]
 
@@ -134,11 +140,14 @@ class TestRegister:
         client.post("/api/auth/register", json=sample_user_data)
 
         # Attempt duplicate
-        response = client.post("/api/auth/register", json={
-            "username": sample_user_data["username"],
-            "email": "different@example.com",
-            "password": "DifferentPass123!@#"
-        })
+        response = client.post(
+            "/api/auth/register",
+            json={
+                "username": sample_user_data["username"],
+                "email": "different@example.com",
+                "password": "DifferentPass123!@#",
+            },
+        )
         assert response.status_code == 409
         assert "username is already taken" in response.get_json()["message"]
 
@@ -151,13 +160,13 @@ class TestLogin:
         create_user(
             username=sample_user_data["username"],
             email=sample_user_data["email"],
-            password=sample_user_data["password"]
+            password=sample_user_data["password"],
         )
 
-        response = client.post("/api/auth/login", json={
-            "email": sample_user_data["email"],
-            "password": sample_user_data["password"]
-        })
+        response = client.post(
+            "/api/auth/login",
+            json={"email": sample_user_data["email"], "password": sample_user_data["password"]},
+        )
 
         assert response.status_code == 200
         data = response.get_json()
@@ -167,15 +176,11 @@ class TestLogin:
     def test_login_missing_fields(self, client, app):
         """Test login with missing fields."""
         # Missing password
-        response = client.post("/api/auth/login", json={
-            "email": "test@example.com"
-        })
+        response = client.post("/api/auth/login", json={"email": "test@example.com"})
         assert response.status_code == 400
 
         # Missing email
-        response = client.post("/api/auth/login", json={
-            "password": "SecurePass123!@#"
-        })
+        response = client.post("/api/auth/login", json={"password": "SecurePass123!@#"})
         assert response.status_code == 400
 
     def test_login_wrong_email(self, client, create_user, sample_user_data):
@@ -183,13 +188,13 @@ class TestLogin:
         create_user(
             username=sample_user_data["username"],
             email=sample_user_data["email"],
-            password=sample_user_data["password"]
+            password=sample_user_data["password"],
         )
 
-        response = client.post("/api/auth/login", json={
-            "email": "wrong@example.com",
-            "password": sample_user_data["password"]
-        })
+        response = client.post(
+            "/api/auth/login",
+            json={"email": "wrong@example.com", "password": sample_user_data["password"]},
+        )
 
         assert response.status_code == 401
         # Should not reveal whether email exists
@@ -200,13 +205,13 @@ class TestLogin:
         create_user(
             username=sample_user_data["username"],
             email=sample_user_data["email"],
-            password=sample_user_data["password"]
+            password=sample_user_data["password"],
         )
 
-        response = client.post("/api/auth/login", json={
-            "email": sample_user_data["email"],
-            "password": "WrongPassword123!@#"
-        })
+        response = client.post(
+            "/api/auth/login",
+            json={"email": sample_user_data["email"], "password": "WrongPassword123!@#"},
+        )
 
         assert response.status_code == 401
         assert "Invalid email or password" in response.get_json()["message"]

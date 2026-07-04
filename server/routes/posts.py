@@ -1,17 +1,20 @@
-from flask import Blueprint, jsonify, request, g
-import os
-import requests
 import hashlib
+import os
+
 import bleach
+import requests
+from flask import Blueprint, g, jsonify, request
 from sqlalchemy.orm import joinedload
-from extensions import limiter, db
-from models import Comment, Post, PostImage, Like, User
+
+from extensions import db, limiter
+from models import Comment, Like, Post, PostImage
 from rbac import login_required
 
 
 def sanitize_content(text):
     """Strip all HTML tags from user-supplied text."""
     return bleach.clean(text, tags=[], strip=True)
+
 
 bp = Blueprint("posts", __name__)
 
@@ -39,16 +42,16 @@ def make_article_id(article):
 def get_isda_token():
     """Get ISDA API access token (with caching)."""
     import time
-    
+
     token_cache = getattr(get_isda_token, "cache", None)
     if token_cache:
         token, expiry = token_cache
         if time.time() < expiry - 300:  # Refresh 5 minutes before expiry
             return token
-    
+
     if not ISDA_USERNAME or not ISDA_PASSWORD:
         return None
-    
+
     try:
         resp = requests.post(
             f"{ISDA_API_URL}/login",
@@ -57,16 +60,17 @@ def get_isda_token():
                 "Content-Type": "application/x-www-form-urlencoded",
             },
             data=f"username={ISDA_USERNAME}&password={ISDA_PASSWORD}",
-            timeout=10
+            timeout=10,
         )
         resp.raise_for_status()
         data = resp.json()
         token = data.get("access_token")
-        
+
         # Cache the token (assuming 1 hour expiry)
         import time
+
         get_isda_token.cache = (token, time.time() + 3600)
-        
+
         return token
     except Exception as e:
         print(f"ISDA login failed: {e}")
@@ -110,13 +114,15 @@ def list_posts():
         d["image_url"] = p.images[0].image_url if p.images else None
         return d
 
-    return jsonify({
-        "posts": [post_to_dict(p) for p in pagination.items],
-        "total": pagination.total,
-        "page": pagination.page,
-        "pages": pagination.pages,
-        "per_page": per_page,
-    })
+    return jsonify(
+        {
+            "posts": [post_to_dict(p) for p in pagination.items],
+            "total": pagination.total,
+            "page": pagination.page,
+            "pages": pagination.pages,
+            "per_page": per_page,
+        }
+    )
 
 
 @bp.post("")
@@ -169,7 +175,7 @@ def get_post(post_id):
     result["author"] = post.author.to_dict() if post.author else None
     result["image_url"] = post.images[0].image_url if post.images else None
     result["liked"] = bool(
-        g.current_user and any(l.user_id == g.current_user.id for l in post.likes)
+        g.current_user and any(like.user_id == g.current_user.id for like in post.likes)
     )
     return jsonify(result)
 
@@ -217,25 +223,27 @@ def delete_post(post_id):
 def like_post(post_id):
     """Like a post."""
     post = Post.query.get_or_404(post_id)
-    existing = Like.query.filter_by(
-        user_id=g.current_user.id, post_id=post_id
-    ).first()
+    existing = Like.query.filter_by(user_id=g.current_user.id, post_id=post_id).first()
     if existing:
-        return jsonify({
-            "post_id": post_id,
-            "liked": True,
-            "likes_count": len(post.likes),
-        }), 200
+        return jsonify(
+            {
+                "post_id": post_id,
+                "liked": True,
+                "likes_count": len(post.likes),
+            }
+        ), 200
 
     like = Like(user_id=g.current_user.id, post_id=post_id)
     db.session.add(like)
     db.session.commit()
     post = Post.query.get_or_404(post_id)
-    return jsonify({
-        "post_id": post_id,
-        "liked": True,
-        "likes_count": len(post.likes),
-    }), 200
+    return jsonify(
+        {
+            "post_id": post_id,
+            "liked": True,
+            "likes_count": len(post.likes),
+        }
+    ), 200
 
 
 @bp.delete("/<int:post_id>/like")
@@ -244,18 +252,18 @@ def like_post(post_id):
 def unlike_post(post_id):
     """Unlike a post."""
     post = Post.query.get_or_404(post_id)
-    like = Like.query.filter_by(
-        user_id=g.current_user.id, post_id=post_id
-    ).first()
+    like = Like.query.filter_by(user_id=g.current_user.id, post_id=post_id).first()
     if like:
         db.session.delete(like)
         db.session.commit()
     post = Post.query.get_or_404(post_id)
-    return jsonify({
-        "post_id": post_id,
-        "liked": False,
-        "likes_count": len(post.likes),
-    }), 200
+    return jsonify(
+        {
+            "post_id": post_id,
+            "liked": False,
+            "likes_count": len(post.likes),
+        }
+    ), 200
 
 
 @bp.get("/<int:post_id>/comments")
@@ -266,28 +274,35 @@ def get_post_comments(post_id):
     page = request.args.get("page", 1, type=int)
     per_page = min(request.args.get("per_page", 20, type=int), 100)
 
-    pagination = Comment.query.filter_by(post_id=post_id).options(
-        joinedload(Comment.user)
-    ).order_by(Comment.created_at.asc()).paginate(
-        page=page, per_page=per_page, error_out=False
+    pagination = (
+        Comment.query.filter_by(post_id=post_id)
+        .options(joinedload(Comment.user))
+        .order_by(Comment.created_at.asc())
+        .paginate(page=page, per_page=per_page, error_out=False)
     )
 
     def comment_to_dict(c):
         d = c.to_dict()
-        d["author"] = {
-            "id": c.user.id,
-            "username": c.user.username,
-            "profile_image_url": c.user.profile_image_url,
-        } if c.user else None
+        d["author"] = (
+            {
+                "id": c.user.id,
+                "username": c.user.username,
+                "profile_image_url": c.user.profile_image_url,
+            }
+            if c.user
+            else None
+        )
         return d
 
-    return jsonify({
-        "comments": [comment_to_dict(c) for c in pagination.items],
-        "total": pagination.total,
-        "page": pagination.page,
-        "pages": pagination.pages,
-        "per_page": per_page,
-    })
+    return jsonify(
+        {
+            "comments": [comment_to_dict(c) for c in pagination.items],
+            "total": pagination.total,
+            "page": pagination.page,
+            "pages": pagination.pages,
+            "per_page": per_page,
+        }
+    )
 
 
 @bp.post("/<int:post_id>/comments")
@@ -295,7 +310,7 @@ def get_post_comments(post_id):
 @limiter.limit(DEFAULT_RATE_LIMIT)
 def create_post_comment(post_id):
     """Add a comment to a post."""
-    post = Post.query.get_or_404(post_id)
+    Post.query.get_or_404(post_id)
     data = request.get_json() or {}
     content = data.get("content", "").strip()
     content = sanitize_content(data.get("content", "")).strip()
@@ -345,99 +360,109 @@ def add_post_image(post_id):
 @limiter.limit(DEFAULT_RATE_LIMIT)
 def fetch_news():
     """Fetch agriculture articles from NewsAPI.org, ISDA Africa API, or fallback."""
-    
+
     # Try NewsAPI.org first (if configured)
     if NEWSAPI_KEY:
         try:
             resp = requests.get(
-                f"https://newsapi.org/v2/everything",
+                "https://newsapi.org/v2/everything",
                 params={
                     "q": "agriculture OR farming OR crops OR livestock",
                     "language": "en",
                     "sortBy": "publishedAt",
                     "pageSize": 10,
-                    "apiKey": NEWSAPI_KEY
+                    "apiKey": NEWSAPI_KEY,
                 },
-                timeout=10
+                timeout=10,
             )
-            
+
             if resp.status_code == 200:
                 data = resp.json()
                 articles = data.get("articles", [])
-                
+
                 formatted_articles = []
                 for a in articles:
-                    formatted_articles.append({
-                        "id": make_article_id(a),
-                        "title": a.get("title", ""),
-                        "description": a.get("description", ""),
-                        "image": a.get("urlToImage"),
-                        "author": a.get("source", {}).get("name", "NewsAPI"),
-                        "publishedAt": a.get("publishedAt", ""),
-                        "url": a.get("url", "")
-                    })
-                
-                return jsonify({
-                    "articles": formatted_articles,
-                    "page": 1,
-                    "pageSize": len(formatted_articles),
-                    "totalResults": data.get("totalResults", len(formatted_articles)),
-                    "hasMore": len(formatted_articles) >= 10,
-                    "source": "newsapi"
-                })
+                    formatted_articles.append(
+                        {
+                            "id": make_article_id(a),
+                            "title": a.get("title", ""),
+                            "description": a.get("description", ""),
+                            "image": a.get("urlToImage"),
+                            "author": a.get("source", {}).get("name", "NewsAPI"),
+                            "publishedAt": a.get("publishedAt", ""),
+                            "url": a.get("url", ""),
+                        }
+                    )
+
+                return jsonify(
+                    {
+                        "articles": formatted_articles,
+                        "page": 1,
+                        "pageSize": len(formatted_articles),
+                        "totalResults": data.get("totalResults", len(formatted_articles)),
+                        "hasMore": len(formatted_articles) >= 10,
+                        "source": "newsapi",
+                    }
+                )
         except Exception as e:
             import logging
+
             logging.getLogger(__name__).error(f"NewsAPI error: {e}")
-    
+
     # Try ISDA API second
     token = get_isda_token()
-    
+
     if token:
         try:
             # Try to get articles from ISDA API
             # Note: Adjust the endpoint based on actual ISDA API structure
             resp = requests.get(
                 f"{ISDA_API_URL}/articles",
-                headers={
-                    "Accept": "application/json",
-                    "Authorization": f"Bearer {token}"
-                },
+                headers={"Accept": "application/json", "Authorization": f"Bearer {token}"},
                 params={"category": "agriculture", "limit": 5},
-                timeout=10
+                timeout=10,
             )
-            
+
             if resp.status_code == 200:
                 data = resp.json()
                 articles = data.get("articles", data.get("data", []))
-                
+
                 formatted_articles = []
                 for a in articles:
-                    formatted_articles.append({
-                        "id": make_article_id(a),
-                        "title": a.get("title", a.get("headline", "")),
-                        "description": a.get("description", a.get("summary", "")),
-                        "image": a.get("image", a.get("image_url")),
-                        "author": a.get("author", a.get("source", "ISDA Africa")),
-                        "publishedAt": a.get("published_at", a.get("date", "")),
-                        "url": a.get("url", a.get("link", ""))
-                    })
-                
-                return jsonify({
-                    "articles": formatted_articles,
-                    "page": 1,
-                    "pageSize": len(formatted_articles),
-                    "totalResults": len(formatted_articles),
-                    "hasMore": False,
-                    "source": "isda-africa"
-                })
+                    formatted_articles.append(
+                        {
+                            "id": make_article_id(a),
+                            "title": a.get("title", a.get("headline", "")),
+                            "description": a.get("description", a.get("summary", "")),
+                            "image": a.get("image", a.get("image_url")),
+                            "author": a.get("author", a.get("source", "ISDA Africa")),
+                            "publishedAt": a.get("published_at", a.get("date", "")),
+                            "url": a.get("url", a.get("link", "")),
+                        }
+                    )
+
+                return jsonify(
+                    {
+                        "articles": formatted_articles,
+                        "page": 1,
+                        "pageSize": len(formatted_articles),
+                        "totalResults": len(formatted_articles),
+                        "hasMore": False,
+                        "source": "isda-africa",
+                    }
+                )
             else:
                 import logging
-                logging.getLogger(__name__).warning(f"ISDA API returned {resp.status_code}: {resp.text[:200]}")
+
+                logging.getLogger(__name__).warning(
+                    f"ISDA API returned {resp.status_code}: {resp.text[:200]}"
+                )
         except Exception as e:
             import logging
+
             logging.getLogger(__name__).error(f"ISDA API error: {e}")
             print(f"ISDA API request failed: {e}")
-    
+
     # Fallback: sample articles when ISDA not available
     sample = [
         {
@@ -447,7 +472,7 @@ def fetch_news():
             "image": "https://images.unsplash.com/photo-1501004318641-b39e6451bec6?w=800",
             "author": "AgriNews Africa",
             "publishedAt": "2026-02-14T08:00:00Z",
-            "url": "https://example.com/agriculture-1"
+            "url": "https://example.com/agriculture-1",
         },
         {
             "id": make_article_id({"url": "https://example.com/agriculture-2"}),
@@ -456,7 +481,7 @@ def fetch_news():
             "image": "https://images.unsplash.com/photo-1574943320219-553eb213f72d?w=800",
             "author": "Farm Weekly",
             "publishedAt": "2026-02-13T10:30:00Z",
-            "url": "https://example.com/agriculture-2"
+            "url": "https://example.com/agriculture-2",
         },
         {
             "id": make_article_id({"url": "https://example.com/agriculture-3"}),
@@ -465,7 +490,7 @@ def fetch_news():
             "image": "https://images.unsplash.com/photo-1550989460-0adf9ea622e2?w=800",
             "author": "Tech in Agriculture",
             "publishedAt": "2026-02-12T14:15:00Z",
-            "url": "https://example.com/agriculture-3"
+            "url": "https://example.com/agriculture-3",
         },
         {
             "id": make_article_id({"url": "https://example.com/agriculture-4"}),
@@ -474,7 +499,7 @@ def fetch_news():
             "image": "https://images.unsplash.com/photo-1592982537447-6f2a6a0c7c18?w=800",
             "author": "Policy Watch",
             "publishedAt": "2026-02-11T09:00:00Z",
-            "url": "https://example.com/agriculture-4"
+            "url": "https://example.com/agriculture-4",
         },
         {
             "id": make_article_id({"url": "https://example.com/agriculture-5"}),
@@ -483,18 +508,20 @@ def fetch_news():
             "image": "https://images.unsplash.com/photo-1542838132-92c53300491e?w=800",
             "author": "Green Agriculture",
             "publishedAt": "2026-02-10T11:45:00Z",
-            "url": "https://example.com/agriculture-5"
-        }
+            "url": "https://example.com/agriculture-5",
+        },
     ]
-    
-    return jsonify({
-        "articles": sample,
-        "page": 1,
-        "pageSize": 5,
-        "totalResults": 5,
-        "hasMore": False,
-        "source": "fallback"
-    })
+
+    return jsonify(
+        {
+            "articles": sample,
+            "page": 1,
+            "pageSize": 5,
+            "totalResults": 5,
+            "hasMore": False,
+            "source": "fallback",
+        }
+    )
 
 
 # --- Fetch single article ---
@@ -508,7 +535,7 @@ def get_single_news(article_id):
             "description": "Farmers across the continent are adopting innovative sustainable practices to increase yields while protecting the environment.",
             "image": "https://images.unsplash.com/photo-1501004318641-b39e6451bec6?w=800",
             "author": "AgriNews Africa",
-            "publishedAt": "2026-02-14T08:00:00Z"
+            "publishedAt": "2026-02-14T08:00:00Z",
         },
         {
             "url": "https://example.com/agriculture-2",
@@ -516,7 +543,7 @@ def get_single_news(article_id):
             "description": "Researchers announce breakthrough in developing crop varieties that can withstand harsh climate conditions.",
             "image": "https://images.unsplash.com/photo-1574943320219-553eb213f72d?w=800",
             "author": "Farm Weekly",
-            "publishedAt": "2026-02-13T10:30:00Z"
+            "publishedAt": "2026-02-13T10:30:00Z",
         },
         {
             "url": "https://example.com/agriculture-3",
@@ -524,7 +551,7 @@ def get_single_news(article_id):
             "description": "Young entrepreneurs are bringing technology to rural communities, revolutionizing how farmers access markets and information.",
             "image": "https://images.unsplash.com/photo-1550989460-0adf9ea622e2?w=800",
             "author": "Tech in Agriculture",
-            "publishedAt": "2026-02-12T14:15:00Z"
+            "publishedAt": "2026-02-12T14:15:00Z",
         },
         {
             "url": "https://example.com/agriculture-4",
@@ -532,7 +559,7 @@ def get_single_news(article_id):
             "description": "A new initiative aims to support smallholder farmers with direct subsidies and technical assistance.",
             "image": "https://images.unsplash.com/photo-1592982537447-6f2a6a0c7c18?w=800",
             "author": "Policy Watch",
-            "publishedAt": "2026-02-11T09:00:00Z"
+            "publishedAt": "2026-02-11T09:00:00Z",
         },
         {
             "url": "https://example.com/agriculture-5",
@@ -540,56 +567,57 @@ def get_single_news(article_id):
             "description": "New certification program helps farmers access premium markets for organic produce.",
             "image": "https://images.unsplash.com/photo-1542838132-92c53300491e?w=800",
             "author": "Green Agriculture",
-            "publishedAt": "2026-02-10T11:45:00Z"
-        }
+            "publishedAt": "2026-02-10T11:45:00Z",
+        },
     ]
-    
+
     # Try ISDA API first
     token = get_isda_token()
-    
+
     if token:
         try:
             resp = requests.get(
                 f"{ISDA_API_URL}/articles",
-                headers={
-                    "Accept": "application/json",
-                    "Authorization": f"Bearer {token}"
-                },
+                headers={"Accept": "application/json", "Authorization": f"Bearer {token}"},
                 params={"category": "agriculture", "limit": 5},
-                timeout=10
+                timeout=10,
             )
-            
+
             if resp.status_code == 200:
                 data = resp.json()
                 articles = data.get("articles", data.get("data", []))
-                
+
                 for a in articles:
                     if make_article_id(a) == article_id:
-                        return jsonify({
-                            "id": article_id,
-                            "title": a.get("title", a.get("headline", "")),
-                            "description": a.get("description", a.get("summary", "")),
-                            "image": a.get("image", a.get("image_url")),
-                            "author": a.get("author", a.get("source", "ISDA Africa")),
-                            "publishedAt": a.get("published_at", a.get("date", "")),
-                            "url": a.get("url", a.get("link", ""))
-                        }), 200
+                        return jsonify(
+                            {
+                                "id": article_id,
+                                "title": a.get("title", a.get("headline", "")),
+                                "description": a.get("description", a.get("summary", "")),
+                                "image": a.get("image", a.get("image_url")),
+                                "author": a.get("author", a.get("source", "ISDA Africa")),
+                                "publishedAt": a.get("published_at", a.get("date", "")),
+                                "url": a.get("url", a.get("link", "")),
+                            }
+                        ), 200
         except Exception:
             pass
-    
+
     # Fallback: check sample articles
     for article in sample_articles:
         if make_article_id(article) == article_id:
-            return jsonify({
-                "id": article_id,
-                "title": article["title"],
-                "description": article["description"],
-                "image": article["image"],
-                "author": article["author"],
-                "publishedAt": article["publishedAt"],
-                "url": article["url"]
-            }), 200
-    
+            return jsonify(
+                {
+                    "id": article_id,
+                    "title": article["title"],
+                    "description": article["description"],
+                    "image": article["image"],
+                    "author": article["author"],
+                    "publishedAt": article["publishedAt"],
+                    "url": article["url"],
+                }
+            ), 200
+
     return jsonify({"error": "Article not found"}), 404
 
 
@@ -597,8 +625,7 @@ def get_single_news(article_id):
 @bp.get("/news/<article_id>/comments")
 @login_required
 def get_comments(article_id):
-    comments = Comment.query.filter_by(post_id=article_id)\
-        .order_by(Comment.created_at.desc()).all()
+    comments = Comment.query.filter_by(post_id=article_id).order_by(Comment.created_at.desc()).all()
     return jsonify([c.to_dict() for c in comments]), 200
 
 
@@ -611,11 +638,7 @@ def create_comment(article_id):
     if not content:
         return jsonify({"error": "Content required"}), 400
 
-    comment = Comment(
-        post_id=article_id,
-        author_id=g.current_user.id,
-        content=content
-    )
+    comment = Comment(post_id=article_id, author_id=g.current_user.id, content=content)
 
     db.session.add(comment)
     db.session.commit()

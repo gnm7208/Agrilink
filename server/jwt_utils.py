@@ -1,5 +1,6 @@
+from datetime import UTC, datetime, timedelta
+
 import jwt
-from datetime import datetime, timedelta, timezone
 from flask import current_app
 
 
@@ -7,8 +8,8 @@ def create_token(user_id):
     """Generate a JWT token for the given user ID."""
     payload = {
         "user_id": user_id,
-        "exp": datetime.now(timezone.utc) + timedelta(days=1),
-        "iat": datetime.now(timezone.utc),
+        "exp": datetime.now(UTC) + timedelta(days=1),
+        "iat": datetime.now(UTC),
     }
     return jwt.encode(payload, current_app.config["SECRET_KEY"], algorithm="HS256")
 

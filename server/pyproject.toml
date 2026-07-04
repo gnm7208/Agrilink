@@ -1,0 +1,37 @@
+[project]
+name = "agrilink-backend"
+version = "1.0.0"
+description = "AgriLink REST API - Flask/PostgreSQL backend"
+requires-python = ">=3.12"
+
+# ---------------------------------------------------------------------------
+# Ruff: single tool replacing flake8 + isort + pyupgrade + black
+# ---------------------------------------------------------------------------
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = ["migrations"]
+
+[tool.ruff.lint]
+select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+    "I",  # isort (import sorting)
+    "UP", # pyupgrade (modern syntax)
+    "B",  # flake8-bugbear (likely bugs)
+]
+ignore = [
+    "E501", # line length - reduce progressively
+    "B008", # function call in default argument (Flask patterns)
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["config", "extensions", "models", "routes", "services", "utils", "jwt_utils", "rbac", "csrf", "cloudinary_utils"]
+
+# ---------------------------------------------------------------------------
+# Pytest
+# ---------------------------------------------------------------------------
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--tb=short"

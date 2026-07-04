@@ -3,10 +3,11 @@ Email sending service for verification and password reset.
 
 Uses SMTP when configured; otherwise logs the link (development/testing).
 """
+
 import logging
 import smtplib
-from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 
 from flask import current_app
 
@@ -21,7 +22,11 @@ def send_verification_email(user_email: str, verification_link: str) -> None:
     (e.g. development/testing) and does not raise.
     """
     mail_server = current_app.config.get("MAIL_SERVER") if current_app else None
-    email_from = current_app.config.get("EMAIL_FROM", "noreply@agrilink.example.com") if current_app else "noreply@agrilink.example.com"
+    email_from = (
+        current_app.config.get("EMAIL_FROM", "noreply@agrilink.example.com")
+        if current_app
+        else "noreply@agrilink.example.com"
+    )
 
     subject = "Verify your AgriLink email address"
     body_text = f"""Please verify your email address by clicking the link below:
@@ -59,4 +64,6 @@ This link expires in 24 hours. If you did not create an account, you can ignore 
             logger.exception("Failed to send verification email to %s: %s", user_email, e)
             raise
     else:
-        logger.info("Email not configured; verification link for %s: %s", user_email, verification_link)
+        logger.info(
+            "Email not configured; verification link for %s: %s", user_email, verification_link
+        )

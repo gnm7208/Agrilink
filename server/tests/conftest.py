@@ -1,15 +1,17 @@
 """
 Pytest configuration and fixtures for AgriLink API tests.
 """
+
+import os
+import sys
+
 import pytest
 
-import sys
-import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app import create_app
 from extensions import db
-from models import User, Role, Community, CommunityMembership, Post, Comment, Like, Follow, Message
+from models import Role, User
 
 
 @pytest.fixture(scope="function")
@@ -42,27 +44,26 @@ def client(app):
 @pytest.fixture
 def sample_user_data():
     """Sample user registration data."""
-    return {
-        "username": "testuser",
-        "email": "test@example.com",
-        "password": "SecurePass123!@#"
-    }
+    return {"username": "testuser", "email": "test@example.com", "password": "SecurePass123!@#"}
 
 
 @pytest.fixture
 def sample_admin_data():
     """Sample admin registration data."""
-    return {
-        "username": "adminuser",
-        "email": "admin@example.com",
-        "password": "AdminPass123!@#"
-    }
+    return {"username": "adminuser", "email": "admin@example.com", "password": "AdminPass123!@#"}
 
 
 @pytest.fixture
 def create_user(app):
     """Factory fixture to create a user."""
-    def _create_user(username="testuser", email="test@example.com", password="SecurePass123!@#", role="user", email_verified=True):
+
+    def _create_user(
+        username="testuser",
+        email="test@example.com",
+        password="SecurePass123!@#",
+        role="user",
+        email_verified=True,
+    ):
         with app.app_context():
             user = User(username=username, email=email)
             user.set_password(password)
@@ -71,13 +72,20 @@ def create_user(app):
             db.session.add(user)
             db.session.commit()
             return user.id
+
     return _create_user
 
 
 @pytest.fixture
 def create_unverified_user(app):
     """Factory fixture to create an unverified user."""
-    def _create_unverified_user(username="unverified", email="unverified@example.com", password="SecurePass123!@#", role="user"):
+
+    def _create_unverified_user(
+        username="unverified",
+        email="unverified@example.com",
+        password="SecurePass123!@#",
+        role="user",
+    ):
         with app.app_context():
             user = User(username=username, email=email)
             user.set_password(password)
@@ -86,6 +94,7 @@ def create_unverified_user(app):
             db.session.add(user)
             db.session.commit()
             return user.id
+
     return _create_unverified_user
 
 
@@ -95,14 +104,14 @@ def auth_client(app, client, create_user, sample_user_data):
     user_id = create_user(
         username=sample_user_data["username"],
         email=sample_user_data["email"],
-        password=sample_user_data["password"]
+        password=sample_user_data["password"],
     )
 
     # Login to establish session
-    response = client.post("/api/auth/login", json={
-        "email": sample_user_data["email"],
-        "password": sample_user_data["password"]
-    })
+    response = client.post(
+        "/api/auth/login",
+        json={"email": sample_user_data["email"], "password": sample_user_data["password"]},
+    )
 
     assert response.status_code == 200, f"Login failed: {response.get_json()}"
     return client, user_id
@@ -115,14 +124,14 @@ def admin_client(app, client, create_user, sample_admin_data):
         username=sample_admin_data["username"],
         email=sample_admin_data["email"],
         password=sample_admin_data["password"],
-        role="admin"
+        role="admin",
     )
 
     # Login to establish session
-    response = client.post("/api/auth/login", json={
-        "email": sample_admin_data["email"],
-        "password": sample_admin_data["password"]
-    })
+    response = client.post(
+        "/api/auth/login",
+        json={"email": sample_admin_data["email"], "password": sample_admin_data["password"]},
+    )
 
     assert response.status_code == 200, f"Admin login failed: {response.get_json()}"
     return client, user_id
@@ -133,10 +142,9 @@ def sample_community(auth_client):
     """Create a sample community."""
     client, user_id = auth_client
 
-    response = client.post("/api/communities", json={
-        "name": "Test Community",
-        "description": "A test community"
-    })
+    response = client.post(
+        "/api/communities", json={"name": "Test Community", "description": "A test community"}
+    )
 
     assert response.status_code == 201, f"Community creation failed: {response.get_json()}"
     return response.get_json()
@@ -146,7 +154,5 @@ def sample_community(auth_client):
 def second_user(create_user):
     """Create a second user for interaction tests."""
     return create_user(
-        username="seconduser",
-        email="second@example.com",
-        password="SecurePass123!@#"
+        username="seconduser", email="second@example.com", password="SecurePass123!@#"
     )

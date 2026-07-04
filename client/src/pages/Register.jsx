@@ -50,7 +50,7 @@ export function RegisterPage() {
         // Refresh auth context so SPA recognizes logged-in user immediately
         try {
           await refreshUser()
-        } catch (e) {
+        } catch {
           // ignore — we'll still navigate to login where user can retry
         }
       }

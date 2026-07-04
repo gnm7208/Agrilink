@@ -3,10 +3,12 @@ Image upload routes for AgriLink.
 
 Provides endpoints for uploading images to Cloudinary.
 """
+
 from flask import Blueprint, jsonify, request
+
+from cloudinary_utils import upload_image, validate_image_file
 from extensions import limiter
 from rbac import login_required
-from cloudinary_utils import validate_image_file, upload_image
 
 bp = Blueprint("uploads", __name__, url_prefix="/uploads")
 
@@ -48,28 +50,22 @@ def upload_image_endpoint():
     file = request.files.get("image") or request.files.get("file")
 
     if not file:
-        return jsonify({
-            "error": "No file provided",
-            "message": "Please include an image file with field name 'image' or 'file'"
-        }), 400
+        return jsonify(
+            {
+                "error": "No file provided",
+                "message": "Please include an image file with field name 'image' or 'file'",
+            }
+        ), 400
 
     # Validate the file
     validation = validate_image_file(file)
     if not validation["valid"]:
-        return jsonify({
-            "error": validation["error"],
-            "message": validation["error"]
-        }), 400
+        return jsonify({"error": validation["error"], "message": validation["error"]}), 400
 
     # Upload to Cloudinary
     result = upload_image(file)
 
     if not result["success"]:
-        return jsonify({
-            "error": "Upload failed",
-            "message": result["error"]
-        }), 500
+        return jsonify({"error": "Upload failed", "message": result["error"]}), 500
 
-    return jsonify({
-        "url": result["url"]
-    }), 201
+    return jsonify({"url": result["url"]}), 201

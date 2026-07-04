@@ -8,7 +8,7 @@ on:
 
 jobs:
   backend:
-    name: Backend tests
+    name: Backend lint + tests
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -26,13 +26,18 @@ jobs:
           cache-dependency-path: server/requirements.txt
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: pip install -r requirements.txt ruff
 
-      - name: Run tests
-        run: python -m pytest tests/ -v --tb=short
+      - name: Lint (ruff)
+        run: |
+          ruff check .
+          ruff format --check .
+
+      - name: Run tests with coverage
+        run: python -m pytest tests/ -v --cov=. --cov-report=term-missing
 
   frontend:
-    name: Frontend lint
+    name: Frontend lint + tests
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -52,3 +57,35 @@ jobs:
 
       - name: Lint
         run: npm run lint
+
+      - name: Tests (vitest)
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+  security:
+    name: Dependency audit
+    runs-on: ubuntu-latest
+    continue-on-error: true # advisory only - do not block merges
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: pip-audit (backend)
+        run: |
+          pip install pip-audit
+          pip-audit -r server/requirements.txt
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: npm audit (frontend)
+        working-directory: client
+        run: npm audit --audit-level=high

@@ -3,15 +3,15 @@ Email verification token generation and validation.
 
 Tokens are stored as SHA256 hashes; the raw token is only sent in the verification link.
 """
+
 import hashlib
 import secrets
-from datetime import datetime, timedelta
-from utils.timeutils import utcnow
-from typing import Optional
+from datetime import timedelta
 
 from flask import current_app
-from extensions import db
+
 from models import User
+from utils.timeutils import utcnow
 
 
 def generate_verification_token() -> str:
@@ -48,7 +48,7 @@ def create_email_verification(user: User) -> str:
     return raw_token
 
 
-def verify_email_token(token: str) -> Optional[User]:
+def verify_email_token(token: str) -> User | None:
     """
     Validate token and return the user if valid and not expired.
 
