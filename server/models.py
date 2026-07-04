@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from utils.timeutils import utcnow
 import secrets
 
 from extensions import db
@@ -42,8 +43,8 @@ class User(db.Model):
     email_verified = db.Column(db.Boolean, default=False, nullable=False)
     email_verification_token = db.Column(db.String(255), nullable=True, index=True)
     email_verification_expires = db.Column(db.DateTime, nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
+    updated_at = db.Column(db.DateTime, onupdate=utcnow)
 
     role_obj = db.relationship("Role", backref="users")
 
@@ -112,7 +113,7 @@ class Community(db.Model):
     description = db.Column(db.Text)
     image_url = db.Column(db.String(255))
     created_by = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
 
     members = db.relationship("CommunityMembership", backref="community", cascade="all, delete-orphan")
     posts = db.relationship("Post", backref="community", lazy=True)
@@ -135,7 +136,7 @@ class CommunityMembership(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
     community_id = db.Column(db.Integer, db.ForeignKey("communities.id"), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
 
     user = db.relationship("User", backref="community_memberships")
      
@@ -154,8 +155,8 @@ class Post(db.Model):
     community_id = db.Column(db.Integer, db.ForeignKey("communities.id"))
     title = db.Column(db.String(255))
     content = db.Column(db.Text, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
+    updated_at = db.Column(db.DateTime, onupdate=utcnow)
 
     images = db.relationship("PostImage", backref="post", cascade="all, delete-orphan")
     likes = db.relationship("Like", backref="post", cascade="all, delete-orphan")
@@ -186,7 +187,7 @@ class PostImage(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     post_id = db.Column(db.Integer, db.ForeignKey("posts.id"), nullable=False)
     image_url = db.Column(db.String(255), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
 
     def to_dict(self): 
         return { "id": self.id, 
@@ -201,7 +202,7 @@ class Like(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
     post_id = db.Column(db.Integer, db.ForeignKey("posts.id"), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
 
     user = db.relationship("User", backref="likes")
 
@@ -224,7 +225,7 @@ class Comment(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
     post_id = db.Column(db.Integer, db.ForeignKey("posts.id"), nullable=False)
     content = db.Column(db.Text, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
 
     user = db.relationship("User", backref="comments")
     
@@ -244,7 +245,7 @@ class Follow(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     follower_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
     followed_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
 
     follower = db.relationship("User", foreign_keys=[follower_id])
     followed = db.relationship("User", foreign_keys=[followed_id])
@@ -269,7 +270,7 @@ class Message(db.Model):
     receiver_id = db.Column(db.Integer, db.ForeignKey("users.id"))
     community_id = db.Column(db.Integer, db.ForeignKey("communities.id"))
     content = db.Column(db.Text, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
 
     def to_dict(self):
         return {
@@ -289,7 +290,7 @@ class PasswordResetToken(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
     token = db.Column(db.String(100), unique=True, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
     expires_at = db.Column(db.DateTime, nullable=False)
     used = db.Column(db.Boolean, default=False)
 
@@ -305,7 +306,7 @@ class PasswordResetToken(db.Model):
         cls.query.filter_by(user_id=user_id, used=False).update({"used": True})
 
         token = secrets.token_urlsafe(32)
-        expires_at = datetime.utcnow() + timedelta(hours=cls.TOKEN_EXPIRY_HOURS)
+        expires_at = utcnow() + timedelta(hours=cls.TOKEN_EXPIRY_HOURS)
 
         reset_token = cls(
             user_id=user_id,
@@ -322,7 +323,7 @@ class PasswordResetToken(db.Model):
         return cls.query.filter(
             cls.token == token,
             cls.used == False,
-            cls.expires_at > datetime.utcnow()
+            cls.expires_at > utcnow()
         ).first()
 
     def mark_used(self) -> None:
@@ -332,7 +333,7 @@ class PasswordResetToken(db.Model):
 
     def is_valid(self) -> bool:
         """Check if token is still valid."""
-        return not self.used and self.expires_at > datetime.utcnow()
+        return not self.used and self.expires_at > utcnow()
 
     def to_dict(self):
         return {

@@ -8,7 +8,7 @@ import { motion } from 'framer-motion'
 import { apiRequest, API_ENDPOINTS, setToken } from '../config/api'
 import { useAuth } from '../hooks/useAuth'
 
-import bgImage from '../assets/Agriculture Sprayers Market Size, Share, and Growth Analysis 2024-2032.jpeg'
+import bgImage from '../assets/auth-bg.jpeg'
 
 export function LoginPage() {
   const navigate = useNavigate()

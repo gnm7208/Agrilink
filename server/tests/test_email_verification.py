@@ -3,6 +3,7 @@ Tests for email verification: token utility, verify-email and resend-verificatio
 """
 import pytest
 from datetime import datetime, timedelta
+from utils.timeutils import utcnow
 from unittest.mock import patch
 
 import sys
@@ -38,7 +39,7 @@ class TestEmailVerificationTokenUtility:
             assert len(raw_token) > 20
             assert user.email_verification_token is not None
             assert user.email_verification_expires is not None
-            assert user.email_verification_expires > datetime.utcnow()
+            assert user.email_verification_expires > utcnow()
 
     def test_verify_email_token_success(self, app, create_user):
         """Valid token returns user and verification clears token fields."""
@@ -59,7 +60,7 @@ class TestEmailVerificationTokenUtility:
             user_id = create_user(email="expired@example.com", username="expireduser", email_verified=False)
             user = User.query.get(user_id)
             raw_token = create_email_verification(user)
-            user.email_verification_expires = datetime.utcnow() - timedelta(hours=1)
+            user.email_verification_expires = utcnow() - timedelta(hours=1)
             db.session.commit()
 
             found = verify_email_token(raw_token)

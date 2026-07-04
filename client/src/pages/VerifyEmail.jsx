@@ -7,7 +7,7 @@ import { Sprout, AlertCircle, CheckCircle, ArrowLeft } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { apiRequest, API_ENDPOINTS } from '../config/api'
 
-import bgImage from '../assets/Agriculture Sprayers Market Size, Share, and Growth Analysis 2024-2032.jpeg'
+import bgImage from '../assets/auth-bg.jpeg'
 
 export function VerifyEmailPage() {
   const [searchParams] = useSearchParams()

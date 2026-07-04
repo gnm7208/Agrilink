@@ -2,6 +2,7 @@ import logging
 import os
 import sys
 from datetime import datetime, timedelta
+from utils.timeutils import utcnow
 from flask import Flask, jsonify, request, session, g
 from flask_cors import CORS
 from flask_limiter import Limiter
@@ -86,7 +87,7 @@ def create_app(config_name=None):
         if session_created and user_id:
             try:
                 created_time = datetime.fromisoformat(session_created)
-                session_age = datetime.utcnow() - created_time
+                session_age = utcnow() - created_time
                 max_age = timedelta(seconds=app.config.get("PERMANENT_SESSION_LIFETIME", 86400))
 
                 if session_age > max_age:

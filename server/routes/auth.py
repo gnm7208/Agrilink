@@ -1,4 +1,5 @@
 from datetime import datetime
+from utils.timeutils import utcnow
 from flask import Blueprint, jsonify, request, session, g, current_app
 from sqlalchemy.exc import IntegrityError
 from extensions import db, limiter
@@ -105,7 +106,7 @@ def register():
 
         # Create session so user can resend from profile/login
         session["user_id"] = user.id
-        session["session_created_at"] = datetime.utcnow().isoformat()
+        session["session_created_at"] = utcnow().isoformat()
         session.permanent = True  # Use PERMANENT_SESSION_LIFETIME from config
 
         # In development when email is not configured, also return the
@@ -184,7 +185,7 @@ def login():
 
     # Create session with timestamp
     session["user_id"] = user.id
-    session["session_created_at"] = datetime.utcnow().isoformat()
+    session["session_created_at"] = utcnow().isoformat()
     session.permanent = True  # Use PERMANENT_SESSION_LIFETIME from config
 
     payload = {
