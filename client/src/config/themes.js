@@ -17,6 +17,22 @@ export function getHomeHeroImage(themeId) {
   return `${HOME_HERO_IMAGES[themeId] || HOME_HERO_IMAGES['maize-field']}?w=1600&q=75&fit=crop&auto=format`
 }
 
+// Admin header backdrop photos — reuses the same curated set as the main app,
+// mapped onto the conceptually closest admin theme. Slate stays photo-free by
+// design (the "Professional" default), giving it a plain, minimal gradient.
+const ADMIN_HERO_IMAGES = {
+  'wheat-ink': HOME_HERO_IMAGES['golden-wheat'],
+  meadow: HOME_HERO_IMAGES['meadow-bloom'],
+  forest: HOME_HERO_IMAGES['forest-canopy'],
+  terracotta: HOME_HERO_IMAGES['savanna'],
+  coffee: HOME_HERO_IMAGES['coffee-farm'],
+}
+
+export function getAdminHeroImage(themeId) {
+  const src = ADMIN_HERO_IMAGES[themeId]
+  return src ? `${src}?w=1600&q=70&fit=crop&auto=format` : null
+}
+
 export const MAIN_THEME_CATEGORIES = [
   {
     category: 'Crops & Fields',

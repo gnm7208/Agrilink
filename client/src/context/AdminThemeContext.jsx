@@ -28,6 +28,22 @@ export function AdminThemeProvider({ children }) {
     localStorage.setItem(MODE_KEY, mode);
   }, [mode]);
 
+  // Tailwind's `dark:` variant matches ANY `.dark` ancestor, not just the
+  // nearest one — so scoping `dark` to this provider's own wrapper div isn't
+  // enough if <html> already has `dark` from the main app's ThemeContext.
+  // Force <html> to reflect the admin's own mode while mounted, then hand
+  // control back to whatever the main app's preference is on unmount.
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', mode === 'dark');
+    return () => {
+      const mainMode = localStorage.getItem('agrilink_mode');
+      const shouldBeDark =
+        mainMode === 'dark' ||
+        (mainMode !== 'light' && window.matchMedia?.('(prefers-color-scheme: dark)').matches);
+      document.documentElement.classList.toggle('dark', shouldBeDark);
+    };
+  }, [mode]);
+
   const setTheme = useCallback((id) => setThemeState(id), []);
   const setMode = useCallback((m) => setModeState(m), []);
   const toggleMode = useCallback(() => setModeState((m) => (m === 'dark' ? 'light' : 'dark')), []);
