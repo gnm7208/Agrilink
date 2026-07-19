@@ -8,10 +8,16 @@ import {
   Bell,
   Search,
   Send,
+  Flag,
 } from "lucide-react";
 /* eslint-disable-next-line no-unused-vars -- motion used in JSX */
 import { motion } from "framer-motion";
 import { useFeed } from "../hooks/useFeed";
+import { ReportModal } from "../components/ReportModal";
+import { useTheme } from "../hooks/useTheme";
+import { getHomeHeroImage } from "../config/themes";
+
+const isNumericId = (val) => /^\d+$/.test(String(val));
 
 export function HomeFeed() {
   // Server state (fetching, caching, pagination) lives in TanStack Query.
@@ -29,6 +35,7 @@ export function HomeFeed() {
   const [activePost, setActivePost] = useState(null);
   const [commentText, setCommentText] = useState("");
   const [overrides, setOverrides] = useState({});
+  const [reportPostId, setReportPostId] = useState(null);
 
   const withOverrides = (post) => ({ ...post, ...overrides[post.id] });
 
@@ -36,7 +43,7 @@ export function HomeFeed() {
     .map(withOverrides)
     .filter(
       (p) =>
-        p.title.toLowerCase().includes(query.toLowerCase()) ||
+        (p.title || "").toLowerCase().includes(query.toLowerCase()) ||
         (p.description || "").toLowerCase().includes(query.toLowerCase())
     );
 
@@ -70,24 +77,24 @@ export function HomeFeed() {
   };
 
   const loading = isLoading || isFetchingNextPage;
+  const { theme } = useTheme();
 
   return (
     <div
-      className="w-full min-h-screen bg-cover bg-center bg-fixed"
+      className="w-full min-h-screen bg-cover bg-center bg-fixed transition-[background-image] duration-500"
       style={{
-        backgroundImage:
-          "url(https://images.unsplash.com/photo-1500382017468-9049fed747ef)",
+        backgroundImage: `url(${getHomeHeroImage(theme)})`,
       }}
     >
       <div className="w-full bg-black/30 backdrop-blur-sm">
         {/* HEADER */}
         <header className="sticky top-0 z-50 bg-black/30 backdrop-blur-md">
           <div className="flex justify-between items-center px-6 py-3">
-            <h1 className="text-2xl font-bold text-green-200">Agrilink</h1>
+            <h1 className="text-2xl font-bold text-green-600">Agrilink</h1>
 
             <div className="flex items-center gap-4">
               <div className="flex items-center bg-white/20 rounded-full px-3 py-1">
-                <Search size={16} className="text-gray-300 mr-2" />
+                <Search size={16} className="text-white/70 mr-2" />
                 <input
                   type="text"
                   placeholder="Search articles..."
@@ -98,7 +105,7 @@ export function HomeFeed() {
               </div>
 
               <button>
-                <Bell size={20} className="text-white hover:text-green-200" />
+                <Bell size={20} className="text-white hover:text-white/70" />
               </button>
             </div>
           </div>
@@ -124,7 +131,7 @@ export function HomeFeed() {
               </Link>
               <div className="p-5 space-y-3">
                 <Link to={`/post/${post.id}`}>
-                  <h2 className="text-lg font-semibold hover:text-green-200">{post.title}</h2>
+                  <h2 className="text-lg font-semibold hover:text-white/70">{post.title}</h2>
                 </Link>
                 <p className="text-sm text-white/80">{post.description}</p>
 
@@ -172,6 +179,17 @@ export function HomeFeed() {
                   >
                     <Share2 size={18} />
                   </button>
+
+                  {isNumericId(post.id) && (
+                    <button
+                      onClick={() => setReportPostId(post.id)}
+                      className="text-white/70 hover:text-red-400 ml-auto"
+                      title="Report post"
+                      aria-label="Report post"
+                    >
+                      <Flag size={18} />
+                    </button>
+                  )}
                 </div>
 
                 {activePost === post.id && (
@@ -216,6 +234,14 @@ export function HomeFeed() {
           )}
         </main>
       </div>
+
+      {reportPostId && (
+        <ReportModal
+          targetType="post"
+          targetId={Number(reportPostId)}
+          onClose={() => setReportPostId(null)}
+        />
+      )}
     </div>
   );
 }

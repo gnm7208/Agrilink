@@ -1,19 +1,27 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Image as ImageIcon, Camera, X, Loader2 } from 'lucide-react';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
+import { Image as ImageIcon, Camera, X, Loader2, WifiOff } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Avatar } from '../components/ui/Avatar';
 import { apiRequest, API_ENDPOINTS } from '../config/api';
 import { useImageUpload } from '../hooks/useImageUpload';
 import { useAuth } from '../hooks/useAuth';
+import { useOutbox } from '../hooks/useOutbox';
 
 export function CreatePost() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const communityId = searchParams.get('community_id');
   const { user, loading: authLoading } = useAuth();
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
+  const prefill = location.state || {};
+  const [title, setTitle] = useState(prefill.prefillTitle || '');
+  const [content, setContent] = useState(prefill.prefillContent || '');
+  const [prefilledImageUrl, setPrefilledImageUrl] = useState(prefill.prefillImageUrl || null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
+  const [queuedOffline, setQueuedOffline] = useState(false);
+  const { queuePost } = useOutbox();
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -46,30 +54,55 @@ export function CreatePost() {
       return;
     }
 
+    // Can't queue a not-yet-uploaded photo for later (Files aren't
+    // serializable to localStorage) — ask the user to remove it or wait
+    // for a connection instead of silently dropping it.
+    if (!navigator.onLine && hasFile) {
+      setSubmitError('You’re offline — remove the photo or reconnect to post with an image.');
+      return;
+    }
+
     setIsSubmitting(true);
 
+    const postData = {
+      title: title.trim() || undefined,
+      content: content.trim(),
+      image_url: prefilledImageUrl || undefined,
+      community_id: communityId ? parseInt(communityId, 10) : undefined,
+    };
+
+    if (!navigator.onLine) {
+      queuePost(postData);
+      setIsSubmitting(false);
+      setQueuedOffline(true);
+      setTimeout(() => navigate(communityId ? `/communities/${communityId}` : '/'), 1200);
+      return;
+    }
+
     try {
-      // Step 1: Upload image if selected
-      let imageUrl = null;
+      // Step 1: Upload image if selected (falls back to a prefilled URL
+      // carried over from the Crop Helper's "Ask the community" flow).
+      let imageUrl = prefilledImageUrl;
       if (hasFile) {
         imageUrl = await upload();
       }
 
-      // Step 2: Create the post (with image_url if uploaded)
-      const postData = {
-        title: title.trim() || undefined,
-        content: content.trim(),
-        image_url: imageUrl || undefined,
-      };
-
       await apiRequest(API_ENDPOINTS.posts.create, {
         method: 'POST',
-        body: JSON.stringify(postData),
+        body: JSON.stringify({ ...postData, image_url: imageUrl || undefined }),
       });
 
-      // Success - navigate to home
-      navigate('/');
+      // Success - return to the community if posting there, otherwise home
+      navigate(communityId ? `/communities/${communityId}` : '/');
     } catch (err) {
+      // A network error (not an HTTP error response) means the request
+      // never reached the server — queue it instead of losing the draft.
+      if (!err.status) {
+        queuePost(postData);
+        setQueuedOffline(true);
+        setTimeout(() => navigate(communityId ? `/communities/${communityId}` : '/'), 1200);
+        return;
+      }
       console.error('Failed to create post:', err);
       setSubmitError(err.message || 'Failed to create post. Please try again.');
     } finally {
@@ -93,8 +126,8 @@ export function CreatePost() {
   }
 
   return (
-    <div className="min-h-screen bg-white pb-20">
-      <header className="sticky top-0 z-40 bg-white border-b border-gray-100 px-4 py-3 flex items-center justify-between">
+    <div className="min-h-screen bg-white dark:bg-slate-900 pb-20">
+      <header className="sticky top-0 z-40 bg-white dark:bg-slate-900 border-b border-gray-100 dark:border-slate-800 px-4 py-3 flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <button onClick={() => navigate(-1)} className="text-gray-600">
             <X size={24} />
@@ -113,6 +146,14 @@ export function CreatePost() {
       </header>
 
       <div className="p-4">
+        {/* Queued-offline confirmation */}
+        {queuedOffline && (
+          <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-800 text-sm flex items-center gap-2">
+            <WifiOff size={16} className="shrink-0" />
+            You’re offline — this post will send automatically once you’re back online.
+          </div>
+        )}
+
         {/* Error Display */}
         {error && (
           <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
@@ -138,7 +179,7 @@ export function CreatePost() {
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Give your post a title..."
-            className="w-full text-xl font-bold placeholder-gray-400 border-none focus:ring-0 p-0 focus:outline-none"
+            className="w-full text-xl font-bold text-gray-900 placeholder-gray-400 border-none focus:ring-0 p-0 focus:outline-none"
             maxLength={255}
           />
 
@@ -151,10 +192,10 @@ export function CreatePost() {
           />
 
           {/* Image Preview */}
-          {preview && (
+          {(preview || prefilledImageUrl) && (
             <div className="relative rounded-2xl overflow-hidden mb-4 group">
               <img
-                src={preview}
+                src={preview || prefilledImageUrl}
                 alt="Upload preview"
                 className="w-full h-auto max-h-80 object-cover"
               />
@@ -165,7 +206,10 @@ export function CreatePost() {
               )}
               <button
                 type="button"
-                onClick={clearFile}
+                onClick={() => {
+                  clearFile();
+                  setPrefilledImageUrl(null);
+                }}
                 disabled={uploading}
                 className="absolute top-2 right-2 p-1.5 bg-black/50 text-white rounded-full hover:bg-black/70 transition-colors disabled:opacity-50"
               >
@@ -177,7 +221,7 @@ export function CreatePost() {
       </div>
 
       {/* Bottom Actions */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-100">
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white dark:bg-slate-900 border-t border-gray-100 dark:border-slate-800">
         <div className="flex items-center space-x-4 max-w-md mx-auto">
           <label className="p-3 text-green-600 bg-green-50 rounded-xl cursor-pointer hover:bg-green-100 transition-colors">
             <input

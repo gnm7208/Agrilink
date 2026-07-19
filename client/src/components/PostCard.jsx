@@ -1,10 +1,13 @@
-import React from 'react'
-import { Heart, MessageCircle, Share2, MoreHorizontal } from 'lucide-react'
+import React, { useState } from 'react'
+import { Heart, MessageCircle, Share2, MoreHorizontal, Flag } from 'lucide-react'
 import { Card } from './ui/Card'
 import { Avatar } from './ui/Avatar'
+import { ReportModal } from './ReportModal'
 import { Link } from 'react-router-dom'
 /* eslint-disable-next-line no-unused-vars -- motion used in JSX */
 import { motion } from 'framer-motion'
+
+const isNumericId = (val) => /^\d+$/.test(String(val))
 
 const PostCard = ({
   id,
@@ -17,6 +20,10 @@ const PostCard = ({
   timeAgo,
   tags,
 }) => {
+  const [showMenu, setShowMenu] = useState(false)
+  const [showReport, setShowReport] = useState(false)
+  const canReport = isNumericId(id)
+
   return (
     <Card noPadding className="mb-4">
       <div className="p-4">
@@ -44,9 +51,34 @@ const PostCard = ({
             </div>
           </div>
 
-          <button className="text-gray-400 hover:text-gray-600">
-            <MoreHorizontal size={20} />
-          </button>
+          {canReport && (
+            <div className="relative">
+              <button
+                onClick={() => setShowMenu((v) => !v)}
+                aria-label="Post options"
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <MoreHorizontal size={20} />
+              </button>
+              {showMenu && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
+                  <div className="absolute right-0 mt-1 w-40 bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-lg shadow-lg z-20 py-1">
+                    <button
+                      onClick={() => {
+                        setShowMenu(false)
+                        setShowReport(true)
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:hover:bg-slate-700"
+                    >
+                      <Flag size={14} className="text-red-500" />
+                      Report post
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
         </div>
 
         <Link to={`/post/${id}`} className="block group">
@@ -110,6 +142,14 @@ const PostCard = ({
           <Share2 size={20} />
         </button>
       </div>
+
+      {showReport && (
+        <ReportModal
+          targetType="post"
+          targetId={Number(id)}
+          onClose={() => setShowReport(false)}
+        />
+      )}
     </Card>
   )
 }

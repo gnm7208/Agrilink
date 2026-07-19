@@ -77,9 +77,9 @@ export function EditProfileModal({ user, onClose, onSave }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-      <div className="bg-white rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-gray-100 px-4 py-3 flex items-center justify-between">
+        <div className="sticky top-0 bg-white dark:bg-slate-800 border-b border-gray-100 dark:border-slate-700 px-4 py-3 flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <button
               onClick={onClose}
@@ -150,7 +150,7 @@ export function EditProfileModal({ user, onClose, onSave }) {
               value={bio}
               onChange={(e) => setBio(e.target.value)}
               placeholder="Tell others about yourself..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-slate-700 dark:bg-slate-900 text-gray-900 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
               rows={3}
               maxLength={500}
             />
@@ -169,7 +169,7 @@ export function EditProfileModal({ user, onClose, onSave }) {
               value={location}
               onChange={(e) => setLocation(e.target.value)}
               placeholder="Where are you based?"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-slate-700 dark:bg-slate-900 text-gray-900 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               maxLength={100}
             />
           </div>

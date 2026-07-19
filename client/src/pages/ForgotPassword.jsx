@@ -93,7 +93,7 @@ export function ForgotPasswordPage() {
                   setSuccess(false)
                   setEmail('')
                 }}
-                className="w-full text-sm text-green-400 hover:text-green-300 font-semibold transition-colors"
+                className="w-full text-sm text-emerald-400 hover:text-emerald-300 font-semibold transition-colors"
               >
                 Try another email
               </button>
@@ -146,7 +146,7 @@ export function ForgotPasswordPage() {
               <span className="text-white/40">•</span>
               <Link
                 to="/register"
-                className="flex-1 text-center text-sm text-green-400 font-semibold hover:text-green-300 transition-colors"
+                className="flex-1 text-center text-sm text-emerald-400 font-semibold hover:text-emerald-300 transition-colors"
               >
                 Create account
               </Link>

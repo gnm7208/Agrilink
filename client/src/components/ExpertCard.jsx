@@ -35,7 +35,7 @@ const ExpertCard = ({ id, name, specialty, followers, avatar, glass }) => {
     : 'flex items-center justify-between p-4'
 
   return (
-    <Card className={cardClass}>
+    <Card className={cardClass} surface={!glass}>
       <div className="flex items-center space-x-4">
         <Avatar src={avatar} fallback={name} size="lg" />
 

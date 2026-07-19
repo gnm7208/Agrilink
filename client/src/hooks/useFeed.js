@@ -15,8 +15,8 @@ async function fetchFeedPage({ pageParam = 1 }) {
 
   const formattedNews = newsArticles.map((article) => ({
     id: article.id,
-    title: article.title,
-    description: article.description,
+    title: article.title || '',
+    description: article.description || '',
     image: article.image,
     author: article.author,
     timeAgo: new Date(article.publishedAt || 0).toLocaleDateString(),

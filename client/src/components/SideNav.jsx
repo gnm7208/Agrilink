@@ -9,6 +9,8 @@ import {
   Sprout,
   LogOut,
   Settings,
+  ShieldCheck,
+  TrendingUp,
 } from 'lucide-react'
 /* eslint-disable-next-line no-unused-vars -- motion used in JSX */
 import { motion } from 'framer-motion'
@@ -25,8 +27,13 @@ const SideNav = () => {
     { id: 'communities', icon: Users, label: 'Communities', path: '/communities' },
     { id: 'create', icon: PlusSquare, label: 'Create', path: '/create', primary: true },
     { id: 'messages', icon: MessageSquare, label: 'Messages', path: '/messages' },
+    { id: 'market', icon: TrendingUp, label: 'Market', path: '/market' },
     { id: 'profile', icon: User, label: 'Profile', path: '/profile' },
   ]
+
+  if (user?.role === 'admin') {
+    tabs.push({ id: 'admin', icon: ShieldCheck, label: 'Admin', path: '/admin' })
+  }
 
   return (
     <aside className="
@@ -42,13 +49,14 @@ const SideNav = () => {
         <div className="p-2 rounded-2xl bg-green-600 text-white shadow-lg">
           <Sprout size={22} />
         </div>
-        <h1 className="text-xl font-bold text-white tracking-tight">Agrilink</h1>
+        <h1 className="text-xl font-bold text-green-600 tracking-tight">Agrilink</h1>
       </div>
 
       
       <nav className="flex-1 px-4 space-y-1">
         {tabs.map((tab) => {
-          const isActive = pathname === tab.path
+          const isActive =
+            tab.path === '/' ? pathname === '/' : pathname.startsWith(tab.path)
           const Icon = tab.icon
 
           return (
@@ -77,7 +85,7 @@ const SideNav = () => {
               </span>
 
               {tab.primary && (
-                <span className="ml-auto relative z-10 text-[10px] px-2 py-0.5 rounded-full bg-green-500/20 text-green-300">
+                <span className="ml-auto relative z-10 text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300">
                   New
                 </span>
               )}

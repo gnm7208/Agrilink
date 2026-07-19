@@ -150,7 +150,7 @@ export function VerifyEmailPage() {
               {resendStatus === 'sent' ? 'Link sent — check your email' : 'Resend verification email'}
             </Button>
             {resendStatus === 'sent' && (
-              <p className="text-xs text-green-400 text-center">Check your inbox and spam folder.</p>
+              <p className="text-xs text-emerald-400 text-center">Check your inbox and spam folder.</p>
             )}
 
             <div className="pt-4 border-t border-white/10 space-y-3">

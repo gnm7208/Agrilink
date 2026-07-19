@@ -16,6 +16,9 @@ export function PostDetails() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isUserPost, setIsUserPost] = useState(false);
+  const [liked, setLiked] = useState(false);
+  const [likesCount, setLikesCount] = useState(0);
+  const [likeBusy, setLikeBusy] = useState(false);
 
   const fetchPost = useCallback(async () => {
     try {
@@ -25,6 +28,8 @@ export function PostDetails() {
       if (isNumericId(id)) {
         const postData = await apiRequest(API_ENDPOINTS.posts.byId(id));
         setIsUserPost(true);
+        setLiked(Boolean(postData.liked));
+        setLikesCount(postData.likes_count || 0);
         setPost({
           id: postData.id,
           title: postData.title || "",
@@ -101,13 +106,34 @@ export function PostDetails() {
     }
   };
 
+  const handleToggleLike = async () => {
+    if (!isUserPost || !currentUser || likeBusy) return;
+    setLikeBusy(true);
+    const wasLiked = liked;
+    try {
+      if (wasLiked) {
+        const res = await apiRequest(API_ENDPOINTS.posts.like(id), { method: "DELETE" });
+        setLiked(res.liked);
+        setLikesCount(res.likes_count);
+      } else {
+        const res = await apiRequest(API_ENDPOINTS.posts.like(id), { method: "POST" });
+        setLiked(res.liked);
+        setLikesCount(res.likes_count);
+      }
+    } catch (err) {
+      console.error("Failed to toggle like:", err);
+    } finally {
+      setLikeBusy(false);
+    }
+  };
+
   if (loading) return <p className="text-center mt-10 text-gray-500">Loading post…</p>;
   if (error) return <p className="text-center mt-10 text-red-600">{error}</p>;
   if (!post) return <p className="text-center mt-10 text-gray-500">Post not found.</p>;
 
   return (
-    <div className="bg-white min-h-screen pb-20">
-      <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-gray-100 px-4 py-3 flex items-center space-x-4">
+    <div className="bg-white dark:bg-slate-900 min-h-screen pb-20">
+      <header className="sticky top-0 z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-gray-100 dark:border-slate-800 px-4 py-3 flex items-center space-x-4">
         <Link to="/" className="text-gray-600 hover:text-gray-900">
           <ArrowLeft size={24} />
         </Link>
@@ -133,9 +159,15 @@ export function PostDetails() {
 
         <div className="flex items-center justify-between py-4 border-y border-gray-100 mb-6">
           <div className="flex space-x-6">
-            <button className="flex items-center space-x-2 text-gray-500 hover:text-red-500">
-              <Heart size={22} />
-              <span>{Math.floor(Math.random() * 100)}</span>
+            <button
+              onClick={handleToggleLike}
+              disabled={!isUserPost || !currentUser || likeBusy}
+              className={`flex items-center space-x-2 transition-colors disabled:opacity-50 ${
+                liked ? "text-red-500" : "text-gray-500 hover:text-red-500"
+              }`}
+            >
+              <Heart size={22} className={liked ? "fill-red-500" : ""} />
+              <span>{likesCount}</span>
             </button>
 
             <button className="flex items-center space-x-2 text-gray-500 hover:text-blue-500">
@@ -164,7 +196,7 @@ export function PostDetails() {
       </div>
 
       {isUserPost && currentUser && (
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-100">
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-white dark:bg-slate-900 border-t border-gray-100 dark:border-slate-800">
           <form
             onSubmit={handleCommentSubmit}
             className="flex items-center space-x-3 max-w-md mx-auto"
