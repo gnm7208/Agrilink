@@ -1,0 +1,35 @@
+# One-command local development: docker compose up
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: agrilink
+      POSTGRES_PASSWORD: agrilink_dev # local dev only
+      POSTGRES_DB: agrilink
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agrilink"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build: ./server
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      FLASK_ENV: development
+      DATABASE_URL: postgresql://agrilink:agrilink_dev@db:5432/agrilink
+      SECRET_KEY: dev-secret-change-me
+      FRONTEND_ORIGINS: http://localhost:5173
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./server:/app
+
+volumes:
+  pgdata:

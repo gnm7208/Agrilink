@@ -15,19 +15,24 @@ export function MessagesList() {
 
   useEffect(() => {
     fetchConversations()
+    // Poll for new conversations/messages so unread badges update without a manual reload.
+    const interval = setInterval(() => fetchConversations(true), 8000)
+    return () => clearInterval(interval)
   }, [])
 
-  const fetchConversations = async () => {
+  const fetchConversations = async (silent = false) => {
     try {
-      setLoading(true)
+      if (!silent) setLoading(true)
       setError(null)
       const response = await apiRequest(API_ENDPOINTS.messages.conversations)
       setConversations(response.conversations || [])
     } catch (err) {
-      setError(err.message || 'Failed to load conversations')
-      setConversations([])
+      if (!silent) {
+        setError(err.message || 'Failed to load conversations')
+        setConversations([])
+      }
     } finally {
-      setLoading(false)
+      if (!silent) setLoading(false)
     }
   }
 
@@ -75,8 +80,8 @@ export function MessagesList() {
   }
 
   return (
-    <div className="min-h-screen bg-white pb-24">
-      <header className="sticky top-0 z-40 bg-white border-b border-gray-100 px-4 py-3">
+    <div className="min-h-screen bg-white dark:bg-slate-900 pb-24">
+      <header className="sticky top-0 z-40 bg-white dark:bg-slate-900 border-b border-gray-100 dark:border-slate-800 px-4 py-3">
           <div className="flex items-center justify-between mb-4">
           <h1 className="text-xl font-bold text-gray-900">Messages</h1>
           <button
@@ -162,9 +167,9 @@ export function MessagesList() {
         {/* Composer modal */}
         {showComposer && (
           <div className="fixed inset-0 z-50 flex items-start justify-center p-4">
-            <div className="w-full max-w-md bg-white rounded-xl shadow-lg p-4">
+            <div className="w-full max-w-md bg-white dark:bg-slate-800 rounded-xl shadow-lg p-4">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-lg font-semibold">New Message</h3>
+                <h3 className="text-lg font-semibold text-gray-900">New Message</h3>
                 <button onClick={() => setShowComposer(false)} className="text-gray-500">Close</button>
               </div>
               <input
@@ -174,7 +179,7 @@ export function MessagesList() {
                   handleSearch(e.target.value)
                 }}
                 placeholder="Search users..."
-                className="w-full mb-3 px-3 py-2 border rounded"
+                className="w-full mb-3 px-3 py-2 border border-gray-300 dark:border-slate-700 dark:bg-slate-900 text-gray-900 rounded"
               />
               <div className="max-h-64 overflow-y-auto">
                 {users.filter(u => (u.username || '').toLowerCase().includes(userSearch.toLowerCase())).map(u => (

@@ -10,9 +10,11 @@ import {
   MoreVertical,
   Send,
   Paperclip,
+  Flag,
 } from 'lucide-react'
 import { Avatar } from '../components/ui/Avatar'
 import ChatBubble from '../components/ChatBubble'
+import { ReportModal } from '../components/ReportModal'
 import { apiRequest, API_ENDPOINTS } from '../config/api'
 import { useAuth } from '../hooks/useAuth'
 
@@ -24,6 +26,8 @@ export function ChatInterface() {
   const [chatHistory, setChatHistory] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [showMenu, setShowMenu] = useState(false)
+  const [showReport, setShowReport] = useState(false)
   const messagesEndRef = useRef(null)
 
   const fetchOtherUser = useCallback(async () => {
@@ -35,9 +39,9 @@ export function ChatInterface() {
     }
   }, [userId])
 
-  const fetchConversation = useCallback(async () => {
+  const fetchConversation = useCallback(async (silent = false) => {
     try {
-      setLoading(true)
+      if (!silent) setLoading(true)
       setError(null)
       const response = await apiRequest(API_ENDPOINTS.messages.withUser(userId))
       const msgs = response.messages || []
@@ -55,10 +59,12 @@ export function ChatInterface() {
         }))
       )
     } catch (err) {
-      setError(err.message || 'Failed to load messages')
-      setChatHistory([])
+      if (!silent) {
+        setError(err.message || 'Failed to load messages')
+        setChatHistory([])
+      }
     } finally {
-      setLoading(false)
+      if (!silent) setLoading(false)
     }
   }, [userId, currentUser?.id])
 
@@ -68,6 +74,13 @@ export function ChatInterface() {
 
   useEffect(() => {
     if (userId && currentUser?.id) fetchConversation()
+  }, [userId, currentUser?.id, fetchConversation])
+
+  useEffect(() => {
+    if (!userId || !currentUser?.id) return
+    // Poll so the other side's replies show up without a manual reload.
+    const interval = setInterval(() => fetchConversation(true), 5000)
+    return () => clearInterval(interval)
   }, [userId, currentUser?.id, fetchConversation])
 
   const scrollToBottom = () => {
@@ -120,9 +133,9 @@ export function ChatInterface() {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50">
+    <div className="flex flex-col h-screen bg-gray-50 dark:bg-slate-900">
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 py-3 bg-white border-b shadow-sm">
+      <div className="flex items-center gap-3 px-4 py-3 bg-white dark:bg-slate-900 border-b dark:border-slate-800 shadow-sm">
         <Link to="/messages" className="p-1">
           <ArrowLeft size={24} />
         </Link>
@@ -132,7 +145,7 @@ export function ChatInterface() {
           size="sm"
         />
         <div className="flex-1 min-w-0">
-          <h2 className="text-sm font-semibold truncate">
+          <h2 className="text-sm font-semibold truncate text-gray-900">
             {chatUser?.username || 'Loading...'}
           </h2>
         </div>
@@ -142,10 +155,37 @@ export function ChatInterface() {
         <button className="p-2 text-gray-500">
           <Video size={20} />
         </button>
-        <button className="p-2 text-gray-500">
-          <MoreVertical size={20} />
-        </button>
+        <div className="relative">
+          <button onClick={() => setShowMenu((v) => !v)} aria-label="Chat options" className="p-2 text-gray-500">
+            <MoreVertical size={20} />
+          </button>
+          {showMenu && (
+            <>
+              <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
+              <div className="absolute right-0 mt-1 w-44 bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-lg shadow-lg z-20 py-1">
+                <button
+                  onClick={() => {
+                    setShowMenu(false)
+                    setShowReport(true)
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:hover:bg-slate-700"
+                >
+                  <Flag size={14} className="text-red-500" />
+                  Report user
+                </button>
+              </div>
+            </>
+          )}
+        </div>
       </div>
+
+      {showReport && userId && (
+        <ReportModal
+          targetType="user"
+          targetId={parseInt(userId, 10)}
+          onClose={() => setShowReport(false)}
+        />
+      )}
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
@@ -174,7 +214,7 @@ export function ChatInterface() {
       {/* Input */}
       <form
         onSubmit={handleSend}
-        className="flex items-center gap-2 px-4 py-3 bg-white border-t"
+        className="flex items-center gap-2 px-4 py-3 bg-white dark:bg-slate-900 border-t dark:border-slate-800"
       >
         <button type="button" className="p-2 text-gray-500">
           <Paperclip size={20} />
@@ -184,7 +224,7 @@ export function ChatInterface() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Type a message..."
-          className="flex-1 rounded-full border border-gray-300 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+          className="flex-1 rounded-full border border-gray-300 dark:border-slate-700 dark:bg-slate-800 text-gray-900 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
         />
         <button
           type="submit"

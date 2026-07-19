@@ -7,7 +7,7 @@ import { Sprout, AlertCircle, CheckCircle, ArrowLeft } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { apiRequest, API_ENDPOINTS } from '../config/api'
 
-import bgImage from '../assets/Agriculture Sprayers Market Size, Share, and Growth Analysis 2024-2032.jpeg'
+import bgImage from '../assets/auth-bg.jpeg'
 
 export function VerifyEmailPage() {
   const [searchParams] = useSearchParams()
@@ -150,7 +150,7 @@ export function VerifyEmailPage() {
               {resendStatus === 'sent' ? 'Link sent — check your email' : 'Resend verification email'}
             </Button>
             {resendStatus === 'sent' && (
-              <p className="text-xs text-green-400 text-center">Check your inbox and spam folder.</p>
+              <p className="text-xs text-emerald-400 text-center">Check your inbox and spam folder.</p>
             )}
 
             <div className="pt-4 border-t border-white/10 space-y-3">

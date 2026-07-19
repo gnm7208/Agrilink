@@ -7,10 +7,8 @@ all state-changing requests (POST, PUT, PATCH, DELETE).
 """
 
 import secrets
-from typing import Optional
 
 from flask import current_app, jsonify, request, session
-
 
 CSRF_SESSION_KEY = "csrf_token"
 
@@ -28,7 +26,7 @@ def get_or_set_csrf_token() -> str:
     return token
 
 
-def validate_csrf() -> Optional[tuple]:
+def validate_csrf() -> tuple | None:
     """
     Validate CSRF token for unsafe HTTP methods.
 
@@ -65,8 +63,28 @@ def validate_csrf() -> Optional[tuple]:
     # #region agent log
     try:
         import json
+
         with open("/home/user/AGRILINK/Agrilink/.cursor/debug.log", "a") as f:
-            f.write(json.dumps({"hypothesisId": "H1_H2_H3", "location": "csrf.py:validate_csrf", "message": "CSRF check", "data": {"path": request.path, "method": request.method, "session_has_token": bool(session_token), "header_has_token": bool(header_token), "tokens_match": session_token == header_token if (session_token and header_token) else False}, "timestamp": __import__("time").time() * 1000}) + "\n")
+            f.write(
+                json.dumps(
+                    {
+                        "hypothesisId": "H1_H2_H3",
+                        "location": "csrf.py:validate_csrf",
+                        "message": "CSRF check",
+                        "data": {
+                            "path": request.path,
+                            "method": request.method,
+                            "session_has_token": bool(session_token),
+                            "header_has_token": bool(header_token),
+                            "tokens_match": session_token == header_token
+                            if (session_token and header_token)
+                            else False,
+                        },
+                        "timestamp": __import__("time").time() * 1000,
+                    }
+                )
+                + "\n"
+            )
     except Exception:
         pass
     # #endregion
@@ -82,4 +100,3 @@ def validate_csrf() -> Optional[tuple]:
         return response, 403
 
     return None
-

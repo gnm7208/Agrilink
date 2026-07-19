@@ -3,7 +3,6 @@ Tests for user management endpoints.
 
 Covers: /api/users endpoints (list, get, update, delete, follow/unfollow)
 """
-import pytest
 
 
 class TestHealthCheck:
@@ -51,9 +50,7 @@ class TestListUsers:
         # Create additional users
         for i in range(5):
             create_user(
-                username=f"extrauser{i}",
-                email=f"extra{i}@example.com",
-                password="SecurePass123!@#"
+                username=f"extrauser{i}", email=f"extra{i}@example.com", password="SecurePass123!@#"
             )
 
         # Test pagination
@@ -113,10 +110,9 @@ class TestUpdateUser:
         """Test updating own profile."""
         client, user_id = auth_client
 
-        response = client.patch(f"/api/users/{user_id}", json={
-            "bio": "Updated bio",
-            "location": "New Location"
-        })
+        response = client.patch(
+            f"/api/users/{user_id}", json={"bio": "Updated bio", "location": "New Location"}
+        )
 
         assert response.status_code == 200
         data = response.get_json()
@@ -127,9 +123,7 @@ class TestUpdateUser:
         """Test that users cannot update others' profiles."""
         client, _ = auth_client
 
-        response = client.patch(f"/api/users/{second_user}", json={
-            "bio": "Hacked bio"
-        })
+        response = client.patch(f"/api/users/{second_user}", json={"bio": "Hacked bio"})
 
         assert response.status_code == 403
 
@@ -137,9 +131,7 @@ class TestUpdateUser:
         """Test that admin can update any user's profile."""
         client, _ = admin_client
 
-        response = client.patch(f"/api/users/{second_user}", json={
-            "bio": "Admin updated bio"
-        })
+        response = client.patch(f"/api/users/{second_user}", json={"bio": "Admin updated bio"})
 
         assert response.status_code == 200
         assert response.get_json()["bio"] == "Admin updated bio"
@@ -148,9 +140,9 @@ class TestUpdateUser:
         """Test updating profile image URL."""
         client, user_id = auth_client
 
-        response = client.patch(f"/api/users/{user_id}", json={
-            "profile_image_url": "https://example.com/image.jpg"
-        })
+        response = client.patch(
+            f"/api/users/{user_id}", json={"profile_image_url": "https://example.com/image.jpg"}
+        )
 
         assert response.status_code == 200
         assert response.get_json()["profile_image_url"] == "https://example.com/image.jpg"

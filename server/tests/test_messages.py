@@ -3,7 +3,6 @@ Tests for messaging endpoints.
 
 Covers: /api/messages endpoints (send, delete, conversations)
 """
-import pytest
 
 
 class TestHealthCheck:
@@ -23,10 +22,10 @@ class TestSendMessage:
         """Test sending a direct message to another user."""
         client, _ = auth_client
 
-        response = client.post("/api/messages", json={
-            "receiver_id": second_user,
-            "content": "Hello, this is a test message!"
-        })
+        response = client.post(
+            "/api/messages",
+            json={"receiver_id": second_user, "content": "Hello, this is a test message!"},
+        )
 
         assert response.status_code == 201
         data = response.get_json()
@@ -38,10 +37,10 @@ class TestSendMessage:
         """Test sending a message to a community."""
         client, _ = auth_client
 
-        response = client.post("/api/messages", json={
-            "community_id": sample_community["id"],
-            "content": "Hello community!"
-        })
+        response = client.post(
+            "/api/messages",
+            json={"community_id": sample_community["id"], "content": "Hello community!"},
+        )
 
         assert response.status_code == 201
         data = response.get_json()
@@ -52,9 +51,7 @@ class TestSendMessage:
         """Test sending a message without content."""
         client, _ = auth_client
 
-        response = client.post("/api/messages", json={
-            "receiver_id": second_user
-        })
+        response = client.post("/api/messages", json={"receiver_id": second_user})
 
         assert response.status_code == 400
         assert "content is required" in response.get_json()["error"]
@@ -63,10 +60,7 @@ class TestSendMessage:
         """Test sending a message with empty content."""
         client, _ = auth_client
 
-        response = client.post("/api/messages", json={
-            "receiver_id": second_user,
-            "content": "   "
-        })
+        response = client.post("/api/messages", json={"receiver_id": second_user, "content": "   "})
 
         assert response.status_code == 400
 
@@ -74,9 +68,7 @@ class TestSendMessage:
         """Test sending a message without receiver or community."""
         client, _ = auth_client
 
-        response = client.post("/api/messages", json={
-            "content": "Message to no one"
-        })
+        response = client.post("/api/messages", json={"content": "Message to no one"})
 
         assert response.status_code == 400
         assert "receiver_id or community_id is required" in response.get_json()["error"]
@@ -85,11 +77,14 @@ class TestSendMessage:
         """Test sending a message with both receiver and community."""
         client, _ = auth_client
 
-        response = client.post("/api/messages", json={
-            "receiver_id": second_user,
-            "community_id": sample_community["id"],
-            "content": "Confused message"
-        })
+        response = client.post(
+            "/api/messages",
+            json={
+                "receiver_id": second_user,
+                "community_id": sample_community["id"],
+                "content": "Confused message",
+            },
+        )
 
         assert response.status_code == 400
         assert "either receiver_id or community_id" in response.get_json()["error"]
@@ -98,10 +93,9 @@ class TestSendMessage:
         """Test sending a message to a non-existent user."""
         client, _ = auth_client
 
-        response = client.post("/api/messages", json={
-            "receiver_id": 99999,
-            "content": "Hello nobody"
-        })
+        response = client.post(
+            "/api/messages", json={"receiver_id": 99999, "content": "Hello nobody"}
+        )
 
         assert response.status_code == 404
 
@@ -109,19 +103,17 @@ class TestSendMessage:
         """Test sending a message to a non-existent community."""
         client, _ = auth_client
 
-        response = client.post("/api/messages", json={
-            "community_id": 99999,
-            "content": "Hello nowhere"
-        })
+        response = client.post(
+            "/api/messages", json={"community_id": 99999, "content": "Hello nowhere"}
+        )
 
         assert response.status_code == 404
 
     def test_send_message_unauthenticated(self, client, app):
         """Test that unauthenticated users cannot send messages."""
-        response = client.post("/api/messages", json={
-            "receiver_id": 1,
-            "content": "Unauthorized message"
-        })
+        response = client.post(
+            "/api/messages", json={"receiver_id": 1, "content": "Unauthorized message"}
+        )
 
         assert response.status_code == 401
 
@@ -134,10 +126,9 @@ class TestDeleteMessage:
         client, _ = auth_client
 
         # Send a message
-        response = client.post("/api/messages", json={
-            "receiver_id": second_user,
-            "content": "To be deleted"
-        })
+        response = client.post(
+            "/api/messages", json={"receiver_id": second_user, "content": "To be deleted"}
+        )
         message_id = response.get_json()["id"]
 
         # Delete it
@@ -151,13 +142,11 @@ class TestDeleteMessage:
 
         # Create a message from the second user
         with app.app_context():
-            from models import Message
             from extensions import db
+            from models import Message
 
             message = Message(
-                sender_id=second_user,
-                receiver_id=user_id,
-                content="From second user"
+                sender_id=second_user, receiver_id=user_id, content="From second user"
             )
             db.session.add(message)
             db.session.commit()
@@ -183,14 +172,8 @@ class TestConversationWithUser:
         client, user_id = auth_client
 
         # Send some messages
-        client.post("/api/messages", json={
-            "receiver_id": second_user,
-            "content": "Message 1"
-        })
-        client.post("/api/messages", json={
-            "receiver_id": second_user,
-            "content": "Message 2"
-        })
+        client.post("/api/messages", json={"receiver_id": second_user, "content": "Message 1"})
+        client.post("/api/messages", json={"receiver_id": second_user, "content": "Message 2"})
 
         # Get conversation
         response = client.get(f"/api/messages/user/{second_user}")
@@ -217,21 +200,16 @@ class TestConversationWithUser:
         client, user_id = auth_client
 
         # Send a message from first user
-        client.post("/api/messages", json={
-            "receiver_id": second_user,
-            "content": "From first user"
-        })
+        client.post(
+            "/api/messages", json={"receiver_id": second_user, "content": "From first user"}
+        )
 
         # Create a reply from second user
         with app.app_context():
-            from models import Message
             from extensions import db
+            from models import Message
 
-            reply = Message(
-                sender_id=second_user,
-                receiver_id=user_id,
-                content="From second user"
-            )
+            reply = Message(sender_id=second_user, receiver_id=user_id, content="From second user")
             db.session.add(reply)
             db.session.commit()
 
@@ -250,10 +228,9 @@ class TestConversationWithUser:
 
         # Send multiple messages
         for i in range(5):
-            client.post("/api/messages", json={
-                "receiver_id": second_user,
-                "content": f"Message {i}"
-            })
+            client.post(
+                "/api/messages", json={"receiver_id": second_user, "content": f"Message {i}"}
+            )
 
         # Get paginated conversation
         response = client.get(f"/api/messages/user/{second_user}?page=1&per_page=3")
@@ -279,14 +256,14 @@ class TestCommunityMessages:
         client, _ = auth_client
 
         # Send some messages
-        client.post("/api/messages", json={
-            "community_id": sample_community["id"],
-            "content": "Community message 1"
-        })
-        client.post("/api/messages", json={
-            "community_id": sample_community["id"],
-            "content": "Community message 2"
-        })
+        client.post(
+            "/api/messages",
+            json={"community_id": sample_community["id"], "content": "Community message 1"},
+        )
+        client.post(
+            "/api/messages",
+            json={"community_id": sample_community["id"], "content": "Community message 2"},
+        )
 
         # Get messages
         response = client.get(f"/api/messages/community/{sample_community['id']}")
@@ -312,15 +289,13 @@ class TestCommunityMessages:
 
         # Send multiple messages
         for i in range(5):
-            client.post("/api/messages", json={
-                "community_id": sample_community["id"],
-                "content": f"Message {i}"
-            })
+            client.post(
+                "/api/messages",
+                json={"community_id": sample_community["id"], "content": f"Message {i}"},
+            )
 
         # Get paginated messages
-        response = client.get(
-            f"/api/messages/community/{sample_community['id']}?page=1&per_page=3"
-        )
+        response = client.get(f"/api/messages/community/{sample_community['id']}?page=1&per_page=3")
         assert response.status_code == 200
 
         data = response.get_json()
@@ -338,14 +313,14 @@ class TestCommunityMessages:
         client, _ = auth_client
 
         # Send messages
-        client.post("/api/messages", json={
-            "community_id": sample_community["id"],
-            "content": "First message"
-        })
-        client.post("/api/messages", json={
-            "community_id": sample_community["id"],
-            "content": "Second message"
-        })
+        client.post(
+            "/api/messages",
+            json={"community_id": sample_community["id"], "content": "First message"},
+        )
+        client.post(
+            "/api/messages",
+            json={"community_id": sample_community["id"], "content": "Second message"},
+        )
 
         response = client.get(f"/api/messages/community/{sample_community['id']}")
         messages = response.get_json()["messages"]

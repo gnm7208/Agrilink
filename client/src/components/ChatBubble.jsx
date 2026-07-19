@@ -23,7 +23,7 @@ const ChatBubble = ({ message, time, isSent }) => {
         className={`max-w-[80%] rounded-2xl px-4 py-3 shadow-sm ${
           isSent
             ? 'bg-green-600 text-white rounded-tr-none'
-            : 'bg-white text-gray-800 rounded-tl-none border border-gray-100'
+            : 'bg-white dark:bg-slate-800 text-gray-800 rounded-tl-none border border-gray-100 dark:border-slate-700'
         }`}
       >
         <p className="text-sm leading-relaxed">{message}</p>

@@ -1,11 +1,11 @@
 """
 Utility functions for validation and sanitization.
 """
+
 import re
-from typing import Dict, Optional
 
 
-def validate_password(password: str) -> Dict[str, any]:
+def validate_password(password: str) -> dict[str, any]:
     """
     Validate password strength.
 
@@ -27,13 +27,13 @@ def validate_password(password: str) -> Dict[str, any]:
     if len(password) < 12:
         errors.append("Password must be at least 12 characters long")
 
-    if not re.search(r'[A-Z]', password):
+    if not re.search(r"[A-Z]", password):
         errors.append("Password must contain at least one uppercase letter")
 
-    if not re.search(r'[a-z]', password):
+    if not re.search(r"[a-z]", password):
         errors.append("Password must contain at least one lowercase letter")
 
-    if not re.search(r'\d', password):
+    if not re.search(r"\d", password):
         errors.append("Password must contain at least one number")
 
     if not re.search(r'[!@#$%^&*(),.?":{}|<>_\-+=\[\]\\\/;\'`~]', password):
@@ -41,19 +41,24 @@ def validate_password(password: str) -> Dict[str, any]:
 
     # Check for common weak passwords
     common_passwords = [
-        'password', 'password123', 'admin', 'admin123', 'letmein',
-        'welcome', 'monkey', 'dragon', 'master', 'sunshine'
+        "password",
+        "password123",
+        "admin",
+        "admin123",
+        "letmein",
+        "welcome",
+        "monkey",
+        "dragon",
+        "master",
+        "sunshine",
     ]
     if password.lower() in common_passwords:
         errors.append("Password is too common and easily guessed")
 
-    return {
-        "valid": len(errors) == 0,
-        "errors": errors
-    }
+    return {"valid": len(errors) == 0, "errors": errors}
 
 
-def validate_email(email: str) -> Dict[str, any]:
+def validate_email(email: str) -> dict[str, any]:
     """
     Validate email format.
 
@@ -64,7 +69,7 @@ def validate_email(email: str) -> Dict[str, any]:
         dict with 'valid' (bool) and 'error' (optional str)
     """
     # Basic email regex pattern
-    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
 
     if not email:
         return {"valid": False, "error": "Email is required"}
@@ -78,7 +83,7 @@ def validate_email(email: str) -> Dict[str, any]:
     return {"valid": True}
 
 
-def validate_username(username: str) -> Dict[str, any]:
+def validate_username(username: str) -> dict[str, any]:
     """
     Validate username format.
 
@@ -103,16 +108,16 @@ def validate_username(username: str) -> Dict[str, any]:
         return {"valid": False, "error": "Username must be at most 80 characters"}
 
     # Only alphanumeric, underscores, and hyphens
-    if not re.match(r'^[a-zA-Z0-9][a-zA-Z0-9_-]*$', username):
+    if not re.match(r"^[a-zA-Z0-9][a-zA-Z0-9_-]*$", username):
         return {
             "valid": False,
-            "error": "Username can only contain letters, numbers, underscores, and hyphens, and must start with a letter or number"
+            "error": "Username can only contain letters, numbers, underscores, and hyphens, and must start with a letter or number",
         }
 
     return {"valid": True}
 
 
-def sanitize_text_input(text: str, max_length: Optional[int] = None) -> str:
+def sanitize_text_input(text: str, max_length: int | None = None) -> str:
     """
     Sanitize text input by stripping whitespace and limiting length.
 
@@ -150,12 +155,12 @@ def sanitize_html_content(content: str) -> str:
         Sanitized content string
     """
     replacements = {
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#x27;',
-        '/': '&#x2F;',
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#x27;",
+        "/": "&#x2F;",
     }
 
     for char, entity in replacements.items():

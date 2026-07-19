@@ -1,6 +1,6 @@
 import React from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Home, Users, PlusSquare, MessageSquare, User } from 'lucide-react'
+import { Home, Users, PlusSquare, MessageSquare, User, TrendingUp } from 'lucide-react'
 /* eslint-disable-next-line no-unused-vars -- motion used in JSX */
 import { motion } from 'framer-motion'
 
@@ -13,11 +13,12 @@ const BottomNav = () => {
     { id: 'communities', icon: Users, label: 'Groups', path: '/communities' },
     { id: 'create', icon: PlusSquare, label: 'Post', path: '/create' },
     { id: 'messages', icon: MessageSquare, label: 'Chat', path: '/messages' },
+    { id: 'market', icon: TrendingUp, label: 'Market', path: '/market' },
     { id: 'profile', icon: User, label: 'Profile', path: '/profile' },
   ]
 
   return (
-    <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 z-50 h-16 px-2 safe-area-inset-bottom">
+    <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-900 border-t border-gray-100 dark:border-slate-800 z-50 h-16 px-1 safe-area-inset-bottom">
       <div className="flex items-center justify-around h-full max-w-md mx-auto">
         {tabs.map((tab) => {
           const isActive = currentPath === tab.path

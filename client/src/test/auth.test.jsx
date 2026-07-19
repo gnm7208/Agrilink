@@ -32,7 +32,8 @@ describe('Auth Flow', () => {
         <LoginPage />
       </BrowserRouter>
     )
-    expect(screen.getByText(/sign in/i)).toBeInTheDocument()
+    // "Sign in" appears in both the heading copy and the submit button
+    expect(screen.getAllByText(/sign in/i).length).toBeGreaterThan(0)
   })
 
   // Add more auth tests as needed

@@ -1,0 +1,338 @@
+openapi: 3.0.3
+info:
+  title: AgriLink API
+  description: >
+    REST API for AgriLink — a platform connecting farmers with agricultural
+    experts through posts, topic-based communities, and direct messaging.
+    Authentication uses JWT bearer tokens obtained from /api/auth/login.
+  version: 1.0.0
+servers:
+  - url: https://agrilink-11rw.onrender.com
+    description: Production (Render)
+  - url: http://localhost:5000
+    description: Local development
+
+tags:
+  - name: auth
+  - name: users
+  - name: posts
+  - name: communities
+  - name: messages
+  - name: uploads
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Error:
+      type: object
+      properties:
+        error: { type: string }
+        message: { type: string }
+    User:
+      type: object
+      properties:
+        id: { type: integer }
+        username: { type: string }
+        email: { type: string, format: email }
+        role: { type: string, enum: [farmer, expert, admin, user] }
+        bio: { type: string, nullable: true }
+        location: { type: string, nullable: true }
+        profile_image_url: { type: string, nullable: true }
+        email_verified: { type: boolean }
+    Post:
+      type: object
+      properties:
+        id: { type: integer }
+        title: { type: string }
+        content: { type: string }
+        author: { $ref: "#/components/schemas/User" }
+        image_url: { type: string, nullable: true }
+        likes_count: { type: integer }
+        comments_count: { type: integer }
+        created_at: { type: string, format: date-time }
+    Community:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        description: { type: string }
+        members_count: { type: integer }
+    Message:
+      type: object
+      properties:
+        id: { type: integer }
+        sender_id: { type: integer }
+        recipient_id: { type: integer, nullable: true }
+        community_id: { type: integer, nullable: true }
+        content: { type: string }
+        created_at: { type: string, format: date-time }
+    Comment:
+      type: object
+      properties:
+        id: { type: integer }
+        post_id: { type: integer }
+        author: { $ref: "#/components/schemas/User" }
+        content: { type: string }
+        created_at: { type: string, format: date-time }
+
+security:
+  - bearerAuth: []
+
+paths:
+  # ------------------------------------------------------------------ auth
+  /api/auth/register:
+    post:
+      tags: [auth]
+      summary: Register a new account (sends verification email)
+      security: []
+      responses:
+        "201": { description: Created }
+        "400": { description: Validation error, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+  /api/auth/login:
+    post:
+      tags: [auth]
+      summary: Log in and receive a JWT
+      security: []
+      responses:
+        "200": { description: JWT token + user }
+        "401": { description: Invalid credentials }
+  /api/auth/logout:
+    post:
+      tags: [auth]
+      summary: Log out (clears session)
+      responses: { "200": { description: OK } }
+  /api/auth/me:
+    get:
+      tags: [auth]
+      summary: Current authenticated user
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/User" } } } }
+        "401": { description: Not authenticated }
+  /api/auth/verify-email:
+    post: { tags: [auth], summary: Verify email with token, security: [], responses: { "200": { description: OK } } }
+  /api/auth/resend-verification:
+    post: { tags: [auth], summary: Resend verification email, security: [], responses: { "200": { description: OK } } }
+  /api/auth/request-password-reset:
+    post: { tags: [auth], summary: Request password reset email, security: [], responses: { "200": { description: OK } } }
+  /api/auth/verify-reset-token/{token}:
+    get:
+      tags: [auth]
+      summary: Check that a reset token is valid
+      security: []
+      parameters: [{ name: token, in: path, required: true, schema: { type: string } }]
+      responses: { "200": { description: OK }, "400": { description: Invalid/expired } }
+  /api/auth/reset-password:
+    post: { tags: [auth], summary: Set a new password with a reset token, security: [], responses: { "200": { description: OK } } }
+
+  # ------------------------------------------------------------------ users
+  /api/users:
+    get: { tags: [users], summary: List users, responses: { "200": { description: OK } } }
+  /api/users/search:
+    get:
+      tags: [users]
+      summary: Search users by username
+      parameters: [{ name: q, in: query, schema: { type: string } }]
+      responses: { "200": { description: OK } }
+  /api/users/experts:
+    get: { tags: [users], summary: List expert users, responses: { "200": { description: OK } } }
+  /api/users/inbox:
+    get: { tags: [users], summary: Conversations inbox for current user, responses: { "200": { description: OK } } }
+  /api/users/{user_id}:
+    get:
+      tags: [users]
+      summary: Get user profile
+      parameters: [{ name: user_id, in: path, required: true, schema: { type: integer } }]
+      responses: { "200": { description: OK }, "404": { description: Not found } }
+    patch:
+      tags: [users]
+      summary: Update own profile
+      parameters: [{ name: user_id, in: path, required: true, schema: { type: integer } }]
+      responses: { "200": { description: OK }, "403": { description: Forbidden } }
+    delete:
+      tags: [users]
+      summary: Delete account (self or admin)
+      parameters: [{ name: user_id, in: path, required: true, schema: { type: integer } }]
+      responses: { "204": { description: Deleted } }
+  /api/users/{user_id}/follow:
+    post:
+      tags: [users]
+      summary: Follow a user
+      parameters: [{ name: user_id, in: path, required: true, schema: { type: integer } }]
+      responses: { "201": { description: Followed } }
+    delete:
+      tags: [users]
+      summary: Unfollow a user
+      parameters: [{ name: user_id, in: path, required: true, schema: { type: integer } }]
+      responses: { "204": { description: Unfollowed } }
+  /api/users/{user_id}/followers:
+    get:
+      tags: [users]
+      summary: List a user's followers
+      parameters: [{ name: user_id, in: path, required: true, schema: { type: integer } }]
+      responses: { "200": { description: OK } }
+  /api/users/{user_id}/following:
+    get:
+      tags: [users]
+      summary: List accounts a user follows
+      parameters: [{ name: user_id, in: path, required: true, schema: { type: integer } }]
+      responses: { "200": { description: OK } }
+
+  # ------------------------------------------------------------------ posts
+  /api/posts:
+    get:
+      tags: [posts]
+      summary: List posts (paginated)
+      parameters:
+        - { name: page, in: query, schema: { type: integer, default: 1 } }
+        - { name: per_page, in: query, schema: { type: integer, default: 20 } }
+      responses: { "200": { description: OK } }
+    post:
+      tags: [posts]
+      summary: Create a post
+      responses: { "201": { description: Created }, "400": { description: Validation error } }
+  /api/posts/{post_id}:
+    get:
+      tags: [posts]
+      summary: Get a post
+      parameters: [{ name: post_id, in: path, required: true, schema: { type: integer } }]
+      responses: { "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/Post" } } } }, "404": { description: Not found } }
+    patch:
+      tags: [posts]
+      summary: Update own post
+      parameters: [{ name: post_id, in: path, required: true, schema: { type: integer } }]
+      responses: { "200": { description: OK } }
+    delete:
+      tags: [posts]
+      summary: Delete own post
+      parameters: [{ name: post_id, in: path, required: true, schema: { type: integer } }]
+      responses: { "204": { description: Deleted } }
+  /api/posts/{post_id}/like:
+    post:
+      tags: [posts]
+      summary: Like a post
+      parameters: [{ name: post_id, in: path, required: true, schema: { type: integer } }]
+      responses: { "201": { description: Liked } }
+    delete:
+      tags: [posts]
+      summary: Remove like
+      parameters: [{ name: post_id, in: path, required: true, schema: { type: integer } }]
+      responses: { "204": { description: Unliked } }
+  /api/posts/{post_id}/comments:
+    get:
+      tags: [posts]
+      summary: List comments on a post
+      parameters: [{ name: post_id, in: path, required: true, schema: { type: integer } }]
+      responses: { "200": { description: OK } }
+    post:
+      tags: [posts]
+      summary: Comment on a post
+      parameters: [{ name: post_id, in: path, required: true, schema: { type: integer } }]
+      responses: { "201": { description: Created } }
+  /api/posts/{post_id}/images:
+    post:
+      tags: [posts]
+      summary: Attach an image to a post (Cloudinary)
+      parameters: [{ name: post_id, in: path, required: true, schema: { type: integer } }]
+      responses: { "201": { description: Uploaded } }
+  /api/posts/news:
+    get:
+      tags: [posts]
+      summary: Merged agricultural news feed (NewsAPI + ISDA Africa)
+      security: []
+      parameters:
+        - { name: page, in: query, schema: { type: integer } }
+        - { name: page_size, in: query, schema: { type: integer } }
+      responses: { "200": { description: OK } }
+  /api/posts/news/{article_id}:
+    get:
+      tags: [posts]
+      summary: Get a news article
+      security: []
+      parameters: [{ name: article_id, in: path, required: true, schema: { type: string } }]
+      responses: { "200": { description: OK } }
+  /api/posts/news/{article_id}/comments:
+    get:
+      tags: [posts]
+      summary: List comments on a news article
+      parameters: [{ name: article_id, in: path, required: true, schema: { type: string } }]
+      responses: { "200": { description: OK } }
+    post:
+      tags: [posts]
+      summary: Comment on a news article
+      parameters: [{ name: article_id, in: path, required: true, schema: { type: string } }]
+      responses: { "201": { description: Created } }
+
+  # ------------------------------------------------------------- communities
+  /api/communities:
+    get: { tags: [communities], summary: List communities, responses: { "200": { description: OK } } }
+    post: { tags: [communities], summary: Create a community, responses: { "201": { description: Created } } }
+  /api/communities/{community_id}:
+    delete:
+      tags: [communities]
+      summary: Delete a community (owner/admin)
+      parameters: [{ name: community_id, in: path, required: true, schema: { type: integer } }]
+      responses: { "204": { description: Deleted } }
+  /api/communities/{community_id}/join:
+    post:
+      tags: [communities]
+      summary: Join a community
+      parameters: [{ name: community_id, in: path, required: true, schema: { type: integer } }]
+      responses: { "201": { description: Joined } }
+  /api/communities/{community_id}/leave:
+    delete:
+      tags: [communities]
+      summary: Leave a community
+      parameters: [{ name: community_id, in: path, required: true, schema: { type: integer } }]
+      responses: { "204": { description: Left } }
+  /api/communities/{community_id}/members:
+    get:
+      tags: [communities]
+      summary: List community members
+      parameters: [{ name: community_id, in: path, required: true, schema: { type: integer } }]
+      responses: { "200": { description: OK } }
+  /api/communities/{community_id}/posts:
+    get:
+      tags: [communities]
+      summary: List posts in a community
+      parameters: [{ name: community_id, in: path, required: true, schema: { type: integer } }]
+      responses: { "200": { description: OK } }
+
+  # ---------------------------------------------------------------- messages
+  /api/messages:
+    post: { tags: [messages], summary: Send a direct or community message, responses: { "201": { description: Sent } } }
+  /api/messages/conversations:
+    get: { tags: [messages], summary: List conversations for current user, responses: { "200": { description: OK } } }
+  /api/messages/{message_id}:
+    delete:
+      tags: [messages]
+      summary: Delete own message
+      parameters: [{ name: message_id, in: path, required: true, schema: { type: integer } }]
+      responses: { "204": { description: Deleted } }
+  /api/messages/user/{user_id}:
+    get:
+      tags: [messages]
+      summary: Message history with a user
+      parameters: [{ name: user_id, in: path, required: true, schema: { type: integer } }]
+      responses: { "200": { description: OK } }
+  /api/messages/community/{community_id}:
+    get:
+      tags: [messages]
+      summary: Message history in a community
+      parameters: [{ name: community_id, in: path, required: true, schema: { type: integer } }]
+      responses: { "200": { description: OK } }
+
+  # ----------------------------------------------------------------- uploads
+  /api/uploads/images:
+    post: { tags: [uploads], summary: Upload an image to Cloudinary, responses: { "201": { description: Uploaded } } }
+
+  # ------------------------------------------------------------------ system
+  /health:
+    get:
+      tags: [auth]
+      summary: Service health check
+      security: []
+      responses: { "200": { description: Healthy } }

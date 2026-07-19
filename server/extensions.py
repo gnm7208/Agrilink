@@ -1,11 +1,13 @@
-from flask_sqlalchemy import SQLAlchemy
-from flask_migrate import Migrate
 from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from flask_migrate import Migrate
+from flask_sqlalchemy import SQLAlchemy
+from flask_talisman import Talisman
 
 db = SQLAlchemy()
 migrate = Migrate()
-# CORS and Limiter will be initialized in create_app() with app context
+# CORS, Limiter, and Talisman are initialized in create_app() with app context
 cors = CORS()
 limiter = Limiter(key_func=get_remote_address)
+talisman = Talisman()

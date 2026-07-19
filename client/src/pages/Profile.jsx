@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Settings, MapPin, Calendar, Loader2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Settings, MapPin, Calendar, Loader2, ShieldCheck } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Avatar } from '../components/ui/Avatar';
 import PostCard from '../components/PostCard';
 import { EditProfileModal } from '../components/EditProfileModal';
+import { ThemePicker } from '../components/ThemePicker';
 import { apiRequest, API_ENDPOINTS } from '../config/api';
 import { useAuth } from '../hooks/useAuth';
 
@@ -107,7 +109,7 @@ export function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center">
         <Loader2 className="w-8 h-8 text-green-600 animate-spin" />
       </div>
     );
@@ -115,7 +117,7 @@ export function ProfilePage() {
 
   if (error || !user) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
+      <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex flex-col items-center justify-center p-4">
         <p className="text-gray-600 mb-4">{error || 'Unable to load profile'}</p>
         <Button onClick={fetchCurrentUser}>Try Again</Button>
       </div>
@@ -123,9 +125,9 @@ export function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24">
-      <header className="bg-white sticky top-0 z-40 border-b border-gray-100 px-4 py-3 flex items-center justify-between">
-        <h1 className="font-bold text-lg">My Profile</h1>
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900 pb-24">
+      <header className="bg-white dark:bg-slate-900 sticky top-0 z-40 border-b border-gray-100 dark:border-slate-800 px-4 py-3 flex items-center justify-between">
+        <h1 className="font-bold text-lg text-gray-900">My Profile</h1>
         <button className="text-gray-600 hover:text-gray-900">
           <Settings size={24} />
         </button>
@@ -148,7 +150,7 @@ export function ProfilePage() {
         </div>
       )}
 
-      <div className="bg-white pb-6 mb-4">
+      <div className="bg-white dark:bg-slate-800 pb-6 mb-4">
         <div className="relative h-32 bg-green-600">
           <div className="absolute -bottom-12 left-4 p-1 bg-white rounded-full">
             <Avatar src={user.profile_image_url} fallback={user.username} size="xl" />
@@ -166,9 +168,20 @@ export function ProfilePage() {
               )}
             </div>
 
-            <Button variant="outline" size="sm" onClick={() => setShowEditModal(true)}>
-              Edit Profile
-            </Button>
+            <div className="flex items-center gap-2">
+              {user.role === 'admin' && (
+                <Link
+                  to="/admin"
+                  className="lg:hidden flex items-center gap-1.5 text-xs font-medium text-green-700 bg-green-50 px-3 py-2 rounded-lg hover:bg-green-100 transition-colors"
+                >
+                  <ShieldCheck size={14} />
+                  Admin
+                </Link>
+              )}
+              <Button variant="outline" size="sm" onClick={() => setShowEditModal(true)}>
+                Edit Profile
+              </Button>
+            </div>
           </div>
 
           {user.bio && (
@@ -203,6 +216,10 @@ export function ProfilePage() {
             </div>
           </div>
         </div>
+      </div>
+
+      <div className="px-4 mb-4">
+        <ThemePicker />
       </div>
 
       <div className="px-4 space-y-4">

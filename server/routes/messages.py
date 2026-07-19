@@ -1,10 +1,20 @@
-from flask import Blueprint, jsonify, request, g
+from flask import Blueprint, abort, g, jsonify, request
+from sqlalchemy import func
 
 from extensions import db
-from models import Message, Community, User
+from utils.timeutils import utcnow
+from models import Community, CommunityMembership, Message, User
 from rbac import login_required
 
 bp = Blueprint("messages", __name__, url_prefix="/messages")
+
+
+def _require_community_membership(community_id):
+    is_member = CommunityMembership.query.filter_by(
+        user_id=g.current_user.id, community_id=community_id
+    ).first()
+    if not is_member:
+        abort(403, description="You must be a member of this community to do that")
 
 
 @bp.route("/health", methods=["GET"])
@@ -35,6 +45,7 @@ def send_message():
 
     if community_id:
         Community.query.get_or_404(community_id)
+        _require_community_membership(community_id)
 
     msg = Message(
         sender_id=g.current_user.id,
@@ -63,6 +74,16 @@ def list_conversations():
         .all()
     )
 
+    unread_counts = dict(
+        db.session.query(Message.sender_id, func.count(Message.id))
+        .filter(
+            Message.receiver_id == g.current_user.id,
+            Message.read_at.is_(None),
+        )
+        .group_by(Message.sender_id)
+        .all()
+    )
+
     conversations_map = {}
     for m in msgs:
         other_id = m.receiver_id if m.sender_id == g.current_user.id else m.sender_id
@@ -77,7 +98,7 @@ def list_conversations():
                     "created_at": m.created_at.isoformat() if m.created_at else None,
                     "sender_id": m.sender_id,
                 },
-                "unread_count": 0,
+                "unread_count": unread_counts.get(other_id, 0),
             }
 
     conversations = list(conversations_map.values())
@@ -91,7 +112,7 @@ def delete_message(message_id):
     message = Message.query.get_or_404(message_id)
     if message.sender_id != g.current_user.id:
         return jsonify({"error": "forbidden"}), 403
-    
+
     db.session.delete(message)
     db.session.commit()
     return jsonify({"message": "message deleted"})
@@ -101,57 +122,85 @@ def delete_message(message_id):
 @login_required
 def conversation_with_user(user_id):
     """Get all messages exchanged with a specific user with pagination.
-    
+
     Query params:
         page: Page number (default: 1)
         per_page: Items per page (default: 20, max: 100)
     """
     page = request.args.get("page", 1, type=int)
     per_page = min(request.args.get("per_page", 20, type=int), 100)
-    
+
     User.query.get_or_404(user_id)
-    pagination = Message.query.filter(
-        ((Message.sender_id == g.current_user.id) & (Message.receiver_id == user_id)) |
-        ((Message.sender_id == user_id) & (Message.receiver_id == g.current_user.id))
-    ).order_by(Message.created_at.asc()).paginate(
-        page=page, per_page=per_page, error_out=False
+    pagination = (
+        Message.query.filter(
+            ((Message.sender_id == g.current_user.id) & (Message.receiver_id == user_id))
+            | ((Message.sender_id == user_id) & (Message.receiver_id == g.current_user.id))
+        )
+        .order_by(Message.created_at.asc())
+        .paginate(page=page, per_page=per_page, error_out=False)
     )
-    
+
     messages = [m.to_dict() for m in pagination.items]
-    
-    return jsonify({
-        "messages": messages,
-        "total": pagination.total,
-        "page": pagination.page,
-        "pages": pagination.pages,
-        "per_page": per_page
-    })
+
+    Message.query.filter(
+        Message.sender_id == user_id,
+        Message.receiver_id == g.current_user.id,
+        Message.read_at.is_(None),
+    ).update({"read_at": utcnow()}, synchronize_session=False)
+    db.session.commit()
+
+    return jsonify(
+        {
+            "messages": messages,
+            "total": pagination.total,
+            "page": pagination.page,
+            "pages": pagination.pages,
+            "per_page": per_page,
+        }
+    )
 
 
 @bp.get("/community/<int:community_id>")
 @login_required
 def community_messages(community_id):
     """Get all messages in a community channel with pagination.
-    
+
     Query params:
         page: Page number (default: 1)
         per_page: Items per page (default: 20, max: 100)
     """
     page = request.args.get("page", 1, type=int)
     per_page = min(request.args.get("per_page", 20, type=int), 100)
-    
-    Community.query.get_or_404(community_id)
-    pagination = Message.query.filter_by(community_id=community_id) \
-        .order_by(Message.created_at.asc()) \
-        .paginate(page=page, per_page=per_page, error_out=False)
-    
-    messages = [m.to_dict() for m in pagination.items]
-    
-    return jsonify({
-        "messages": messages,
-        "total": pagination.total,
-        "page": pagination.page,
-        "pages": pagination.pages,
-        "per_page": per_page
-    })
 
+    Community.query.get_or_404(community_id)
+    _require_community_membership(community_id)
+    pagination = (
+        Message.query.filter_by(community_id=community_id)
+        .order_by(Message.created_at.asc())
+        .paginate(page=page, per_page=per_page, error_out=False)
+    )
+
+    def message_to_dict(m):
+        d = m.to_dict()
+        d["sender"] = (
+            {
+                "id": m.sender.id,
+                "username": m.sender.username,
+                "profile_image_url": m.sender.profile_image_url,
+            }
+            if m.sender
+            else None
+        )
+        return d
+
+    messages = [message_to_dict(m) for m in pagination.items]
+
+    return jsonify(
+        {
+            "messages": messages,
+            "total": pagination.total,
+            "page": pagination.page,
+            "pages": pagination.pages,
+            "per_page": per_page,
+        }
+    )

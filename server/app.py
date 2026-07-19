@@ -2,11 +2,11 @@ import logging
 import os
 import sys
 from datetime import datetime, timedelta
-from flask import Flask, jsonify, request, session, g
-from flask_cors import CORS
-from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
+
 from dotenv import load_dotenv
+from flask import Flask, g, jsonify, request, session
+
+from utils.timeutils import utcnow
 
 load_dotenv()  # Load .env variables
 
@@ -15,11 +15,10 @@ _server_dir = os.path.dirname(os.path.abspath(__file__))
 if _server_dir not in sys.path:
     sys.path.insert(0, _server_dir)
 
-from config import get_config
-from extensions import db, migrate, cors, limiter
+from config import get_config  # noqa: E402
+from extensions import cors, db, limiter, migrate, talisman  # noqa: E402
 
 DEFAULT_RATE_LIMIT = "100 per hour"  # Adjust as needed
-
 
 
 def create_app(config_name=None):
@@ -32,7 +31,6 @@ def create_app(config_name=None):
     config_class = get_config(config_name)
     app.config.from_object(config_class)
     config_class.validate()  # Validate required settings
-    
 
     # Initialize extensions
     db.init_app(app)
@@ -42,19 +40,39 @@ def create_app(config_name=None):
     frontend_origins = app.config.get("FRONTEND_ORIGINS", "")
     origins_list = [o.strip() for o in frontend_origins.split(",")] if frontend_origins else []
     cors.init_app(
-        app,
-        resources={r"/api/*": {"origins": origins_list, "supports_credentials": True}}
+        app, resources={r"/api/*": {"origins": origins_list, "supports_credentials": True}}
     )
 
     # Rate limiter
-    # Rate limiter
     limiter.init_app(app)
 
+    # Security headers (X-Frame-Options, nosniff, HSTS, referrer policy).
+    # force_https stays opt-in so local dev and Render's proxy keep working;
+    # set FORCE_HTTPS=true in production once X-Forwarded-Proto is trusted.
+    talisman.init_app(
+        app,
+        force_https=os.getenv("FORCE_HTTPS", "false").lower() == "true",
+        content_security_policy=None,  # JSON API; CSP is set per-page below
+    )
+
     # Import models AFTER db.init_app
-    from models import Role, User, Community, CommunityMembership, Post, PostImage, Like, Comment, Follow, Message
+    from models import (
+        User,
+    )
 
     # Import blueprints
-    from routes import auth, users, posts, communities, messages, uploads
+    from routes import (
+        admin,
+        auth,
+        communities,
+        crop_helper,
+        market,
+        messages,
+        posts,
+        reports,
+        uploads,
+        users,
+    )
 
     # Register blueprints
     app.register_blueprint(auth.bp, url_prefix="/api/auth")
@@ -63,6 +81,10 @@ def create_app(config_name=None):
     app.register_blueprint(communities.bp, url_prefix="/api/communities")
     app.register_blueprint(messages.bp, url_prefix="/api/messages")
     app.register_blueprint(uploads.bp, url_prefix="/api/uploads")
+    app.register_blueprint(admin.bp, url_prefix="/api/admin")
+    app.register_blueprint(reports.bp, url_prefix="/api/reports")
+    app.register_blueprint(market.bp, url_prefix="/api/market-prices")
+    app.register_blueprint(crop_helper.bp, url_prefix="/api/crop-helper")
 
     @app.before_request
     def load_current_user():
@@ -76,6 +98,7 @@ def create_app(config_name=None):
             payload = decode_token(token)
             if payload and "user_id" in payload:
                 g.current_user = User.query.get(payload["user_id"])
+                _reject_if_restricted()
                 return
             # Invalid/expired token — fall through to session check
 
@@ -86,7 +109,7 @@ def create_app(config_name=None):
         if session_created and user_id:
             try:
                 created_time = datetime.fromisoformat(session_created)
-                session_age = datetime.utcnow() - created_time
+                session_age = utcnow() - created_time
                 max_age = timedelta(seconds=app.config.get("PERMANENT_SESSION_LIFETIME", 86400))
 
                 if session_age > max_age:
@@ -101,7 +124,12 @@ def create_app(config_name=None):
                 return
 
         g.current_user = User.query.get(user_id) if user_id else None
-        
+        _reject_if_restricted()
+
+    def _reject_if_restricted():
+        """Treat suspended/banned accounts as logged out, even with a valid token/session."""
+        if g.current_user is not None and not g.current_user.is_active_status():
+            g.current_user = None
 
     # Structured error handlers
     # Structured error handlers
@@ -123,12 +151,32 @@ def create_app(config_name=None):
 
     @app.errorhandler(500)
     def internal_error(error):
-        return jsonify({"error": "Internal server error", "message": "An unexpected error occurred"}), 500
+        return jsonify(
+            {"error": "Internal server error", "message": "An unexpected error occurred"}
+        ), 500
 
     # Root health check
     @app.route("/health")
     def health():
         return jsonify({"status": "healthy", "service": "agrilink-backend"})
+
+    # Interactive API documentation (Swagger UI reading static/openapi.yaml)
+    @app.route("/api/docs")
+    def api_docs():
+        return """<!DOCTYPE html>
+<html>
+<head>
+  <title>AgriLink API Docs</title>
+  <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css">
+</head>
+<body>
+  <div id="swagger-ui"></div>
+  <script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
+  <script>
+    SwaggerUIBundle({ url: "/static/openapi.yaml", dom_id: "#swagger-ui" });
+  </script>
+</body>
+</html>"""
 
     return app
 

@@ -8,7 +8,7 @@ import { motion } from 'framer-motion'
 import { apiRequest, API_ENDPOINTS, setToken } from '../config/api'
 import { useAuth } from '../hooks/useAuth'
 
-import bgImage from '../assets/Agriculture Sprayers Market Size, Share, and Growth Analysis 2024-2032.jpeg'
+import bgImage from '../assets/auth-bg.jpeg'
 
 export function LoginPage() {
   const navigate = useNavigate()
@@ -120,7 +120,7 @@ export function LoginPage() {
             <p className="text-xs font-medium">{navState.message}</p>
             {navState.verification_link && (
               <div className="flex items-center gap-2">
-                <a href={navState.verification_link} className="text-xs text-green-300 break-all">Open verification link</a>
+                <a href={navState.verification_link} className="text-xs text-emerald-300 break-all">Open verification link</a>
                 <button
                   type="button"
                   onClick={() => navigator.clipboard?.writeText(navState.verification_link)}
@@ -179,7 +179,7 @@ export function LoginPage() {
           <div className="text-right">
             <Link
               to="/forgot-password"
-              className="text-xs text-green-400 hover:text-green-300 font-semibold transition-colors"
+              className="text-xs text-emerald-400 hover:text-emerald-300 font-semibold transition-colors"
             >
               Forgot password?
             </Link>
@@ -195,7 +195,7 @@ export function LoginPage() {
           Don&apos;t have an account?{' '}
           <Link
             to="/register"
-            className="text-green-400 font-semibold hover:underline"
+            className="text-emerald-400 font-semibold hover:underline"
           >
             Create Account
           </Link>

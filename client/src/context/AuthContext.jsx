@@ -84,12 +84,18 @@ export function AuthProvider({ children }) {
       if (response.authenticated && response.user) {
         setUser(response.user);
       } else {
+        // Server explicitly says the token is invalid/expired.
         setUser(null);
         removeToken();
       }
-    } catch {
-      setUser(null);
-      removeToken();
+    } catch (err) {
+      // Only treat a real auth rejection (401) as "logged out". Transient
+      // failures (429 rate limit, network error, 500) shouldn't wipe the
+      // token and force a re-login — just leave the current session as-is.
+      if (err.status === 401) {
+        setUser(null);
+        removeToken();
+      }
     } finally {
       setLoading(false);
     }

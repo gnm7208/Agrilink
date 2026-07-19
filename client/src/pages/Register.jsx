@@ -50,7 +50,7 @@ export function RegisterPage() {
         // Refresh auth context so SPA recognizes logged-in user immediately
         try {
           await refreshUser()
-        } catch (e) {
+        } catch {
           // ignore — we'll still navigate to login where user can retry
         }
       }
@@ -222,7 +222,7 @@ export function RegisterPage() {
           Already have an account?{' '}
           <Link
             to="/login"
-            className="text-green-400 font-semibold hover:underline"
+            className="text-emerald-400 font-semibold hover:underline"
           >
             Sign In
           </Link>
