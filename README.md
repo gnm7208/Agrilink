@@ -4,8 +4,9 @@ AgriLink is a mobile-first agricultural super app that connects farmers with agr
 
 ## Live Application
 
-- **Frontend:** https://agrilink-sigma.vercel.app
-- **Backend API:** https://agrilink-11rw.onrender.com
+- **Frontend:** <https://agrilink-self.vercel.app>
+- **Backend API:** <https://agrilink-7uhu.onrender.com>
+- **Interactive API Docs:** <https://agrilink-7uhu.onrender.com/api/docs> (Swagger UI)
 
 ## Table of Contents
 
@@ -24,29 +25,41 @@ AgriLink is a mobile-first agricultural super app that connects farmers with agr
 
 - **Post Feed:** Create, browse, and engage with agricultural posts and articles
 - **User Authentication:** Secure JWT-based authentication with email verification
-- **Role-Based Access:** User and Admin roles with specific permissions
+- **Role-Based Access:** User, Expert, and Admin roles with specific permissions
 - **Agricultural News:** Integrated NewsAPI and ISDA Africa API for agriculture-related articles
 - **Image Upload:** Cloudinary integration for post images and profile photos
-- **Communities:** Create and join topic-based agricultural communities
+- **Communities:** Create and join topic-based agricultural communities, with group chat
 - **Messaging:** Direct user-to-user and community messaging
 - **Responsive Design:** Mobile-first UI with adaptive navigation (SideNav + BottomNav)
+- **Nature-Themed Theming System:** 8 farm/nature-inspired color themes for the main app (Maize Field, Golden Wheat, Rice Paddy, Forest Canopy, Meadow Bloom, Coffee Farm, Sunflower, Savanna) and 6 for the admin console, each with independent light/dark mode — the Home feed's hero photo and the "Agrilink" wordmark color adapt to match the active theme
+- **Offline-Friendly Posting:** Posts composed while offline are queued locally and auto-sent once connectivity returns
+- **Report & Flag:** Users can report posts, comments, or other users for moderator review
+- **Market Price Board:** Community-reported local crop prices, filterable by crop/location
+- **Crop Issue Helper:** Rule-based (non-AI) symptom checker covering 15 crops, matching selected symptoms against a curated pest/disease/nutrient-deficiency knowledge base
 
 ### User Features
 
-- **Home Feed:** Merged feed of user posts and agriculture news, sorted by date
+- **Home Feed:** Merged feed of user posts and agriculture news, sorted by date, with a theme-matched hero photo
 - **Post Interactions:** Like, comment, save, and share posts
-- **User Profiles:** Customizable profiles with bio, location, and profile image
+- **User Profiles:** Customizable profiles with bio, location, profile image, and an "Appearance" theme picker
 - **Follow System:** Follow agricultural experts and other users
-- **Community Membership:** Join communities and participate in discussions
+- **Community Membership:** Join communities, participate in discussions, and chat in a community group channel
 - **Direct Messaging:** Private conversations with other users
 - **Email Verification:** Secure account verification via email
+- **Reporting:** Flag inappropriate posts, comments, or users for admin review
+- **Market Prices:** Browse and post local crop price reports
+- **Crop Issue Helper:** Select a crop and observed symptoms (optionally with a photo) to get a ranked list of likely pests/diseases/deficiencies and recommended actions, with a one-click "Ask the community" handoff to Create Post
+- **Offline Posting:** Compose a post with no connection; it's queued and sent automatically once back online
 
 ### Admin Features
 
-- **User Management:** View and manage all platform users
-- **Role Assignment:** Assign and update user roles
-- **Community Moderation:** Delete communities when necessary
-- **Platform Oversight:** Full access to all platform resources
+- **Traffic & Platform Overview:** Dashboard with user/post/community counts and pending-report stats
+- **User Management:** Search, filter, and paginate all platform users; suspend, ban, or reactivate accounts; assign roles (user/expert/admin); cascade-safe hard delete
+- **Community Moderation:** Browse and search all communities; delete communities that violate policy
+- **Content Moderation:** Browse and search all posts platform-wide; remove posts or comments that violate policy
+- **Report Review:** Review pending/resolved/dismissed reports with target previews; dismiss, mark resolved, or take direct moderation action from the report itself
+- **Audit Log:** Full history of admin actions (who did what, to what, and why)
+- **Admin Theming:** Independent 6-theme, light/dark-mode console appearance, separate from the main app's theme choice
 
 ## Tech Stack
 
@@ -54,10 +67,11 @@ AgriLink is a mobile-first agricultural super app that connects farmers with agr
 
 - **Framework:** React 19 with Vite 7
 - **Routing:** React Router v7
-- **Styling:** TailwindCSS 4
+- **Server State:** TanStack Query (caching, pagination, background refetch)
+- **Styling:** TailwindCSS 4 with a CSS-custom-property theming layer (14 themes total, light + dark)
 - **Animations:** Framer Motion
 - **Icons:** Lucide React
-- **State Management:** React Context API
+- **Local/UI State:** React Context API (auth, theme, admin theme, offline outbox)
 - **HTTP Client:** Fetch API with centralized config
 - **Build Tool:** Vite
 
@@ -118,7 +132,7 @@ AgriLink is a mobile-first agricultural super app that connects farmers with agr
 1. **Clone the repository**
 
 ```bash
-git clone https://github.com/Ndet0/Agrilink.git
+git clone https://github.com/gnm7208/Agrilink.git
 cd Agrilink
 ```
 
@@ -273,6 +287,50 @@ DELETE /api/messages/:id          # Delete a message
 POST   /api/uploads/images        # Upload an image
 ```
 
+### Report Endpoints
+
+```
+POST   /api/reports               # Report a post, comment, or user
+```
+
+### Market Price Endpoints
+
+```
+GET    /api/market-prices         # List/filter market price reports
+GET    /api/market-prices/crops   # Distinct crop names reported so far
+POST   /api/market-prices         # Report a price
+DELETE /api/market-prices/:id     # Delete a price report (owner or admin)
+```
+
+### Crop Issue Helper Endpoints
+
+```
+GET    /api/crop-helper/symptoms  # Crop list + symptom checklist for the picker UI
+POST   /api/crop-helper/diagnose  # Rule-based symptom match against the crop/issue knowledge base
+```
+
+### Admin Endpoints
+
+All routes below require an authenticated admin account.
+
+```
+GET    /api/admin/stats                     # Platform overview (user/post/community/report counts)
+GET    /api/admin/users                     # Paginated, searchable, filterable user list
+GET    /api/admin/users/:id                 # Single user detail
+PATCH  /api/admin/users/:id/status          # Suspend/ban/reactivate a user
+PATCH  /api/admin/users/:id/role            # Change a user's role
+DELETE /api/admin/users/:id                 # Cascade-safe hard delete of a user
+GET    /api/admin/communities               # Paginated, searchable community list
+GET    /api/admin/posts                     # Paginated, searchable post list (platform-wide)
+DELETE /api/admin/posts/:id                 # Remove any post (policy violation override)
+DELETE /api/admin/comments/:id              # Remove any comment (policy violation override)
+GET    /api/admin/audit-log                 # History of admin moderation actions
+GET    /api/admin/reports                   # List reports (filter by status/target type)
+PATCH  /api/admin/reports/:id               # Resolve or dismiss a report
+```
+
+Interactive, always-current documentation for every endpoint is also available at `/api/docs` (Swagger UI, reads `server/static/openapi.yaml`).
+
 ## User Roles
 
 ### User (Default)
@@ -281,15 +339,26 @@ POST   /api/uploads/images        # Upload an image
 - Create, edit, and delete own posts
 - Like and comment on posts
 - Follow other users
-- Join and participate in communities
+- Join and participate in communities, including group chat
 - Send and receive messages
 - Upload images
+- Report posts, comments, or users
+- Post and browse market prices
+- Use the Crop Issue Helper
+
+### Expert
+
+- All User permissions
+- Listed under the "Experts" tab in Discover for farmers seeking advice
 
 ### Admin
 
 - All User permissions
-- Manage all users (view, update roles, delete)
-- Delete any community
+- Manage all users: search/filter, suspend/ban/reactivate, assign roles, cascade-safe hard delete
+- Browse and moderate all communities and posts platform-wide, regardless of authorship
+- Review, resolve, or dismiss user-submitted reports
+- View a full audit log of admin actions
+- View platform overview stats (users, posts, communities, pending reports)
 - Full platform access
 
 ## Deployment
@@ -309,7 +378,7 @@ POST   /api/uploads/images        # Upload an image
 FLASK_ENV=production
 DATABASE_URL=postgresql://user:pass@host:port/db
 SECRET_KEY=your-production-secret-key
-FRONTEND_ORIGINS=https://agrilink-sigma.vercel.app
+FRONTEND_ORIGINS=https://agrilink-self.vercel.app
 NEWSAPI_KEY=your-newsapi-key
 CLOUDINARY_CLOUD_NAME=your-cloud-name
 CLOUDINARY_API_KEY=your-api-key
@@ -322,7 +391,7 @@ ISDA_PASSWORD=your-isda-password
 **Frontend (Vercel):**
 
 ```bash
-VITE_API_URL=https://agrilink-11rw.onrender.com/api
+VITE_API_URL=https://agrilink-7uhu.onrender.com/api
 ```
 
 ## Contributing

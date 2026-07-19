@@ -18,6 +18,7 @@
 | 14 | Tuesday 11/02/2026 | 1. API integration work — connecting remaining frontend components to backend. 2. Implemented image upload endpoints with Cloudinary. 3. Added CreatePost page with image upload support. | 1. API integration push completed — all major pages connected. 2. Image upload route (`/api/uploads/images`) created with Cloudinary integration. 3. File validation implemented — size limits, format checks (JPEG/PNG/GIF/WebP). 4. CreatePost page allows image attachment to posts. 5. Upload rate limiting added (10/min). |
 | 15 | Wednesday 12/02/2026 | 1. Fixed merge conflicts from multiple feature branches. 2. Merged origin/main into working branches. 3. Updated CI workflow configuration. | 1. All merge conflicts resolved cleanly. 2. CI workflow updated and passing. 3. Codebase unified on main branch. 4. Prepared for deployment configuration. |
 | 16 | Thursday 13/02/2026 | 1. Fixed remaining lint errors in frontend and backend. 2. Configured deployment — Render (backend) + Vercel (frontend). 3. Added `render.yaml` with build and start commands. | 1. All lint errors resolved — CI pipeline green. 2. Render deployment configured — gunicorn with 2 workers, PostgreSQL database. 3. Vercel deployment configured for React frontend. 4. Environment variables set for production (DATABASE_URL, SECRET_KEY, FRONTEND_ORIGINS). 5. Application ready for production deployment. |
+| 17 | Sunday 19/07/2026 | 1. Diagnosed and fixed the production news feed, messaging, and community-creation regressions on the live deployment. 2. Scoped and approved a full Admin Dashboard: user/community/content moderation, reports, audit log, traffic overview. 3. Researched comparable agricultural apps for feature ideas; scoped Report & Flag, Market Price Board, Crop Issue Helper, and offline-friendly posting. 4. Scoped a nature-themed light/dark theming system for the main app and admin console. | 1. Admin Dashboard shipped end-to-end (backend RBAC routes + frontend console), with cascade-safe user deletion and a full audit log. 2. Report & Flag, Market Price Board, and the rule-based Crop Issue Helper (15 crops) shipped with backend + frontend + pytest coverage. 3. Offline-friendly post creation shipped (localStorage outbox queue, auto-flush on reconnect). 4. Theme system shipped — 8 main-app themes + 6 admin themes, each with light/dark mode, CSS-custom-property driven so most existing components re-themed with no rewrites. 5. Fixed a real bug where the admin console's dark-mode toggle wasn't actually isolated from the main app's. 6. Multiple rounds of dark-mode contrast fixes across the app (backgrounds inverting, missing text colors on inputs/titles, swapped-ramp colors on fixed-dark surfaces). 7. Home feed hero photo and the "Agrilink" wordmark now match the active theme; admin dashboard given theme-matched header photos and ambient accents instead of a flat, generic look. 8. Backend test suite grew to 200 passing tests. 9. Diagnosed and resolved a from-scratch production redeploy: new Render web service + PostgreSQL database (original was on an unreachable collaborator's account), migrations verified clean (single linear head), CORS/env vars reconciled, and discovered the Vercel production domain (`agrilink-six`) actually belonged to an unrelated project — traced the real one (`agrilink-self`) and repointed it. 10. Production database seeded with realistic demo data (users, communities, posts, comments, likes, follows, market prices) for review. |
 
 ---
 
@@ -46,7 +47,7 @@
 - Post detail view
 - Expert listing
 
-### Sprint 3: Creation, Communities & Messaging — IN PROGRESS
+### Sprint 3: Creation, Communities & Messaging — MOSTLY COMPLETE
 - Post creation with image upload — DONE
 - Image upload to Cloudinary — DONE
 - Communities CRUD — DONE
@@ -55,10 +56,34 @@
 - Community channel messaging — DONE
 - Conversation list — DONE
 - Chat interface — DONE
+- Backend test coverage (pytest) — DONE (200 passing tests)
 - Read status tracking — PENDING
 - Typing indicators — PENDING
 - Rich media in messages — PENDING
-- Comprehensive test coverage (Jest + unittest) — PENDING
+- Frontend test coverage (Jest) — PENDING
+
+### Sprint 4: Admin Dashboard, Community Features & Theming — COMPLETED
+- Admin Dashboard: user management (search/filter, suspend/ban/reactivate, role
+  assignment, cascade-safe hard delete), community moderation, content
+  moderation (posts/comments), audit log, platform traffic/stats overview — DONE
+- Report & Flag: users can report posts/comments/users; admins review,
+  resolve, or take direct moderation action — DONE
+- Market Price Board: community-reported local crop prices — DONE
+- Crop Issue Helper: rule-based (non-AI) symptom checker, 15 crops — DONE
+- Offline-friendly post creation (localStorage outbox, auto-flush on
+  reconnect) — DONE
+- Nature-themed light/dark theme system: 8 main-app themes + 6 admin
+  console themes, independently selectable — DONE
+- Theme-matched Home hero photo and "Agrilink" wordmark color — DONE
+- Theme-matched admin dashboard visuals (header photos, ambient accents) — DONE
+- Dark-mode contrast bug fixes across the app (multiple rounds) — DONE
+- Fixed admin console dark-mode isolation bug (was bleeding the main app's
+  dark mode into admin regardless of the admin's own setting) — DONE
+- Fixed 429 rate-limit responses incorrectly forcing a logout — DONE
+- Production redeploy: new Render web service + PostgreSQL database, clean
+  migration history verified, CORS/env vars reconciled, correct Vercel
+  production domain identified and repointed — DONE
+- Production database seeded with realistic demo data for review — DONE
 
 ---
 
@@ -91,8 +116,14 @@
 
 | Service | Platform | Status |
 |---------|----------|--------|
-| Backend API | Render (gunicorn) | Configured |
-| Frontend App | Vercel | Configured |
-| Database | PostgreSQL (Render) | Configured |
+| Backend API | Render (gunicorn) — <https://agrilink-7uhu.onrender.com> | Live |
+| Frontend App | Vercel — <https://agrilink-self.vercel.app> | Live |
+| Database | PostgreSQL (Render) | Live, seeded with demo data |
 | Image Storage | Cloudinary | Integrated |
 | CI/CD | GitHub Actions | Active |
+
+**Note (19/07/2026):** The original Render/Vercel deployments were owned by a
+collaborator's accounts that became unreachable. Both were rebuilt from
+scratch on the current maintainer's own accounts — see Entry 17 above.
+`render.yaml` at the repo root runs migrations and role-seeding
+automatically on every backend deploy.
