@@ -180,6 +180,14 @@ def login():
             {"error": "Authentication failed", "message": "Invalid email or password"}
         ), 401
 
+    if not user.is_active_status():
+        return jsonify(
+            {
+                "error": "Account restricted",
+                "message": f"This account has been {user.status} by an administrator.",
+            }
+        ), 403
+
     # Create session with timestamp
     session["user_id"] = user.id
     session["session_created_at"] = utcnow().isoformat()

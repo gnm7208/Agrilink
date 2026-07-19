@@ -1,5 +1,6 @@
 import hashlib
 import os
+import time
 
 import bleach
 import requests
@@ -19,7 +20,43 @@ def sanitize_content(text):
 bp = Blueprint("posts", __name__)
 
 DEFAULT_RATE_LIMIT = "30 per minute"
-NEWS_QUERY = "agriculture OR farming OR crops OR livestock OR agribusiness"
+
+# Query sent to NewsAPI's /v2/everything endpoint. Kept narrower than a plain
+# OR-of-words query, since that matches the words anywhere in the article
+# body and pulls in unrelated results (wildlife trivia, geopolitics, etc.)
+NEWS_QUERY = (
+    '"agriculture" OR "farming" OR "agribusiness" OR "crop yield" '
+    'OR "livestock farming" OR "agritech" OR "smallholder farmer"'
+)
+
+# Keywords an article's title/description must contain at least one of to be
+# considered agriculture-relevant. Second line of defense against NewsAPI's
+# loose full-text matching.
+NEWS_RELEVANCE_KEYWORDS = (
+    "agricult",
+    "farm",
+    "crop",
+    "livestock",
+    "harvest",
+    "irrigation",
+    "fertiliz",
+    "fertilis",
+    "soil",
+    "drought",
+    "agribusiness",
+    "agritech",
+    "plantation",
+    "cattle",
+    "poultry",
+    "dairy",
+    "rural econ",
+)
+
+# In-process TTL cache for NewsAPI responses. NewsAPI's free tier allows only
+# 100 requests/day; without caching, that quota is exhausted after a handful
+# of page loads and every user falls back to the static sample articles.
+_NEWS_CACHE_TTL_SECONDS = 20 * 60
+_news_cache = {}
 
 # ISDA Africa API Configuration
 ISDA_API_URL = os.environ.get("ISDA_API_URL", "https://api.isda-africa.com")
@@ -28,6 +65,16 @@ ISDA_PASSWORD = os.environ.get("ISDA_PASSWORD")
 
 # NewsAPI.org Configuration (alternative news source)
 NEWSAPI_KEY = os.environ.get("NEWSAPI_KEY")
+
+
+def _is_relevant_article(article):
+    """Filter out removed/null articles and ones NewsAPI matched too loosely to be agriculture-related."""
+    title = article.get("title")
+    if not title or title == "[Removed]":
+        return False
+    description = (article.get("description") or "").lower()
+    text = f"{title.lower()} {description}"
+    return any(keyword in text for keyword in NEWS_RELEVANCE_KEYWORDS)
 
 
 def make_article_id(article):
@@ -208,10 +255,24 @@ def update_post(post_id):
 @login_required
 @limiter.limit(DEFAULT_RATE_LIMIT)
 def delete_post(post_id):
-    """Delete own post."""
+    """Delete own post, or any post if the caller is an admin (moderation)."""
     post = Post.query.get_or_404(post_id)
-    if post.author_id != g.current_user.id:
+    is_owner = post.author_id == g.current_user.id
+    if not is_owner and not g.current_user.is_admin():
         return jsonify({"error": "Forbidden"}), 403
+
+    if not is_owner:
+        from models import AdminActionLog
+
+        reason = (request.get_json(silent=True) or {}).get("reason")
+        AdminActionLog.record(
+            admin_id=g.current_user.id,
+            action="delete_post",
+            target_type="post",
+            target_id=post.id,
+            reason=reason,
+        )
+
     db.session.delete(post)
     db.session.commit()
     return jsonify({"message": "Post deleted"}), 200
@@ -335,6 +396,33 @@ def create_post_comment(post_id):
     return jsonify(result), 201
 
 
+@bp.delete("/comments/<int:comment_id>")
+@login_required
+@limiter.limit(DEFAULT_RATE_LIMIT)
+def delete_comment(comment_id):
+    """Delete own comment, or any comment if the caller is an admin (moderation)."""
+    comment = Comment.query.get_or_404(comment_id)
+    is_owner = comment.user_id == g.current_user.id
+    if not is_owner and not g.current_user.is_admin():
+        return jsonify({"error": "Forbidden"}), 403
+
+    if not is_owner:
+        from models import AdminActionLog
+
+        reason = (request.get_json(silent=True) or {}).get("reason")
+        AdminActionLog.record(
+            admin_id=g.current_user.id,
+            action="delete_comment",
+            target_type="comment",
+            target_id=comment.id,
+            reason=reason,
+        )
+
+    db.session.delete(comment)
+    db.session.commit()
+    return jsonify({"message": "Comment deleted"}), 200
+
+
 @bp.post("/<int:post_id>/images")
 @login_required
 @limiter.limit(DEFAULT_RATE_LIMIT)
@@ -361,16 +449,25 @@ def add_post_image(post_id):
 def fetch_news():
     """Fetch agriculture articles from NewsAPI.org, ISDA Africa API, or fallback."""
 
+    page = max(request.args.get("page", 1, type=int), 1)
+    page_size = min(max(request.args.get("page_size", 10, type=int), 1), 20)
+
     # Try NewsAPI.org first (if configured)
     if NEWSAPI_KEY:
+        cache_key = ("newsapi", page, page_size)
+        cached = _news_cache.get(cache_key)
+        if cached and time.time() - cached[0] < _NEWS_CACHE_TTL_SECONDS:
+            return jsonify(cached[1])
+
         try:
             resp = requests.get(
                 "https://newsapi.org/v2/everything",
                 params={
-                    "q": "agriculture OR farming OR crops OR livestock",
+                    "q": NEWS_QUERY,
                     "language": "en",
                     "sortBy": "publishedAt",
-                    "pageSize": 10,
+                    "page": page,
+                    "pageSize": page_size,
                     "apiKey": NEWSAPI_KEY,
                 },
                 timeout=10,
@@ -378,7 +475,7 @@ def fetch_news():
 
             if resp.status_code == 200:
                 data = resp.json()
-                articles = data.get("articles", [])
+                articles = [a for a in data.get("articles", []) if _is_relevant_article(a)]
 
                 formatted_articles = []
                 for a in articles:
@@ -394,16 +491,17 @@ def fetch_news():
                         }
                     )
 
-                return jsonify(
-                    {
-                        "articles": formatted_articles,
-                        "page": 1,
-                        "pageSize": len(formatted_articles),
-                        "totalResults": data.get("totalResults", len(formatted_articles)),
-                        "hasMore": len(formatted_articles) >= 10,
-                        "source": "newsapi",
-                    }
-                )
+                total_results = data.get("totalResults", len(formatted_articles))
+                payload = {
+                    "articles": formatted_articles,
+                    "page": page,
+                    "pageSize": len(formatted_articles),
+                    "totalResults": total_results,
+                    "hasMore": page * page_size < total_results,
+                    "source": "newsapi",
+                }
+                _news_cache[cache_key] = (time.time(), payload)
+                return jsonify(payload)
         except Exception as e:
             import logging
 

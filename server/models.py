@@ -44,6 +44,8 @@ class User(db.Model):
     email_verified = db.Column(db.Boolean, default=False, nullable=False)
     email_verification_token = db.Column(db.String(255), nullable=True, index=True)
     email_verification_expires = db.Column(db.DateTime, nullable=True)
+    # Moderation state set by admins: active | suspended | banned.
+    status = db.Column(db.String(20), nullable=False, default="active", server_default="active")
     created_at = db.Column(db.DateTime, default=utcnow)
     updated_at = db.Column(db.DateTime, onupdate=utcnow)
 
@@ -77,6 +79,10 @@ class User(db.Model):
         # Fallback for legacy rows/code paths prior to role_id backfill.
         return self.role == "admin"
 
+    def is_active_status(self) -> bool:
+        """Return True unless an admin has suspended or banned this account."""
+        return self.status == "active"
+
     def set_password(self, password: str) -> None:
         """Hash password using Werkzeug for secure storage."""
         self.password_hash = generate_password_hash(password)
@@ -94,6 +100,7 @@ class User(db.Model):
             "profile_image_url": self.profile_image_url,
             "role": self.role,
             "email_verified": self.email_verified,
+            "status": self.status,
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }
         if include_email:
@@ -118,6 +125,8 @@ class Community(db.Model):
     description = db.Column(db.Text)
     image_url = db.Column(db.String(255))
     created_by = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    # Reserved for admin soft-hide; community deletes are hard deletes today.
+    is_active = db.Column(db.Boolean, nullable=False, default=True, server_default="true")
     created_at = db.Column(db.DateTime, default=utcnow)
 
     members = db.relationship(
@@ -133,6 +142,8 @@ class Community(db.Model):
             "description": self.description,
             "image_url": self.image_url,
             "created_by": self.created_by,
+            "is_active": self.is_active,
+            "member_count": len(self.members),
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }
 
@@ -284,6 +295,7 @@ class Message(db.Model):
     community_id = db.Column(db.Integer, db.ForeignKey("communities.id"))
     content = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=utcnow)
+    read_at = db.Column(db.DateTime, nullable=True)
 
     def to_dict(self):
         return {
@@ -293,6 +305,7 @@ class Message(db.Model):
             "community_id": self.community_id,
             "content": self.content,
             "created_at": self.created_at.isoformat() if self.created_at else None,
+            "read_at": self.read_at.isoformat() if self.read_at else None,
         }
 
 
@@ -349,4 +362,113 @@ class PasswordResetToken(db.Model):
             "user_id": self.user_id,
             "expires_at": self.expires_at.isoformat() if self.expires_at else None,
             "used": self.used,
+        }
+
+
+class AdminActionLog(db.Model):
+    """Audit trail of moderation actions taken by admins."""
+
+    __tablename__ = "admin_action_logs"
+
+    id = db.Column(db.Integer, primary_key=True)
+    admin_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    action = db.Column(db.String(50), nullable=False)
+    target_type = db.Column(db.String(20), nullable=False)
+    target_id = db.Column(db.Integer, nullable=False)
+    reason = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, default=utcnow)
+
+    admin = db.relationship("User", foreign_keys=[admin_id])
+
+    @classmethod
+    def record(cls, admin_id, action, target_type, target_id, reason=None):
+        entry = cls(
+            admin_id=admin_id,
+            action=action,
+            target_type=target_type,
+            target_id=target_id,
+            reason=reason,
+        )
+        db.session.add(entry)
+        return entry
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "admin_id": self.admin_id,
+            "admin_username": self.admin.username if self.admin else None,
+            "action": self.action,
+            "target_type": self.target_type,
+            "target_id": self.target_id,
+            "reason": self.reason,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
+
+
+class Report(db.Model):
+    """A user-submitted report flagging a post, comment, or user for review."""
+
+    __tablename__ = "reports"
+
+    id = db.Column(db.Integer, primary_key=True)
+    reporter_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    target_type = db.Column(db.String(20), nullable=False)  # post | comment | user
+    target_id = db.Column(db.Integer, nullable=False)
+    reason = db.Column(db.String(30), nullable=False)
+    details = db.Column(db.Text, nullable=True)
+    status = db.Column(db.String(20), nullable=False, default="pending", server_default="pending")
+    created_at = db.Column(db.DateTime, default=utcnow)
+    resolved_at = db.Column(db.DateTime, nullable=True)
+    resolved_by = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+
+    reporter = db.relationship("User", foreign_keys=[reporter_id])
+    resolver = db.relationship("User", foreign_keys=[resolved_by])
+
+    __table_args__ = (
+        db.UniqueConstraint("reporter_id", "target_type", "target_id", name="unique_report_per_target"),
+    )
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "reporter_id": self.reporter_id,
+            "reporter_username": self.reporter.username if self.reporter else None,
+            "target_type": self.target_type,
+            "target_id": self.target_id,
+            "reason": self.reason,
+            "details": self.details,
+            "status": self.status,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "resolved_at": self.resolved_at.isoformat() if self.resolved_at else None,
+            "resolved_by": self.resolved_by,
+        }
+
+
+class MarketPrice(db.Model):
+    """A user-submitted local crop/produce price report."""
+
+    __tablename__ = "market_prices"
+
+    id = db.Column(db.Integer, primary_key=True)
+    crop = db.Column(db.String(60), nullable=False)
+    price = db.Column(db.Float, nullable=False)
+    unit = db.Column(db.String(40), nullable=False)
+    location = db.Column(db.String(100), nullable=False)
+    notes = db.Column(db.Text, nullable=True)
+    posted_by = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    created_at = db.Column(db.DateTime, default=utcnow)
+
+    poster = db.relationship("User", foreign_keys=[posted_by])
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "crop": self.crop,
+            "price": self.price,
+            "unit": self.unit,
+            "location": self.location,
+            "notes": self.notes,
+            "posted_by": self.posted_by,
+            "poster_username": self.poster.username if self.poster else None,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
         }

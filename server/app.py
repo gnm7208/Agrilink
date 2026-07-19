@@ -61,7 +61,18 @@ def create_app(config_name=None):
     )
 
     # Import blueprints
-    from routes import auth, communities, messages, posts, uploads, users
+    from routes import (
+        admin,
+        auth,
+        communities,
+        crop_helper,
+        market,
+        messages,
+        posts,
+        reports,
+        uploads,
+        users,
+    )
 
     # Register blueprints
     app.register_blueprint(auth.bp, url_prefix="/api/auth")
@@ -70,6 +81,10 @@ def create_app(config_name=None):
     app.register_blueprint(communities.bp, url_prefix="/api/communities")
     app.register_blueprint(messages.bp, url_prefix="/api/messages")
     app.register_blueprint(uploads.bp, url_prefix="/api/uploads")
+    app.register_blueprint(admin.bp, url_prefix="/api/admin")
+    app.register_blueprint(reports.bp, url_prefix="/api/reports")
+    app.register_blueprint(market.bp, url_prefix="/api/market-prices")
+    app.register_blueprint(crop_helper.bp, url_prefix="/api/crop-helper")
 
     @app.before_request
     def load_current_user():
@@ -83,6 +98,7 @@ def create_app(config_name=None):
             payload = decode_token(token)
             if payload and "user_id" in payload:
                 g.current_user = User.query.get(payload["user_id"])
+                _reject_if_restricted()
                 return
             # Invalid/expired token — fall through to session check
 
@@ -108,6 +124,12 @@ def create_app(config_name=None):
                 return
 
         g.current_user = User.query.get(user_id) if user_id else None
+        _reject_if_restricted()
+
+    def _reject_if_restricted():
+        """Treat suspended/banned accounts as logged out, even with a valid token/session."""
+        if g.current_user is not None and not g.current_user.is_active_status():
+            g.current_user = None
 
     # Structured error handlers
     # Structured error handlers
