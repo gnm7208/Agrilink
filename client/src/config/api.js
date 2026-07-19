@@ -54,6 +54,7 @@ export const API_ENDPOINTS = {
   // Community endpoints
   communities: {
     list: `${API_URL}/communities`,
+    create: `${API_URL}/communities`,
     byId: (id) => `${API_URL}/communities/${id}`,
     join: (id) => `${API_URL}/communities/${id}/join`,
     leave: (id) => `${API_URL}/communities/${id}/leave`,
@@ -71,6 +72,38 @@ export const API_ENDPOINTS = {
   // Upload endpoints
   uploads: {
     image: `${API_URL}/uploads/images`,
+  },
+  // Report/flag endpoints
+  reports: {
+    create: `${API_URL}/reports`,
+  },
+  // Crop issue helper endpoints
+  cropHelper: {
+    symptoms: `${API_URL}/crop-helper/symptoms`,
+    diagnose: `${API_URL}/crop-helper/diagnose`,
+  },
+  // Market price board endpoints
+  market: {
+    list: `${API_URL}/market-prices`,
+    crops: `${API_URL}/market-prices/crops`,
+    create: `${API_URL}/market-prices`,
+    delete: (id) => `${API_URL}/market-prices/${id}`,
+  },
+  // Admin endpoints
+  admin: {
+    stats: `${API_URL}/admin/stats`,
+    users: `${API_URL}/admin/users`,
+    userById: (id) => `${API_URL}/admin/users/${id}`,
+    userStatus: (id) => `${API_URL}/admin/users/${id}/status`,
+    userRole: (id) => `${API_URL}/admin/users/${id}/role`,
+    communities: `${API_URL}/admin/communities`,
+    deleteCommunity: (id) => `${API_URL}/communities/${id}`,
+    posts: `${API_URL}/admin/posts`,
+    deletePost: (id) => `${API_URL}/admin/posts/${id}`,
+    deleteComment: (id) => `${API_URL}/admin/comments/${id}`,
+    auditLog: `${API_URL}/admin/audit-log`,
+    reports: `${API_URL}/admin/reports`,
+    reportStatus: (id) => `${API_URL}/admin/reports/${id}`,
   },
 };
 
