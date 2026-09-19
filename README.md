@@ -107,7 +107,7 @@ Privacy policy: <https://agrilink-self.vercel.app/privacy.html> (also linked fro
 
 - **Frontend Hosting:** Vercel
 - **Backend Hosting:** Render
-- **Database:** Render PostgreSQL
+- **Database:** Neon PostgreSQL (serverless, Frankfurt)
 - **File Storage:** Cloudinary
 - **CI/CD:** GitHub Actions
 - **Version Control:** Git/GitHub
@@ -117,7 +117,7 @@ Privacy policy: <https://agrilink-self.vercel.app/privacy.html> (also linked fro
 ```
 +-------------------+    +-------------------+    +-------------------+
 |   React Client    |----|   Flask API       |----|   PostgreSQL      |
-|   (Vercel)        |    |   (Render)        |    |   (Render)        |
+|   (Vercel)        |    |   (Render)        |    |   (Neon)          |
 +-------------------+    +-------------------+    +-------------------+
          |                        |                        |
          |                        |                        |
@@ -383,7 +383,7 @@ Interactive, always-current documentation for every endpoint is also available a
 
 - **Frontend:** Deployed on Vercel with automatic deployments from `main`
 - **Backend:** Deployed on Render with Gunicorn WSGI server
-- **Database:** Render PostgreSQL with automated backups
+- **Database:** Neon PostgreSQL — project `agrilink` (`broad-rice-55674992`), region `aws-eu-central-1`, [console](https://console.neon.tech/app/projects/broad-rice-55674992). Render gets the **pooled** connection string; migrations run against the direct endpoint.
 - **CDN:** Cloudinary for optimized image delivery
 
 ### Environment Variables (Production)
@@ -392,7 +392,7 @@ Interactive, always-current documentation for every endpoint is also available a
 
 ```bash
 FLASK_ENV=production
-DATABASE_URL=postgresql://user:pass@host:port/db
+DATABASE_URL=postgresql://agrilink_owner:<password>@ep-…-pooler.c-5.eu-central-1.aws.neon.tech/agrilink?sslmode=require&channel_binding=require  # Neon pooled
 SECRET_KEY=your-production-secret-key
 FRONTEND_ORIGINS=https://agrilink-self.vercel.app
 NEWSAPI_KEY=your-newsapi-key
