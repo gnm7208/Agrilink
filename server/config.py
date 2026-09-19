@@ -15,6 +15,10 @@ class Config:
         _db_url = _db_url.replace("postgres://", "postgresql://", 1)
     SQLALCHEMY_DATABASE_URI = _db_url
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    # Neon suspends idle compute (5 min on the free tier) and drops server-side
+    # connections; pre-ping detects that and reconnects instead of failing the
+    # first request after a nap. Recycle well under Neon's idle timeout.
+    SQLALCHEMY_ENGINE_OPTIONS = {"pool_pre_ping": True, "pool_recycle": 240}
 
     SECRET_KEY = os.getenv("SECRET_KEY")
     SESSION_COOKIE_SECURE = os.getenv("SESSION_COOKIE_SECURE", "true").lower() == "true"

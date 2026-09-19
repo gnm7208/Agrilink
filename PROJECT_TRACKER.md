@@ -127,3 +127,19 @@ collaborator's accounts that became unreachable. Both were rebuilt from
 scratch on the current maintainer's own accounts — see Entry 17 above.
 `render.yaml` at the repo root runs migrations and role-seeding
 automatically on every backend deploy.
+
+### Sprint 5: Installable app & store packaging — IN PROGRESS (2026-09-19)
+
+- Replaced the leftover Vite favicon with an AgriLink brand mark (sprout on green) and generated the PNG icon set
+- Added `manifest.webmanifest`, app-shell service worker (`sw.js`, API never cached) and production-only registration in `client/src/services/register-sw.js`
+- Added `/.well-known/assetlinks.json`, `privacy.html`, Apple/mobile meta tags, real `<title>` and description
+- Generated an Android signing key and a Bubblewrap TWA project (`../store-packaging/agrilink`, package `com.gnm7208.agrilink`)
+- Drafted store listing copy. Next: deploy, GitHub Release with the APK, Microsoft Store via PWABuilder
+- Note: `client/src/test/App.test.jsx` was already failing before this work (renders `App` without `OutboxProvider`) — tracked separately
+
+### Sprint 5 (cont.) — 2026-09-19, later
+
+- In-app account deletion: `DELETE /api/auth/me` (password re-checked, 403 on mismatch so the client does not treat it as an expired session; admins refused). The admin console's hard-delete helper moved to `services/account_service.py`, extended to cover reports and market price reports (both were missing and would have raised IntegrityError), and is now shared by both paths. Profile page gains a Delete-my-account card.
+- CI made green for the first time since July: ruff format, ESLint on the test helper, vulnerable pins patched, `npm audit fix`.
+- Keep-alive workflow added (scheduled workflows only run from the default branch — it starts after PR #22 merges).
+- **Production is down**: the API returns 500 on every DB-backed route; the Render Postgres appears to be gone (one free instance per account; `soko-db` took it). Needs a Neon database + `DATABASE_URL` on Render + `flask db upgrade` + `seed_roles.py`.

@@ -2,9 +2,9 @@ from flask import Blueprint, abort, g, jsonify, request
 from sqlalchemy import func
 
 from extensions import db
-from utils.timeutils import utcnow
 from models import Community, CommunityMembership, Message, User
 from rbac import login_required
+from utils.timeutils import utcnow
 
 bp = Blueprint("messages", __name__, url_prefix="/messages")
 

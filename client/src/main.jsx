@@ -6,6 +6,7 @@ import { App } from './App.jsx'
 import { AuthProvider } from './context/AuthContext'
 import { ThemeProvider } from './context/ThemeContext'
 import { OutboxProvider } from './context/OutboxContext'
+import { registerServiceWorker } from './services/register-sw'
 
 // Server-state cache: automatic retries, deduping, and background refetching
 const queryClient = new QueryClient({
@@ -31,3 +32,5 @@ createRoot(document.getElementById('root')).render(
     </QueryClientProvider>
   </StrictMode>,
 )
+
+registerServiceWorker()

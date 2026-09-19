@@ -29,7 +29,12 @@ class TestCreateReport:
 
         response = admin.post(
             "/api/reports",
-            json={"target_type": "post", "target_id": post_id, "reason": "spam", "details": "obvious spam"},
+            json={
+                "target_type": "post",
+                "target_id": post_id,
+                "reason": "spam",
+                "details": "obvious spam",
+            },
         )
         assert response.status_code == 201
         data = response.get_json()

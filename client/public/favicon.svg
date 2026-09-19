@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#16a34a"/>
+      <!-- sprout: stem + two leaves, white on green -->
+      <path d="M256 400 V232" stroke="#ffffff" stroke-width="30" stroke-linecap="round"/>
+      <path d="M256 300 C 256 210, 190 160, 118 160 C 118 240, 176 300, 256 300 Z" fill="#ffffff"/>
+      <path d="M256 250 C 256 160, 322 110, 394 110 C 394 190, 336 250, 256 250 Z" fill="#dcfce7"/>
+      <path d="M150 190 L256 296 M362 140 L256 246" stroke="#16a34a" stroke-width="10" stroke-linecap="round"/>
+</svg>

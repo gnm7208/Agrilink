@@ -61,3 +61,14 @@ Build a mobile-first agricultural super app that centralizes trusted knowledge, 
 - **Auth/security gaps**: Enforce HTTPS-only cookies/JWT practices, input validation, rate limiting; security review each sprint.
 - **Scope creep in messaging**: Keep MVP to text-only and read status; defer rich media and typing indicators to later phase.
 - **Testing debt**: Definition of Done requires tests; track coverage per sprint and block merges on failing checks.
+
+### Sprint 5 — Installable app & distribution ($0 path)
+
+- [x] PWA: manifest, service worker, icon set, brand mark
+- [x] Android signing key, Digital Asset Links, TWA project (`../store-packaging/agrilink`)
+- [x] Privacy policy (`/privacy.html`) and store listing copy
+- [ ] Deploy and verify `/.well-known/assetlinks.json` is served
+- [ ] GitHub Release (APK) → Microsoft Store (PWABuilder) → Amazon / Samsung → Google Play when the $25 fee is paid
+- [x] In-app account deletion (`DELETE /api/auth/me`, Profile page)
+- [x] Keep-alive workflow for the Render API (runs once merged to `main`)
+- [ ] **Production API is down**: every DB-backed endpoint returns 500 (the Render Postgres is gone — Render allows one free instance per account and `soko-db` holds it). Move to Neon like the other apps.

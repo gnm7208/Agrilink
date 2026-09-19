@@ -34,8 +34,7 @@ def list_communities():
         page=page, per_page=per_page, error_out=False
     )
     member_ids = {
-        m.community_id
-        for m in CommunityMembership.query.filter_by(user_id=g.current_user.id).all()
+        m.community_id for m in CommunityMembership.query.filter_by(user_id=g.current_user.id).all()
     }
 
     def community_to_dict(c):

@@ -4,6 +4,8 @@ from sqlalchemy.exc import IntegrityError
 from extensions import db, limiter
 from jwt_utils import create_token
 from models import PasswordResetToken, User
+from rbac import login_required
+from services.account_service import hard_delete_user
 from services.email_service import send_verification_email
 from utils import validate_email, validate_password, validate_username
 from utils.email_verification import create_email_verification, verify_email_token
@@ -216,6 +218,35 @@ def logout():
     """
     session.clear()  # Clear all session data, not just user_id
     return jsonify({"message": "Logout successful"}), 200
+
+
+@bp.delete("/me")
+@login_required
+@limiter.limit("5 per minute")
+def delete_me():
+    """
+    Delete the current user's account and everything they posted.
+
+    App stores require an in-app deletion path. The password is required again
+    so an unlocked phone cannot wipe an account in one tap.
+    """
+    data = request.get_json(silent=True) or {}
+    password = data.get("password") or ""
+    user = g.current_user
+
+    if not password or not user.check_password(password):
+        # 403, not 401: the session is valid, only the confirmation failed, and
+        # the client treats a 401 as an expired session.
+        return jsonify({"error": "Incorrect password"}), 403
+    if user.is_admin():
+        return jsonify(
+            {"error": "Admin accounts are deleted from the admin console by another admin"}
+        ), 403
+
+    hard_delete_user(user)
+    db.session.commit()
+    session.clear()
+    return jsonify({"message": "Account deleted"}), 200
 
 
 @bp.get("/me")

@@ -8,6 +8,21 @@ AgriLink is a mobile-first agricultural super app that connects farmers with agr
 - **Backend API:** <https://agrilink-7uhu.onrender.com>
 - **Interactive API Docs:** <https://agrilink-7uhu.onrender.com/api/docs> (Swagger UI)
 
+## Install as an app
+
+Agrilink is a Progressive Web App. The web build in `client/` is also what ships to the app stores — there is no separate mobile codebase.
+
+| Platform | How |
+|---|---|
+| **Android / desktop Chrome** | Open <https://agrilink-self.vercel.app> → browser menu → **Install app** (or **Add to Home screen**). |
+| **Android APK** | Download the latest signed APK from [GitHub Releases](https://github.com/gnm7208/Agrilink/releases) and open it (allow "install from this source" once). |
+| **Microsoft Store** | Listed as **Agrilink** (packaged from the PWA with PWABuilder). |
+| **Google Play / Amazon / Samsung** | Same Android package (`com.gnm7208.agrilink`); listings go live per store — check Releases for status. |
+
+Privacy policy: <https://agrilink-self.vercel.app/privacy.html> (also linked from every store listing; deletion requests are handled by email as described there).
+
+**How it works.** `client/public/manifest.webmanifest` declares the app (name, colours, PNG + maskable icons), `client/public/sw.js` caches the app shell so it opens with no signal (API responses are deliberately never cached), and `client/src/services/register-sw.js` registers the worker in production builds only. `client/public/.well-known/assetlinks.json` links the site to the Android signing key so the Android app opens full-screen without browser chrome; the Android project itself lives outside this repo in `../store-packaging/` (Bubblewrap TWA) and the signing key in `~/.android-signing/` — never commit either.
+
 ## Table of Contents
 
 - [Features](#features)
@@ -36,6 +51,7 @@ AgriLink is a mobile-first agricultural super app that connects farmers with agr
 - **Report & Flag:** Users can report posts, comments, or other users for moderator review
 - **Market Price Board:** Community-reported local crop prices, filterable by crop/location
 - **Crop Issue Helper:** Rule-based (non-AI) symptom checker covering 15 crops, matching selected symptoms against a curated pest/disease/nutrient-deficiency knowledge base
+- **Installable App (PWA):** Web manifest + service worker so AgriLink installs to the home screen and opens offline; the same build is packaged for Android (TWA) and the Microsoft Store — see [Install as an app](#install-as-an-app)
 
 ### User Features
 
@@ -91,7 +107,7 @@ AgriLink is a mobile-first agricultural super app that connects farmers with agr
 
 - **Frontend Hosting:** Vercel
 - **Backend Hosting:** Render
-- **Database:** Render PostgreSQL
+- **Database:** Neon PostgreSQL (serverless, Frankfurt)
 - **File Storage:** Cloudinary
 - **CI/CD:** GitHub Actions
 - **Version Control:** Git/GitHub
@@ -101,7 +117,7 @@ AgriLink is a mobile-first agricultural super app that connects farmers with agr
 ```
 +-------------------+    +-------------------+    +-------------------+
 |   React Client    |----|   Flask API       |----|   PostgreSQL      |
-|   (Vercel)        |    |   (Render)        |    |   (Render)        |
+|   (Vercel)        |    |   (Render)        |    |   (Neon)          |
 +-------------------+    +-------------------+    +-------------------+
          |                        |                        |
          |                        |                        |
@@ -219,6 +235,7 @@ POST /api/auth/register           # User registration
 POST /api/auth/login              # User login
 POST /api/auth/logout             # User logout
 GET  /api/auth/me                 # Get current user
+DELETE /api/auth/me               # Delete own account (password in body; erases everything the user posted)
 POST /api/auth/verify-email       # Verify email address
 POST /api/auth/resend-verification # Resend verification email
 POST /api/auth/request-password-reset # Request password reset
@@ -367,7 +384,7 @@ Interactive, always-current documentation for every endpoint is also available a
 
 - **Frontend:** Deployed on Vercel with automatic deployments from `main`
 - **Backend:** Deployed on Render with Gunicorn WSGI server
-- **Database:** Render PostgreSQL with automated backups
+- **Database:** Neon PostgreSQL — project `agrilink` (`broad-rice-55674992`), region `aws-eu-central-1`, [console](https://console.neon.tech/app/projects/broad-rice-55674992). Render gets the **pooled** connection string; migrations run against the direct endpoint.
 - **CDN:** Cloudinary for optimized image delivery
 
 ### Environment Variables (Production)
@@ -376,7 +393,7 @@ Interactive, always-current documentation for every endpoint is also available a
 
 ```bash
 FLASK_ENV=production
-DATABASE_URL=postgresql://user:pass@host:port/db
+DATABASE_URL=postgresql://agrilink_owner:<password>@ep-…-pooler.c-5.eu-central-1.aws.neon.tech/agrilink?sslmode=require&channel_binding=require  # Neon pooled
 SECRET_KEY=your-production-secret-key
 FRONTEND_ORIGINS=https://agrilink-self.vercel.app
 NEWSAPI_KEY=your-newsapi-key
