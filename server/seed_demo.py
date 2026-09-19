@@ -3,21 +3,22 @@ Populate the local dev database with realistic demo data for browser review:
 users, communities, memberships, posts (with agricultural photos), comments,
 likes, follows, and market prices. Safe to re-run (skips if already seeded).
 """
+
 import random
 from datetime import timedelta
 
 from app import create_app
 from extensions import db
 from models import (
-    User,
+    Comment,
     Community,
     CommunityMembership,
+    Follow,
+    Like,
+    MarketPrice,
     Post,
     PostImage,
-    Comment,
-    Like,
-    Follow,
-    MarketPrice,
+    User,
 )
 from utils.timeutils import utcnow
 
@@ -48,41 +49,189 @@ COMMUNITY_IMAGES = [
 
 USERS = [
     # username, email, role, bio, location, is_expert
-    ("wanjiku_farms", "wanjiku@agrilink.test", "user", "Third-generation maize and bean farmer in Nakuru. Always experimenting with intercropping.", "Nakuru, Kenya", False),
-    ("oduya_agrivet", "oduya@agrilink.test", "expert", "Agricultural extension officer, 15 years in crop pathology. Ask me about pests and disease.", "Kisumu, Kenya", True),
-    ("amara_greens", "amara@agrilink.test", "user", "Smallholder vegetable farmer. Kale, tomatoes, and spinach for the local market.", "Kampala, Uganda", False),
-    ("dr_naledi_soil", "naledi@agrilink.test", "expert", "Soil scientist, PhD. Consulting on soil health and fertility management across East Africa.", "Gaborone, Botswana", True),
-    ("kofi_cocoa", "kofi@agrilink.test", "user", "Cocoa and cassava farmer. Third generation on this land.", "Kumasi, Ghana", False),
-    ("fatima_livestock", "fatima@agrilink.test", "user", "Dairy and poultry farmer. Also running a small feed supply business.", "Arusha, Tanzania", False),
-    ("prof_okello_agronomy", "okello@agrilink.test", "expert", "Agronomy professor. Research focus on drought-resistant crop varieties.", "Kampala, Uganda", True),
-    ("grace_coffee", "grace@agrilink.test", "user", "Coffee farmer at 1800m altitude. Specialty arabica, direct trade.", "Nyeri, Kenya", False),
-    ("samuel_ricegrower", "samuel@agrilink.test", "user", "Rice farmer in the Mwea irrigation scheme.", "Mwea, Kenya", False),
-    ("aisha_agritech", "aisha@agrilink.test", "expert", "Agritech consultant helping farmers adopt precision agriculture tools.", "Lagos, Nigeria", True),
-    ("museveni_orchard", "mus@agrilink.test", "user", "Mango and avocado orchard owner. Exporting to regional markets.", "Mbale, Uganda", False),
-    ("thandiwe_permaculture", "thandiwe@agrilink.test", "user", "Permaculture designer, teaching regenerative farming workshops.", "Harare, Zimbabwe", False),
+    (
+        "wanjiku_farms",
+        "wanjiku@agrilink.test",
+        "user",
+        "Third-generation maize and bean farmer in Nakuru. Always experimenting with intercropping.",
+        "Nakuru, Kenya",
+        False,
+    ),
+    (
+        "oduya_agrivet",
+        "oduya@agrilink.test",
+        "expert",
+        "Agricultural extension officer, 15 years in crop pathology. Ask me about pests and disease.",
+        "Kisumu, Kenya",
+        True,
+    ),
+    (
+        "amara_greens",
+        "amara@agrilink.test",
+        "user",
+        "Smallholder vegetable farmer. Kale, tomatoes, and spinach for the local market.",
+        "Kampala, Uganda",
+        False,
+    ),
+    (
+        "dr_naledi_soil",
+        "naledi@agrilink.test",
+        "expert",
+        "Soil scientist, PhD. Consulting on soil health and fertility management across East Africa.",
+        "Gaborone, Botswana",
+        True,
+    ),
+    (
+        "kofi_cocoa",
+        "kofi@agrilink.test",
+        "user",
+        "Cocoa and cassava farmer. Third generation on this land.",
+        "Kumasi, Ghana",
+        False,
+    ),
+    (
+        "fatima_livestock",
+        "fatima@agrilink.test",
+        "user",
+        "Dairy and poultry farmer. Also running a small feed supply business.",
+        "Arusha, Tanzania",
+        False,
+    ),
+    (
+        "prof_okello_agronomy",
+        "okello@agrilink.test",
+        "expert",
+        "Agronomy professor. Research focus on drought-resistant crop varieties.",
+        "Kampala, Uganda",
+        True,
+    ),
+    (
+        "grace_coffee",
+        "grace@agrilink.test",
+        "user",
+        "Coffee farmer at 1800m altitude. Specialty arabica, direct trade.",
+        "Nyeri, Kenya",
+        False,
+    ),
+    (
+        "samuel_ricegrower",
+        "samuel@agrilink.test",
+        "user",
+        "Rice farmer in the Mwea irrigation scheme.",
+        "Mwea, Kenya",
+        False,
+    ),
+    (
+        "aisha_agritech",
+        "aisha@agrilink.test",
+        "expert",
+        "Agritech consultant helping farmers adopt precision agriculture tools.",
+        "Lagos, Nigeria",
+        True,
+    ),
+    (
+        "museveni_orchard",
+        "mus@agrilink.test",
+        "user",
+        "Mango and avocado orchard owner. Exporting to regional markets.",
+        "Mbale, Uganda",
+        False,
+    ),
+    (
+        "thandiwe_permaculture",
+        "thandiwe@agrilink.test",
+        "user",
+        "Permaculture designer, teaching regenerative farming workshops.",
+        "Harare, Zimbabwe",
+        False,
+    ),
 ]
 
 COMMUNITIES = [
-    ("Maize Growers Network", "Tips, market info, and troubleshooting for maize farmers across East Africa.", 0),
-    ("Organic & Regenerative Farming", "Sharing regenerative practices, composting, and organic pest control.", 1),
-    ("Coffee & Tea Growers", "For smallholder coffee and tea farmers — processing, pricing, and quality tips.", 2),
+    (
+        "Maize Growers Network",
+        "Tips, market info, and troubleshooting for maize farmers across East Africa.",
+        0,
+    ),
+    (
+        "Organic & Regenerative Farming",
+        "Sharing regenerative practices, composting, and organic pest control.",
+        1,
+    ),
+    (
+        "Coffee & Tea Growers",
+        "For smallholder coffee and tea farmers — processing, pricing, and quality tips.",
+        2,
+    ),
     ("Livestock & Dairy", "Poultry, dairy, and livestock health discussions.", 3),
-    ("Irrigation & Water Management", "Discussing irrigation schemes, drip systems, and water-saving techniques.", 4),
+    (
+        "Irrigation & Water Management",
+        "Discussing irrigation schemes, drip systems, and water-saving techniques.",
+        4,
+    ),
 ]
 
 POSTS = [
-    ("Fall armyworm hitting my maize hard this season", "Anyone else seeing fall armyworm damage this early? I've tried neem extract but it's not keeping up. Looking for advice from anyone who's dealt with a bad outbreak.", "Maize Growers Network"),
-    ("Intercropping maize with beans — first results", "Tried intercropping this season on 2 acres. Yields look promising and the beans are fixing nitrogen nicely. Happy to share what spacing worked for me.", "Maize Growers Network"),
-    ("Best compost ratio for vegetable beds?", "I've been composting kitchen waste and crop residue but my compost is too wet. What's a good carbon:nitrogen ratio for tropical climates?", "Organic & Regenerative Farming"),
-    ("Switched to zero-till this year, small update", "Three months into zero-till on my vegetable plot. Soil moisture retention is noticeably better even in the dry spells we've had.", "Organic & Regenerative Farming"),
-    ("Arabica cherry prices this week", "Cherry prices at the local cooperative are up about 8% from last month. Good time to sell if you're holding stock.", "Coffee & Tea Growers"),
-    ("Coffee berry disease — early signs to watch for", "Sharing photos of early coffee berry disease symptoms so others can catch it before it spreads. Copper-based fungicide worked for me last season.", "Coffee & Tea Growers"),
-    ("Newcastle disease outbreak in my poultry", "Lost a dozen birds this week to what the vet confirmed as Newcastle disease. Vaccinating the rest of the flock now. Anyone have a good vaccination schedule?", "Livestock & Dairy"),
-    ("Milk yield dropped after feed change", "Switched dairy feed suppliers last month and yield dropped noticeably. Going back to the old supplier but curious if others have had this issue.", "Livestock & Dairy"),
-    ("Drip irrigation on a budget — what I learned", "Set up a basic drip system for under $200 covering half an acre. Sharing the parts list and layout that worked for me.", "Irrigation & Water Management"),
-    ("Borehole water is too saline for some crops", "Tested our borehole water and salinity is higher than expected. Which crops are more salt-tolerant for irrigation in these conditions?", "Irrigation & Water Management"),
-    ("Rice paddy water management during dry spells", "Mwea scheme farmers — how are you managing paddy flooding schedules with the reduced canal flow this month?", "Maize Growers Network"),
-    ("Avocado orchard spacing recommendations?", "Planning a new Hass avocado block. What spacing has worked best for others in similar climates?", "Organic & Regenerative Farming"),
+    (
+        "Fall armyworm hitting my maize hard this season",
+        "Anyone else seeing fall armyworm damage this early? I've tried neem extract but it's not keeping up. Looking for advice from anyone who's dealt with a bad outbreak.",
+        "Maize Growers Network",
+    ),
+    (
+        "Intercropping maize with beans — first results",
+        "Tried intercropping this season on 2 acres. Yields look promising and the beans are fixing nitrogen nicely. Happy to share what spacing worked for me.",
+        "Maize Growers Network",
+    ),
+    (
+        "Best compost ratio for vegetable beds?",
+        "I've been composting kitchen waste and crop residue but my compost is too wet. What's a good carbon:nitrogen ratio for tropical climates?",
+        "Organic & Regenerative Farming",
+    ),
+    (
+        "Switched to zero-till this year, small update",
+        "Three months into zero-till on my vegetable plot. Soil moisture retention is noticeably better even in the dry spells we've had.",
+        "Organic & Regenerative Farming",
+    ),
+    (
+        "Arabica cherry prices this week",
+        "Cherry prices at the local cooperative are up about 8% from last month. Good time to sell if you're holding stock.",
+        "Coffee & Tea Growers",
+    ),
+    (
+        "Coffee berry disease — early signs to watch for",
+        "Sharing photos of early coffee berry disease symptoms so others can catch it before it spreads. Copper-based fungicide worked for me last season.",
+        "Coffee & Tea Growers",
+    ),
+    (
+        "Newcastle disease outbreak in my poultry",
+        "Lost a dozen birds this week to what the vet confirmed as Newcastle disease. Vaccinating the rest of the flock now. Anyone have a good vaccination schedule?",
+        "Livestock & Dairy",
+    ),
+    (
+        "Milk yield dropped after feed change",
+        "Switched dairy feed suppliers last month and yield dropped noticeably. Going back to the old supplier but curious if others have had this issue.",
+        "Livestock & Dairy",
+    ),
+    (
+        "Drip irrigation on a budget — what I learned",
+        "Set up a basic drip system for under $200 covering half an acre. Sharing the parts list and layout that worked for me.",
+        "Irrigation & Water Management",
+    ),
+    (
+        "Borehole water is too saline for some crops",
+        "Tested our borehole water and salinity is higher than expected. Which crops are more salt-tolerant for irrigation in these conditions?",
+        "Irrigation & Water Management",
+    ),
+    (
+        "Rice paddy water management during dry spells",
+        "Mwea scheme farmers — how are you managing paddy flooding schedules with the reduced canal flow this month?",
+        "Maize Growers Network",
+    ),
+    (
+        "Avocado orchard spacing recommendations?",
+        "Planning a new Hass avocado block. What spacing has worked best for others in similar climates?",
+        "Organic & Regenerative Farming",
+    ),
 ]
 
 COMMENTS = [
@@ -118,7 +267,7 @@ def run():
             return
 
         users = []
-        for i, (username, email, role, bio, location, is_expert) in enumerate(USERS):
+        for i, (username, email, _role, bio, location, is_expert) in enumerate(USERS):
             u = User(
                 username=username,
                 email=email,
@@ -151,7 +300,9 @@ def run():
             db.session.add(CommunityMembership(user_id=c.created_by, community_id=c.id))
         for u in users:
             for c in random.sample(communities, k=random.randint(2, 4)):
-                exists = CommunityMembership.query.filter_by(user_id=u.id, community_id=c.id).first()
+                exists = CommunityMembership.query.filter_by(
+                    user_id=u.id, community_id=c.id
+                ).first()
                 if not exists:
                     db.session.add(CommunityMembership(user_id=u.id, community_id=c.id))
         db.session.commit()
@@ -171,7 +322,9 @@ def run():
             db.session.add(post)
             db.session.flush()
             if random.random() < 0.7:
-                db.session.add(PostImage(post_id=post.id, image_url=POST_IMAGES[i % len(POST_IMAGES)]))
+                db.session.add(
+                    PostImage(post_id=post.id, image_url=POST_IMAGES[i % len(POST_IMAGES)])
+                )
             posts.append(post)
         db.session.commit()
 
@@ -182,12 +335,14 @@ def run():
                 db.session.add(Like(user_id=u.id, post_id=post.id))
             commenters = random.sample(users, k=random.randint(0, 4))
             for u in commenters:
-                db.session.add(Comment(
-                    user_id=u.id,
-                    post_id=post.id,
-                    content=random.choice(COMMENTS),
-                    created_at=post.created_at + timedelta(hours=random.randint(1, 48)),
-                ))
+                db.session.add(
+                    Comment(
+                        user_id=u.id,
+                        post_id=post.id,
+                        content=random.choice(COMMENTS),
+                        created_at=post.created_at + timedelta(hours=random.randint(1, 48)),
+                    )
+                )
         db.session.commit()
 
         # Follows: each user follows 2-5 others.
@@ -201,16 +356,20 @@ def run():
 
         # Market prices.
         for crop, price, unit, location in MARKET_PRICES:
-            db.session.add(MarketPrice(
-                crop=crop,
-                price=price,
-                unit=unit,
-                location=location,
-                posted_by=random.choice(users).id,
-            ))
+            db.session.add(
+                MarketPrice(
+                    crop=crop,
+                    price=price,
+                    unit=unit,
+                    location=location,
+                    posted_by=random.choice(users).id,
+                )
+            )
         db.session.commit()
 
-        print(f"Seeded {len(users)} users, {len(communities)} communities, {len(posts)} posts, {len(MARKET_PRICES)} market prices.")
+        print(
+            f"Seeded {len(users)} users, {len(communities)} communities, {len(posts)} posts, {len(MARKET_PRICES)} market prices."
+        )
 
 
 if __name__ == "__main__":

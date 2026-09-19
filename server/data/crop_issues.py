@@ -8,9 +8,21 @@ not a diagnosis, since there is no real image analysis behind it.
 """
 
 CROPS = [
-    "maize", "beans", "coffee", "tomatoes", "kale", "cassava", "bananas",
-    "rice", "wheat", "sorghum", "groundnuts", "onions", "cabbage",
-    "sweet potatoes", "sunflower",
+    "maize",
+    "beans",
+    "coffee",
+    "tomatoes",
+    "kale",
+    "cassava",
+    "bananas",
+    "rice",
+    "wheat",
+    "sorghum",
+    "groundnuts",
+    "onions",
+    "cabbage",
+    "sweet potatoes",
+    "sunflower",
 ]
 
 SYMPTOMS = [

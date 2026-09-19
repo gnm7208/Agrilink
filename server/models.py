@@ -425,7 +425,9 @@ class Report(db.Model):
     resolver = db.relationship("User", foreign_keys=[resolved_by])
 
     __table_args__ = (
-        db.UniqueConstraint("reporter_id", "target_type", "target_id", name="unique_report_per_target"),
+        db.UniqueConstraint(
+            "reporter_id", "target_type", "target_id", name="unique_report_per_target"
+        ),
     )
 
     def to_dict(self):

@@ -66,9 +66,7 @@ def stats():
     for i in range(29, -1, -1):
         day_start = (now - timedelta(days=i)).replace(hour=0, minute=0, second=0, microsecond=0)
         day_end = day_start + timedelta(days=1)
-        count = User.query.filter(
-            User.created_at >= day_start, User.created_at < day_end
-        ).count()
+        count = User.query.filter(User.created_at >= day_start, User.created_at < day_end).count()
         new_users_by_day.append({"date": day_start.date().isoformat(), "count": count})
 
     return jsonify(
@@ -211,12 +209,12 @@ def _hard_delete_user(user):
     Comment.query.filter_by(user_id=user.id).delete(synchronize_session=False)
     for post in Post.query.filter_by(author_id=user.id).all():
         db.session.delete(post)
-    Follow.query.filter(
-        (Follow.follower_id == user.id) | (Follow.followed_id == user.id)
-    ).delete(synchronize_session=False)
-    Message.query.filter(
-        (Message.sender_id == user.id) | (Message.receiver_id == user.id)
-    ).delete(synchronize_session=False)
+    Follow.query.filter((Follow.follower_id == user.id) | (Follow.followed_id == user.id)).delete(
+        synchronize_session=False
+    )
+    Message.query.filter((Message.sender_id == user.id) | (Message.receiver_id == user.id)).delete(
+        synchronize_session=False
+    )
     CommunityMembership.query.filter_by(user_id=user.id).delete(synchronize_session=False)
     PasswordResetToken.query.filter_by(user_id=user.id).delete(synchronize_session=False)
     for community in Community.query.filter_by(created_by=user.id).all():

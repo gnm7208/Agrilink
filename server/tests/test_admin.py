@@ -97,9 +97,7 @@ class TestAdminUserManagement:
         assert response.status_code == 200
         assert response.get_json()["status"] == "suspended"
 
-        response = client.patch(
-            f"/api/admin/users/{second_user}/status", json={"status": "active"}
-        )
+        response = client.patch(f"/api/admin/users/{second_user}/status", json={"status": "active"})
         assert response.status_code == 200
         assert response.get_json()["status"] == "active"
 
@@ -136,9 +134,7 @@ class TestAdminUserManagement:
 
     def test_cannot_change_own_status(self, admin_client):
         client, admin_id = admin_client
-        response = client.patch(
-            f"/api/admin/users/{admin_id}/status", json={"status": "suspended"}
-        )
+        response = client.patch(f"/api/admin/users/{admin_id}/status", json={"status": "suspended"})
         assert response.status_code == 400
 
     def test_change_role(self, admin_client, second_user, app):
@@ -147,17 +143,13 @@ class TestAdminUserManagement:
             db.session.add(Role(name="expert"))
             db.session.commit()
 
-        response = client.patch(
-            f"/api/admin/users/{second_user}/role", json={"role": "expert"}
-        )
+        response = client.patch(f"/api/admin/users/{second_user}/role", json={"role": "expert"})
         assert response.status_code == 200
         assert response.get_json()["role"] == "expert"
 
     def test_role_requires_existing_role(self, admin_client, second_user):
         client, _ = admin_client
-        response = client.patch(
-            f"/api/admin/users/{second_user}/role", json={"role": "superuser"}
-        )
+        response = client.patch(f"/api/admin/users/{second_user}/role", json={"role": "superuser"})
         assert response.status_code == 400
 
     def test_cannot_change_own_role(self, admin_client):
@@ -165,9 +157,7 @@ class TestAdminUserManagement:
         response = client.patch(f"/api/admin/users/{admin_id}/role", json={"role": "user"})
         assert response.status_code == 400
 
-    def test_delete_user_with_content_cascades_cleanly(
-        self, admin_client, second_user, app
-    ):
+    def test_delete_user_with_content_cascades_cleanly(self, admin_client, second_user, app):
         """
         Regression test: the schema has no ON DELETE CASCADE, so deleting a
         user who has posts/comments/likes/messages/community-membership must

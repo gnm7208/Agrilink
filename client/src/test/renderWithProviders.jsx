@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components -- test helper, never hot-reloaded */
 import { render } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AuthProvider } from '../context/AuthContext'
@@ -9,7 +10,7 @@ import { OutboxProvider } from '../context/OutboxContext'
  * app-wide contexts (theme, auth, outbox, react-query) can be rendered in
  * tests. Retries are disabled so failing queries don't hang the test.
  */
-export function AllProviders({ children }) {
+function AllProviders({ children }) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   })
