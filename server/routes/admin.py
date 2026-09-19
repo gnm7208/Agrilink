@@ -8,17 +8,15 @@ from models import (
     AdminActionLog,
     Comment,
     Community,
-    CommunityMembership,
-    Follow,
     Like,
     Message,
-    PasswordResetToken,
     Post,
     Report,
     Role,
     User,
 )
 from rbac import admin_required
+from services.account_service import hard_delete_user
 from utils.timeutils import utcnow
 
 bp = Blueprint("admin", __name__)
@@ -196,32 +194,6 @@ def update_user_role(user_id):
     return jsonify(user.to_dict(include_email=True))
 
 
-def _hard_delete_user(user):
-    """Remove a user and everything that references them.
-
-    The schema has no ON DELETE CASCADE, so a bare `session.delete(user)`
-    fails with an IntegrityError for any user with posts/comments/likes/
-    follows/messages. Posts and communities are deleted one-by-one via the
-    ORM (not bulk .delete()) so their own cascade="all, delete-orphan"
-    relationships (images/likes/comments, memberships) fire correctly.
-    """
-    Like.query.filter_by(user_id=user.id).delete(synchronize_session=False)
-    Comment.query.filter_by(user_id=user.id).delete(synchronize_session=False)
-    for post in Post.query.filter_by(author_id=user.id).all():
-        db.session.delete(post)
-    Follow.query.filter((Follow.follower_id == user.id) | (Follow.followed_id == user.id)).delete(
-        synchronize_session=False
-    )
-    Message.query.filter((Message.sender_id == user.id) | (Message.receiver_id == user.id)).delete(
-        synchronize_session=False
-    )
-    CommunityMembership.query.filter_by(user_id=user.id).delete(synchronize_session=False)
-    PasswordResetToken.query.filter_by(user_id=user.id).delete(synchronize_session=False)
-    for community in Community.query.filter_by(created_by=user.id).all():
-        db.session.delete(community)
-    db.session.delete(user)
-
-
 @bp.delete("/users/<int:user_id>")
 @admin_required
 @limiter.limit("30 per minute")
@@ -241,7 +213,7 @@ def delete_user(user_id):
         target_id=user.id,
         reason=reason,
     )
-    _hard_delete_user(user)
+    hard_delete_user(user)
     db.session.commit()
     return jsonify({"message": "User deleted"})
 

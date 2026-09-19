@@ -267,3 +267,50 @@ class TestMe:
         data = response.get_json()
         assert data["authenticated"] is False
         assert data["user"] is None
+
+
+class TestDeleteAccount:
+    def test_wrong_password_is_403_and_keeps_the_session(self, auth_client):
+        client, _ = auth_client
+        response = client.delete("/api/auth/me", json={"password": "not-it"})
+        assert response.status_code == 403, (
+            "must not be 401 — the client treats that as an expired session"
+        )
+        assert client.get("/api/auth/me").status_code == 200
+
+    def test_deletes_user_and_everything_they_posted(self, auth_client, sample_user_data):
+        client, user_id = auth_client
+        post = client.post(
+            "/api/posts", json={"title": "Bye", "content": "Deleting my account soon"}
+        )
+        assert post.status_code == 201
+        post_id = post.get_json()["post"]["id"]
+        client.post(f"/api/posts/{post_id}/like")
+        client.post(f"/api/posts/{post_id}/comments", json={"content": "own comment"})
+        client.post("/api/communities", json={"name": "Soon gone"})
+        client.post(
+            "/api/market-prices",
+            json={"crop": "Maize", "price": 50, "unit": "kg", "location": "Nakuru"},
+        )
+
+        response = client.delete("/api/auth/me", json={"password": sample_user_data["password"]})
+        assert response.status_code == 200
+
+        # Session gone, login gone, content gone, email free again.
+        assert client.get("/api/auth/me").get_json()["authenticated"] is False
+        assert (
+            client.post(
+                "/api/auth/login",
+                json={"email": sample_user_data["email"], "password": sample_user_data["password"]},
+            ).status_code
+            == 401
+        )
+        assert client.get(f"/api/posts/{post_id}").status_code == 404
+        assert client.post(
+            "/api/auth/register",
+            json={
+                "username": "returning",
+                "email": sample_user_data["email"],
+                "password": sample_user_data["password"],
+            },
+        ).status_code in (200, 201)

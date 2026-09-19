@@ -235,6 +235,7 @@ POST /api/auth/register           # User registration
 POST /api/auth/login              # User login
 POST /api/auth/logout             # User logout
 GET  /api/auth/me                 # Get current user
+DELETE /api/auth/me               # Delete own account (password in body; erases everything the user posted)
 POST /api/auth/verify-email       # Verify email address
 POST /api/auth/resend-verification # Resend verification email
 POST /api/auth/request-password-reset # Request password reset

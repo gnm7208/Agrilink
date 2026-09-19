@@ -116,6 +116,14 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('user');
   }, []);
 
+  // Erase the account server-side (password re-checked there), then drop the session locally.
+  const deleteAccount = useCallback(async (password) => {
+    await apiRequest(API_ENDPOINTS.auth.me, { method: 'DELETE', body: JSON.stringify({ password }) });
+    setUser(null);
+    removeToken();
+    localStorage.removeItem('user');
+  }, []);
+
   // Update user data (e.g., after profile edit)
   const updateUser = useCallback((updatedUserData) => {
     setUser(updatedUserData);
@@ -127,6 +135,7 @@ export function AuthProvider({ children }) {
     isAuthenticated: !!user,
     refreshUser: fetchUser,
     logout,
+    deleteAccount,
     updateUser,
     // ISDA API Integration
     isdaAuthenticated,

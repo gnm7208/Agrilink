@@ -69,4 +69,6 @@ Build a mobile-first agricultural super app that centralizes trusted knowledge, 
 - [x] Privacy policy (`/privacy.html`) and store listing copy
 - [ ] Deploy and verify `/.well-known/assetlinks.json` is served
 - [ ] GitHub Release (APK) → Microsoft Store (PWABuilder) → Amazon / Samsung → Google Play when the $25 fee is paid
-- [ ] In-app account deletion; keep the Render API warm before store traffic
+- [x] In-app account deletion (`DELETE /api/auth/me`, Profile page)
+- [x] Keep-alive workflow for the Render API (runs once merged to `main`)
+- [ ] **Production API is down**: every DB-backed endpoint returns 500 (the Render Postgres is gone — Render allows one free instance per account and `soko-db` holds it). Move to Neon like the other apps.

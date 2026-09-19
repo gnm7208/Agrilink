@@ -6,6 +6,7 @@ import { Avatar } from '../components/ui/Avatar';
 import PostCard from '../components/PostCard';
 import { EditProfileModal } from '../components/EditProfileModal';
 import { ThemePicker } from '../components/ThemePicker';
+import { DeleteAccountCard } from '../components/DeleteAccountCard';
 import { apiRequest, API_ENDPOINTS } from '../config/api';
 import { useAuth } from '../hooks/useAuth';
 
@@ -220,6 +221,10 @@ export function ProfilePage() {
 
       <div className="px-4 mb-4">
         <ThemePicker />
+      </div>
+
+      <div className="px-4 mb-4">
+        <DeleteAccountCard />
       </div>
 
       <div className="px-4 space-y-4">
