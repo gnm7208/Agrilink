@@ -7,7 +7,7 @@ info:
     Authentication uses JWT bearer tokens obtained from /api/auth/login.
   version: 1.0.0
 servers:
-  - url: https://agrilink-11rw.onrender.com
+  - url: https://agrilink-7uhu.onrender.com
     description: Production (Render)
   - url: http://localhost:5000
     description: Local development
