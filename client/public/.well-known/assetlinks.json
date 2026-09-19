@@ -1,0 +1,10 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.gnm7208.agrilink",
+      "sha256_cert_fingerprints": ["0B:1A:7F:F8:B5:BD:89:3F:E7:29:96:9D:A7:BF:23:AB:BF:7A:84:09:D4:DA:11:41:4B:69:43:AA:57:E7:B9:46"]
+    }
+  }
+]

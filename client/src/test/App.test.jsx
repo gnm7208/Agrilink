@@ -1,6 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { render } from '@testing-library/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { renderWithProviders } from './renderWithProviders'
 import { App } from '../App'
 
 // Mock AuthProvider
@@ -23,15 +22,9 @@ vi.mock('../hooks/useAuth', () => ({
 
 describe('App', () => {
   it('renders without crashing', () => {
-    // App brings its own Router; provide the query client it expects from main.jsx
-    const queryClient = new QueryClient({
-      defaultOptions: { queries: { retry: false } },
-    })
-    render(
-      <QueryClientProvider client={queryClient}>
-        <App />
-      </QueryClientProvider>
-    )
+    // App brings its own Router; renderWithProviders supplies the same
+    // provider tree main.jsx wraps it in (query client, theme, auth, outbox)
+    renderWithProviders(<App />)
     // Basic smoke test - just verify it renders
     expect(document.body).toBeTruthy()
   })

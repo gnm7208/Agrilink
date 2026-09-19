@@ -61,3 +61,12 @@ Build a mobile-first agricultural super app that centralizes trusted knowledge, 
 - **Auth/security gaps**: Enforce HTTPS-only cookies/JWT practices, input validation, rate limiting; security review each sprint.
 - **Scope creep in messaging**: Keep MVP to text-only and read status; defer rich media and typing indicators to later phase.
 - **Testing debt**: Definition of Done requires tests; track coverage per sprint and block merges on failing checks.
+
+### Sprint 5 — Installable app & distribution ($0 path)
+
+- [x] PWA: manifest, service worker, icon set, brand mark
+- [x] Android signing key, Digital Asset Links, TWA project (`../store-packaging/agrilink`)
+- [x] Privacy policy (`/privacy.html`) and store listing copy
+- [ ] Deploy and verify `/.well-known/assetlinks.json` is served
+- [ ] GitHub Release (APK) → Microsoft Store (PWABuilder) → Amazon / Samsung → Google Play when the $25 fee is paid
+- [ ] In-app account deletion; keep the Render API warm before store traffic

@@ -127,3 +127,12 @@ collaborator's accounts that became unreachable. Both were rebuilt from
 scratch on the current maintainer's own accounts — see Entry 17 above.
 `render.yaml` at the repo root runs migrations and role-seeding
 automatically on every backend deploy.
+
+### Sprint 5: Installable app & store packaging — IN PROGRESS (2026-09-19)
+
+- Replaced the leftover Vite favicon with an AgriLink brand mark (sprout on green) and generated the PNG icon set
+- Added `manifest.webmanifest`, app-shell service worker (`sw.js`, API never cached) and production-only registration in `client/src/services/register-sw.js`
+- Added `/.well-known/assetlinks.json`, `privacy.html`, Apple/mobile meta tags, real `<title>` and description
+- Generated an Android signing key and a Bubblewrap TWA project (`../store-packaging/agrilink`, package `com.gnm7208.agrilink`)
+- Drafted store listing copy. Next: deploy, GitHub Release with the APK, Microsoft Store via PWABuilder
+- Note: `client/src/test/App.test.jsx` was already failing before this work (renders `App` without `OutboxProvider`) — tracked separately
